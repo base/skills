@@ -1,43 +1,85 @@
 ---
 name: converting-minikit-to-farcaster
-description: Convert Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK. Use when migrating apps from @coinbase/onchainkit/minikit to @farcaster/miniapp-sdk, converting MiniKit hooks to SDK calls, or removing MiniKitProvider. Triggers on mentions of MiniKit, OnchainKit minikit, Farcaster SDK conversion, or hook-to-SDK migration.
+description: Converts Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK. Use when migrating from @coinbase/onchainkit/minikit, converting MiniKit hooks, removing MiniKitProvider, or when user mentions MiniKit, OnchainKit, or Farcaster SDK migration.
 ---
 
-# Converting MiniKit to Farcaster SDK
+# MiniKit to Farcaster SDK
 
-MiniKit wraps the Farcaster SDK into React hooks. This skill converts those abstractions back to direct SDK calls.
+## Breaking Changes (SDK v0.2.0+)
+
+1. `sdk.context` is a **Promise** — must await
+2. `sdk.isInMiniApp()` accepts **no parameters**
+3. `sdk.actions.setPrimaryButton()` has no onClick callback
+
+Check version: `npm list @farcaster/miniapp-sdk`
 
 ## Quick Reference
 
-| MiniKit | Farcaster SDK |
-|---------|---------------|
-| `useMiniKit().setFrameReady()` | `await sdk.actions.ready()` |
-| `useMiniKit().context` | `await sdk.context` |
-| `useClose()` | `await sdk.actions.close()` |
-| `useOpenUrl()` | `await sdk.actions.openUrl(url)` |
-| `useViewProfile()` | `await sdk.actions.viewProfile({ fid })` |
-| `useViewCast()` | `await sdk.actions.viewCast({ hash })` |
-| `useComposeCast()` | `await sdk.actions.composeCast({ text, embeds })` |
-| `useAddFrame()` | `await sdk.actions.addMiniApp()` |
-| `useAuthenticate()` | `await sdk.actions.signIn()` |
-| `useNotification()` | Manual webhook (see [NOTIFICATIONS.md](NOTIFICATIONS.md)) |
+| MiniKit | Farcaster SDK | Notes |
+|---------|---------------|-------|
+| `useMiniKit().setFrameReady()` | `await sdk.actions.ready()` | |
+| `useMiniKit().context` | `await sdk.context` | **Async** |
+| `useMiniKit().isSDKLoaded` | `await sdk.isInMiniApp()` | No params |
+| `useClose()` | `await sdk.actions.close()` | |
+| `useOpenUrl(url)` | `await sdk.actions.openUrl(url)` | |
+| `useViewProfile(fid)` | `await sdk.actions.viewProfile({ fid })` | |
+| `useViewCast(hash)` | `await sdk.actions.viewCast({ hash })` | |
+| `useComposeCast()` | `await sdk.actions.composeCast({ text, embeds })` | |
+| `useAddFrame()` | `await sdk.actions.addMiniApp()` | |
+| `usePrimaryButton(opts, cb)` | `await sdk.actions.setPrimaryButton(opts)` | No callback |
+| `useAuthenticate()` | `sdk.quickAuth.getToken()` | See [AUTH.md](AUTH.md) |
+
+## Context Access Pattern
+
+```typescript
+// WRONG
+const fid = sdk.context?.user?.fid;
+
+// CORRECT
+const context = await sdk.context;
+const fid = context?.user?.fid;
+```
+
+In React components, use state:
+
+```typescript
+const [context, setContext] = useState(null);
+
+useEffect(() => {
+  const load = async () => {
+    const ctx = await sdk.context;
+    setContext(ctx);
+  };
+  load();
+}, []);
+```
 
 ## Conversion Workflow
 
-1. **Analyze project**: Run `python3 analyze_project.py <project_dir>` to find all MiniKit usage
-2. **Convert imports**: Replace `@coinbase/onchainkit/minikit` with `@farcaster/miniapp-sdk`
-3. **Transform hooks**: Convert each hook following patterns in [MAPPING.md](MAPPING.md)
-4. **Remove provider**: Delete `MiniKitProvider`, see [PROVIDER_MIGRATION.md](PROVIDER_MIGRATION.md)
-5. **Update manifest**: Change `frame` → `miniapp` in `.well-known/farcaster.json`, see [MANIFEST.md](MANIFEST.md)
-6. **Update package.json**: See [DEPENDENCIES.md](DEPENDENCIES.md)
-7. **Validate**: Run `python3 validate_conversion.py <project_dir>`
+1. Verify Node.js >= 22.11.0
+2. Update dependencies — see [DEPENDENCIES.md](DEPENDENCIES.md)
+3. Replace imports: `@coinbase/onchainkit/minikit` → `@farcaster/miniapp-sdk`
+4. Convert hooks using reference above
+5. Add FrameProvider — see [PROVIDER.md](PROVIDER.md)
+6. Update manifest: `frame` → `miniapp` — see [MANIFEST.md](MANIFEST.md)
 
-## Key Differences
+## Common Errors
 
-- **No provider needed**: Farcaster SDK uses direct imports, not React context
-- **All actions are async**: Always use `await sdk.actions.*()` 
-- **Async context access**: Use `await sdk.context` (it's a Promise), not through a hook
-- **SDK initialization**: Call `sdk.actions.ready()` once when app loads
-- **Manifest key**: Use `miniapp` instead of `frame` in `farcaster.json`
+**"Property 'user' does not exist on type 'Promise<MiniAppContext>'"**
+→ Await `sdk.context` before accessing properties
 
-For complete before/after examples, see [EXAMPLES.md](EXAMPLES.md).
+**"Expected 0 arguments, but got 1"**
+→ Remove parameters from `sdk.isInMiniApp()`
+
+**Context is null in components**
+→ Ensure FrameProvider is in your provider chain
+
+## References
+
+- [MAPPING.md](MAPPING.md) — Complete hook-by-hook conversion reference
+- [EXAMPLES.md](EXAMPLES.md) — Before/after code examples
+- [PROVIDER.md](PROVIDER.md) — Provider setup with FrameProvider
+- [PITFALLS.md](PITFALLS.md) — Common errors and solutions
+- [DEPENDENCIES.md](DEPENDENCIES.md) — Package updates
+- [AUTH.md](AUTH.md) — Quick Auth migration
+- [MANIFEST.md](MANIFEST.md) — farcaster.json changes
