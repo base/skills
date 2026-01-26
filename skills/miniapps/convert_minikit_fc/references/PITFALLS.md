@@ -1,14 +1,41 @@
 # Common Pitfalls & Errors
 
 ## Contents
-- Type errors (sdk.context, isInMiniApp, setPrimaryButton)
-- Runtime issues (context null, detection fails)
-- React patterns (useEffect with async)
-- Sign-in migration
+
+- [Type Errors](#type-errors)
+  - MiniAppProvider not exported
+  - Property 'user' does not exist on Promise
+  - Expected 0 arguments
+  - Promise not assignable
+  - onClick not in SetPrimaryButtonOptions
+- [Runtime Issues](#runtime-issues)
+  - OnchainKitProvider still in chain
+  - isInMiniApp returns false
+  - Context is null
+  - Failed to fetch
+- [React Patterns](#react-patterns)
+  - Async useEffect
+  - Loading context
+- [Sign-In Migration](#sign-in-migration)
+- [Validation Commands](#validation-commands)
 
 ---
 
 ## Type Errors
+
+### "Module '@farcaster/miniapp-sdk' has no exported member 'MiniAppProvider'"
+
+MiniAppProvider is NOT exported from the SDK. You must CREATE it yourself.
+
+```typescript
+// WRONG - trying to import
+import { MiniAppProvider } from '@farcaster/miniapp-sdk';
+
+// CORRECT - create the component yourself
+// See PROVIDER.md for the full MiniAppProvider component code
+```
+
+The Farcaster SDK only exports `sdk` and types. All provider components must be created by you.
 
 ### "Property 'user' does not exist on type 'Promise<MiniAppContext>'"
 
@@ -56,11 +83,11 @@ Assigning `sdk.context` to state without awaiting.
 ```typescript
 // WRONG
 const context = sdk.context;
-setFrameContext({ context, isInMiniApp: true });
+setMiniAppContext({ context, isInMiniApp: true });
 
 // CORRECT
 const context = await sdk.context;
-setFrameContext({ context, isInMiniApp: true });
+setMiniAppContext({ context, isInMiniApp: true });
 ```
 
 ### "'onClick' does not exist in type 'SetPrimaryButtonOptions'"
@@ -89,6 +116,26 @@ For click handling, use regular React buttons.
 
 ## Runtime Issues
 
+### OnchainKitProvider still in provider chain
+
+Remove it entirely. Do not wrap WagmiProvider around OnchainKitProvider.
+
+```typescript
+// WRONG - keeping OnchainKitProvider
+<WagmiProvider>
+  <OnchainKitProvider>
+    {children}
+  </OnchainKitProvider>
+</WagmiProvider>
+
+// CORRECT - OnchainKitProvider removed completely
+<MiniAppProvider>
+  <WagmiProvider>
+    {children}
+  </WagmiProvider>
+</MiniAppProvider>
+```
+
 ### isInMiniApp returns false unexpectedly
 
 Possible causes:
@@ -98,7 +145,7 @@ Possible causes:
 
 ### Context is null in components
 
-FrameProvider not in provider chain.
+MiniAppProvider not in provider chain.
 
 ```typescript
 // WRONG
@@ -109,9 +156,9 @@ export function Providers({ children }) {
 // CORRECT
 export function Providers({ children }) {
   return (
-    <FrameProvider>
+    <MiniAppProvider>
       <WagmiProvider>{children}</WagmiProvider>
-    </FrameProvider>
+    </MiniAppProvider>
   );
 }
 ```
@@ -126,6 +173,23 @@ const context = sdk.context; // Promise, not data
 
 // CORRECT
 const context = await sdk.context;
+```
+
+### "Failed to fetch" in development
+
+SDK methods fail outside Farcaster environment (local browser, dev tools).
+
+```typescript
+// WRONG
+await sdk.actions.ready();
+const ctx = await sdk.context;
+
+// CORRECT
+const inMiniApp = await sdk.isInMiniApp();
+if (inMiniApp) {
+  const ctx = await sdk.context;
+  await sdk.actions.ready();
+}
 ```
 
 ---

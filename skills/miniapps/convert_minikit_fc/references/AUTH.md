@@ -12,7 +12,26 @@ const res = await sdk.quickAuth.fetch('/api/auth');
 
 // Or get token directly
 const { token } = await sdk.quickAuth.getToken();
+// token is a string (JWT)
 ```
+
+## Types
+
+```typescript
+// getToken() returns { token: string }
+const { token } = await sdk.quickAuth.getToken();
+const [authToken, setAuthToken] = useState<string | null>(null);
+setAuthToken(token);
+```
+
+## When to Use
+
+| Endpoint | Method | Why |
+|----------|--------|-----|
+| Auth-protected API routes | `sdk.quickAuth.fetch()` | Auto-adds `Authorization: Bearer <jwt>` header |
+| Public endpoints | Regular `fetch()` | No auth needed |
+
+**401 "Missing token" error?** → Use `sdk.quickAuth.fetch()` instead of `fetch()`.
 
 ## Server (Next.js)
 

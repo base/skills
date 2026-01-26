@@ -53,6 +53,8 @@ FARCASTER_WAGMI_IMPORT = re.compile(r"from\s+['\"]@farcaster/miniapp-wagmi-conne
 SDK_READY = re.compile(r'sdk\.actions\.ready\s*\(')
 MANIFEST_FRAME_KEY = re.compile(r'["\']?frame["\']?\s*[:=]')
 MANIFEST_MINIAPP_KEY = re.compile(r'["\']?miniapp["\']?\s*[:=]')
+MINIKIT_CONFIG_FILE = re.compile(r'minikit\.config\.(ts|js)')
+MINIKIT_CONFIG_EXPORT = re.compile(r'export\s+const\s+minikitConfig\s*=')
 
 def find_source_files(directory: str) -> List[Path]:
     """Find all source files."""
@@ -110,32 +112,32 @@ def check_no_minikit_hooks(files: List[Path], project_path: Path, result: Valida
         result.add_pass("No MiniKit hooks found")
 
 def check_no_provider(files: List[Path], project_path: Path, result: ValidationResult):
-    """Check that MiniKitProvider and OnchainKitProvider with miniKit are removed."""
+    """Check that MiniKitProvider and OnchainKitProvider are completely removed."""
     minikit_provider_found = []
-    onchainkit_with_minikit_found = []
-    
+    onchainkit_provider_found = []
+
     for filepath in files:
         try:
             content = filepath.read_text(encoding='utf-8')
             rel_path = str(filepath.relative_to(project_path))
-            
+
             if MINIKIT_PROVIDER.search(content):
                 minikit_provider_found.append(rel_path)
-            
-            # Check for OnchainKitProvider with miniKit prop
-            if ONCHAINKIT_PROVIDER.search(content) and MINIKIT_PROP.search(content):
-                onchainkit_with_minikit_found.append(rel_path)
+
+            # Check for ANY OnchainKitProvider - must be completely removed
+            if ONCHAINKIT_PROVIDER.search(content):
+                onchainkit_provider_found.append(rel_path)
         except Exception:
             pass
-    
+
     if minikit_provider_found:
-        result.add_error(f"MiniKitProvider still present in: {', '.join(minikit_provider_found)}")
-    
-    if onchainkit_with_minikit_found:
-        result.add_error(f"OnchainKitProvider with miniKit prop found in: {', '.join(onchainkit_with_minikit_found)} - replace with WagmiProvider + farcasterMiniApp connector")
-    
-    if not minikit_provider_found and not onchainkit_with_minikit_found:
-        result.add_pass("MiniKit providers removed")
+        result.add_error(f"MiniKitProvider still present in: {', '.join(minikit_provider_found)} - remove entirely")
+
+    if onchainkit_provider_found:
+        result.add_error(f"OnchainKitProvider still present in: {', '.join(onchainkit_provider_found)} - remove entirely, replace with MiniAppProvider + WagmiProvider")
+
+    if not minikit_provider_found and not onchainkit_provider_found:
+        result.add_pass("OnchainKit/MiniKit providers removed")
 
 def check_farcaster_sdk_usage(files: List[Path], project_path: Path, result: ValidationResult):
     """Check that Farcaster SDK is imported and ready() is called."""
@@ -266,6 +268,27 @@ def check_manifest(project_path: Path, result: ValidationResult):
     if not manifest_found:
         result.add_warning("No farcaster.json manifest found - create app/.well-known/farcaster.json/route.ts")
 
+def check_config_renamed(files: List[Path], project_path: Path, result: ValidationResult):
+    """Check that minikit.config has been renamed to farcaster.config."""
+    config_file_found = False
+    export_found = False
+
+    for filepath in files:
+        if MINIKIT_CONFIG_FILE.search(filepath.name):
+            result.add_error(f"Rename to farcaster.config: {filepath.relative_to(project_path)}")
+            config_file_found = True
+
+        try:
+            content = filepath.read_text(encoding='utf-8')
+            if MINIKIT_CONFIG_EXPORT.search(content):
+                result.add_error(f"Rename minikitConfig to farcasterConfig: {filepath.relative_to(project_path)}")
+                export_found = True
+        except Exception:
+            pass
+
+    if not config_file_found and not export_found:
+        result.add_pass("Config file and export renamed correctly")
+
 def validate_project(project_dir: str) -> ValidationResult:
     """Run all validation checks."""
     project_path = Path(project_dir).resolve()
@@ -289,7 +312,8 @@ def validate_project(project_dir: str) -> ValidationResult:
     check_package_json(project_path, result)
     check_env_variables(project_path, result)
     check_manifest(project_path, result)
-    
+    check_config_renamed(files, project_path, result)
+
     return result
 
 def print_result(result: ValidationResult):

@@ -227,30 +227,34 @@ def print_report(report: AnalysisReport):
     print(f"Files scanned: {report['files_scanned']}")
     print(f"Files with MiniKit: {report['files_with_minikit']}")
     
-    print("\n--- IMPORTS ---")
+    print("\n--- IMPORTS (must be replaced) ---")
     if report['imports']:
         for imp in report['imports']:
             print(f"  {imp['file']}:{imp['line']}")
             print(f"    Imports: {', '.join(imp['imports'])}")
+        print("\n  ACTION: Replace @coinbase/onchainkit imports with @farcaster/miniapp-sdk")
     else:
-        print("  No MiniKit imports found")
+        print("  No OnchainKit/MiniKit imports found")
     
-    print("\n--- HOOK USAGES ---")
+    print("\n--- HOOK USAGES (must be replaced) ---")
     if report['hook_usages']:
         for usage in report['hook_usages']:
             print(f"  {usage['file']}:{usage['line']}")
             print(f"    Hook: {usage['hook']}")
             print(f"    Code: {usage['code'][:80]}...")
+        print("\n  ACTION: Replace MiniKit hooks with sdk.actions.* methods")
     else:
-        print("  No hook usages found")
+        print("  No MiniKit hook usages found")
     
-    print("\n--- PROVIDER LOCATIONS ---")
+    print("\n--- PROVIDER LOCATIONS (must be removed) ---")
     if report['provider_locations']:
         for loc in report['provider_locations']:
             print(f"  {loc['file']}:{loc['line']}")
             print(f"    {loc['code'][:80]}")
+        print("\n  ACTION: Remove OnchainKitProvider and MiniKitProvider entirely.")
+        print("          Replace with MiniAppProvider + WagmiProvider.")
     else:
-        print("  No MiniKitProvider found")
+        print("  No OnchainKitProvider or MiniKitProvider found")
     
     print("\n--- SUMMARY ---")
     summary = report['summary']

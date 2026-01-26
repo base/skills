@@ -1,12 +1,14 @@
 # Conversion Examples
 
 ## Contents
-- Social actions
-- User profile
-- App initialization
-- Primary button
-- Sign-in flow
-- Safe area insets
+
+- [Social Actions](#social-actions)
+- [User Profile](#user-profile)
+- [App Initialization](#app-initialization)
+- [Primary Button (Breaking Change)](#primary-button-breaking-change)
+- [Sign-In Flow](#sign-in-flow)
+- [SafeArea Component](#safearea-component) (conditional)
+- [Add Mini App](#add-mini-app)
 
 ---
 
@@ -67,12 +69,12 @@ useEffect(() => {
 const { fid, username } = user ?? {};
 ```
 
-Or use FrameProvider (see [PROVIDER.md](PROVIDER.md)):
+Or use MiniAppProvider (see [PROVIDER.md](PROVIDER.md)):
 ```typescript
-import { useFrameContext } from '@/components/providers/FrameProvider';
+import { useMiniAppContext } from '@/components/providers/MiniAppProvider';
 
-const frameContext = useFrameContext();
-const { fid, username } = frameContext?.context?.user ?? {};
+const miniAppContext = useMiniAppContext();
+const { fid, username } = miniAppContext?.context?.user ?? {};
 ```
 
 ---
@@ -162,26 +164,25 @@ const res = await sdk.quickAuth.fetch('/api/auth');
 
 ---
 
-## Safe Area Insets
+## SafeArea Component
+
+**Only if the project imports `SafeArea` from OnchainKit:**
 
 **Before:**
 ```typescript
-const { context } = useMiniKit();
-const insets = context?.client?.safeAreaInsets;
+import { SafeArea } from '@coinbase/onchainkit/minikit';
+<SafeArea>{children}</SafeArea>
 ```
 
 **After:**
 ```typescript
-const [insets, setInsets] = useState(null);
-
-useEffect(() => {
-  const load = async () => {
-    const ctx = await sdk.context;
-    setInsets(ctx?.client?.safeAreaInsets);
-  };
-  load();
-}, []);
+import { SafeArea } from '@/components/SafeArea';
+<SafeArea>{children}</SafeArea>
 ```
+
+Create `src/components/SafeArea.tsx` — see [SAFEAREA.md](SAFEAREA.md) for the full component code.
+
+**If project does NOT use SafeArea:** Skip this step.
 
 ---
 

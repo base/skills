@@ -48,3 +48,30 @@ return Response.json({
 ## Categories
 
 `games` | `social` | `finance` | `utilities` | `productivity` | `entertainment` | `news` | `shopping` | `health` | `education`
+
+## Config File Rename
+
+Rename the config file and update all references:
+
+**File rename:**
+```
+minikit.config.ts → farcaster.config.ts
+```
+
+**Inside config file:**
+```typescript
+// Before
+export const minikitConfig = { ... };
+
+// After
+export const farcasterConfig = { ... };
+```
+
+**In `app/.well-known/farcaster.json/route.ts`:**
+```typescript
+// Before
+import { minikitConfig } from "../../../minikit.config";
+
+// After
+import { farcasterConfig } from "../../../farcaster.config";
+```
