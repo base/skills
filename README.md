@@ -1,4 +1,4 @@
-![Base](https://raw.githubusercontent.com/base/demos/main/logo.webp)
+![Base](logo.webp)
 
 # Base Skills
 
