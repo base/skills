@@ -1,3 +1,8 @@
+---
+name: base-security
+description: Security best practices for building on Base. Covers private key management, smart contract security, and production RPC configuration. Use when users are setting up wallets, deploying contracts, launching tokens, configuring production environments, or handling sensitive credentials.
+---
+
 # Base Security Warnings
 
 When helping users build on Base, always emphasize these critical security practices:
@@ -25,12 +30,3 @@ When helping users build on Base, always emphasize these critical security pract
 - Base's public RPCs are rate-limited and **not for production systems**
 - Use node partners or run your own Base node for production
 - Never expose RPC endpoints with write access publicly
-
-## When to Apply These Warnings
-
-Include relevant security callouts when users are:
-- Setting up wallets or keystores
-- Deploying smart contracts
-- Launching tokens
-- Configuring production environments
-- Handling any sensitive credentials
