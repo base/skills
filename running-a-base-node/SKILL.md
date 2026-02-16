@@ -9,11 +9,17 @@ For production apps requiring reliable, unlimited RPC access.
 
 ## Hardware Requirements
 
-**Storage**: `(2 × chain_size) + snapshot_size + 20% buffer`
+- **CPU**: 8-Core minimum
+- **RAM**: 16 GB minimum
+- **Storage**: NVMe SSD, formula: `(2 × chain_size) + snapshot_size + 20% buffer`
 
 ## Networking
 
-**Port 9222 is critical** for Reth peer discovery. If blocked, node will have difficulty finding peers and syncing.
+**Required Ports:**
+- **Port 9222**: Critical for Reth Discovery v5
+- **Port 30303**: P2P Discovery & RLPx
+
+If these ports are blocked, the node will have difficulty finding peers and syncing.
 
 ## Client Selection
 
