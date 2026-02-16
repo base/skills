@@ -1,8 +1,8 @@
-![Base](logo.webp)
-
 # Base Skills
 
-A collection of AI agent skills that extend Claude's capabilities for building on Base and the Coinbase Developer Platform.
+![Base](logo.webp)
+
+A collection of reusable AI agent skills for building on [Base](https://base.org).
 
 <!-- Badge row 1 - status -->
 
@@ -27,18 +27,18 @@ A collection of AI agent skills that extend Claude's capabilities for building o
 
 ## Overview
 
-Skills are modular, self-contained packages that extend Claude's capabilities with specialized knowledge, workflows, and tools for building on [Base]. Think of them as "onboarding guides" that transform Claude from a general-purpose agent into a specialized assistant equipped with procedural knowledge for Base development.
+Skills are modular, self-contained packages that extend AI agents with specialized knowledge, workflows, and tools for building on [Base]. Think of them as onboarding guides that transform a general-purpose agent into a specialized assistant for Base development tasks.
 
 ## Available Skills
 
 | Skill | Category | Location | Description |
-|-------|----------|----------|-------------|
-| **Building with Base Account** | Base Account | `skills/base-account/` | Integrates Base Account SDK for authentication and payments. Covers Sign in with Base (SIWB), Base Pay, Paymasters, Sub Accounts, and Spend Permissions. |
-| **Connecting to Base Network** | Base Chain | `skills/base-chain/` | Configure wallet connections and RPC endpoints for Base Mainnet and Sepolia testnet. |
-| **Deploying Contracts on Base** | Base Chain | `skills/base-chain/` | Deploy and verify smart contracts on Base using Foundry, Hardhat, or Remix. |
-| **Running a Base Node** | Base Chain | `skills/base-chain/` | Set up and operate a Base node for production infrastructure. |
-| **MiniKit to Farcaster Migration** | Mini Apps | `skills/miniapps/convert_minikit_fc/` | Convert Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK with complete hook mapping and migration guides. |
-| **Security Best Practices** | Security | `skills/` | Critical security practices for private keys, smart contracts, and production RPC configuration. |
+| ----- | -------- | -------- | ----------- |
+| **Building with Base Account** | Base Account | `building-with-base-account/SKILL.md` | Integrates Base Account SDK for authentication and payments, including SIWB, Base Pay, Paymasters, Sub Accounts, and Spend Permissions. |
+| **Connecting to Base Network** | Base Chain | `connecting-to-base-network/SKILL.md` | Provides Base Mainnet and Sepolia network configuration, RPC endpoints, chain IDs, and explorer URLs. |
+| **Deploying Contracts on Base** | Base Chain | `deploying-contracts-on-base/SKILL.md` | Deploys and verifies contracts on Base with Foundry, plus common troubleshooting guidance. |
+| **Running a Base Node** | Infrastructure | `running-a-base-node/SKILL.md` | Covers production node setup, hardware requirements, networking ports, and syncing guidance. |
+| **Base Security** | Security | `base-security/SKILL.md` | Security best practices for private key handling, smart contract safety, and production RPC usage. |
+| **Converting MiniKit to Farcaster** | Mini Apps | `miniapps/converting-minikit-to-farcaster/SKILL.md` | Migrates Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK with mappings, examples, and pitfalls. |
 
 ## What Skills Provide
 
@@ -50,12 +50,13 @@ Skills are modular, self-contained packages that extend Claude's capabilities wi
 ## Getting Started
 
 1. Clone this repository
-2. Navigate to the specific skill directory you want to use
-3. Follow the instructions in each skill's markdown file
+2. Open the skill directory relevant to your task
+3. Use the corresponding `SKILL.md` file as the primary guide
+4. Follow linked references in the same directory when needed
 
-### Using with Claude
+### Using with AI Agents
 
-Skills are designed to be loaded into Claude's context when working on relevant tasks. The skill's frontmatter metadata helps Claude understand when to apply specific knowledge:
+These skills are designed to be loaded into an agent's context when working on relevant tasks. This repo uses a `SKILL.md` pattern with frontmatter metadata that many agent ecosystems recognize:
 
 ```yaml
 ---
@@ -63,6 +64,8 @@ name: building-with-base-account
 description: Integrates Base Account SDK for authentication and payments...
 ---
 ```
+
+This repository is currently organized with Claude Code compatibility in mind (including the local `.claude/` tooling), but the skill content itself is written to be reusable across modern AI agent workflows.
 
 ## Creating New Skills
 
@@ -74,7 +77,7 @@ python .claude/skills/skill-creator/scripts/init_skill.py <skill-name> --path <o
 
 ## Requirements
 
-- Node.js (v16 or higher) for JavaScript/TypeScript skills
+- Node.js (v22.11.0+) for the MiniKit to Farcaster conversion workflow
 - Python 3.8+ for Python scripts
 
 ## Contributing
@@ -82,7 +85,7 @@ python .claude/skills/skill-creator/scripts/init_skill.py <skill-name> --path <o
 Contributions are welcome! When adding new skills:
 
 1. Follow the skill structure pattern (SKILL.md with frontmatter)
-2. Keep skills concise and focused on Base specific skills
+2. Keep skills concise and focused on Base-specific procedural guidance
 3. Include relevant examples and common pitfalls
 4. Test skills with real-world use cases
 
