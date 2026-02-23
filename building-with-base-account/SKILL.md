@@ -1,11 +1,11 @@
 ---
 name: building-with-base-account
-description: Integrates Base Account SDK for authentication and payments. Covers Sign in with Base (SIWB), Base Pay, Paymasters, Sub Accounts, and Spend Permissions. Use when building apps with wallet authentication, USDC payments, sponsored transactions, or smart wallet features on Base.
+description: Integrates Base Account SDK for authentication and payments. Covers Sign in with Base (SIWB), Base Pay, Paymasters, Sub Accounts, Spend Permissions, Prolinks, and batch transactions. Use when building apps with wallet authentication, USDC payments, sponsored transactions, smart wallet features, recurring subscriptions, shareable payment links, or any onchain interaction on Base.
 ---
 
 # Building with Base Account
 
-Base Account is an ERC-4337 Smart Wallet providing universal sign-on, one-tap USDC payments, and multi-chain support (Base, Arbitrum, Optimism, Zora, Polygon, BNB, Avalanche, Lordchain, Ethereum Mainnet).
+Base Account is an ERC-4337 smart wallet providing universal sign-on, one-tap USDC payments, and multi-chain support (Base, Arbitrum, Optimism, Zora, Polygon, BNB, Avalanche, Lordchain, Ethereum Mainnet).
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ Base Account is an ERC-4337 Smart Wallet providing universal sign-on, one-tap US
 npm install @base-org/account @base-org/account-ui
 ```
 
-```tsx
+```typescript
 import { createBaseAccountSDK } from '@base-org/account';
 
 const sdk = createBaseAccountSDK({
@@ -25,17 +25,19 @@ const sdk = createBaseAccountSDK({
 const provider = sdk.getProvider();
 ```
 
-## Core Features
+## Feature References
 
-| Feature | Description |
-|---------|-------------|
-| Sign in with Base | Wallet auth using SIWE (EIP-4361) |
-| Base Pay | One-tap USDC payments, gas handled automatically |
-| Paymasters | Sponsor gas for users (ERC-7677) |
-| Sub Accounts | App-specific embedded wallets |
-| Spend Permissions | Delegate asset spending to trusted spenders |
-| Batch Transactions | Multiple calls in one transaction (EIP-5792) |
-| Magic Spend | Access Coinbase balances onchain |
+Read the reference for the feature you're implementing:
+
+| Feature | Reference | When to Read |
+|---------|-----------|-------------|
+| Sign in with Base | [references/authentication.md](references/authentication.md) | Wallet auth, SIWE, backend verification, SignInWithBaseButton, Wagmi/Privy setup |
+| Base Pay | [references/payments.md](references/payments.md) | One-tap USDC payments, payerInfo, server-side verification, BasePayButton |
+| Subscriptions | [references/subscriptions.md](references/subscriptions.md) | Recurring charges, spend permissions, CDP wallet setup, charge/revoke lifecycle |
+| Sub Accounts | [references/sub-accounts.md](references/sub-accounts.md) | App-specific embedded wallets, key generation, funding |
+| Capabilities | [references/capabilities.md](references/capabilities.md) | Batch transactions, gas sponsorship (paymasters), atomic execution, auxiliaryFunds, attribution |
+| Prolinks | [references/prolinks.md](references/prolinks.md) | Shareable payment links, QR codes, encoded transaction URLs |
+| Troubleshooting | [references/troubleshooting.md](references/troubleshooting.md) | Popup issues, gas usage, unsupported calls, migration, doc links |
 
 ## Critical Requirements
 
@@ -45,6 +47,7 @@ const provider = sdk.getProvider();
 - **Verify sender matches authenticated user** to prevent impersonation
 - **Use a proxy** to protect Paymaster URLs from frontend exposure
 - **Paymaster providers must be ERC-7677-compliant**
+- **Never expose CDP credentials client-side** (subscription backend only)
 
 ### Popup Handling
 
@@ -54,9 +57,9 @@ const provider = sdk.getProvider();
 
 ### Base Pay
 
-- Base Pay works independently from SIWB - no auth required for `pay()`
+- Base Pay works independently from SIWB — no auth required for `pay()`
 - `testnet` param in `getPaymentStatus()` must match `pay()` call
-- Never disable actions based on onchain balance alone - check `auxiliaryFunds` capability
+- Never disable actions based on onchain balance alone — check `auxiliaryFunds` capability
 
 ### Sub Accounts
 
@@ -64,24 +67,12 @@ const provider = sdk.getProvider();
 - Ownership changes expected on new devices/browsers
 - Only Coinbase Smart Wallet contracts supported for import
 
-### Spend Permissions
-
-- `spendCalls` array has 2 calls first time, 1 call after registration
-- Limited to first token when multiple transfers needed
-
 ### Smart Wallets
 
 - ERC-6492 wrapper enables signature verification before wallet deployment
 - Viem's `verifyMessage`/`verifyTypedData` handle this automatically
 
-## Brand Guidelines
+## For Edge Cases and Latest API Changes
 
-Follow brand guidelines when using `SignInWithBaseButton` or `BasePayButton`.
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Peer dependency error | Use `--legacy-peer-deps` flag |
-| Popup infinite spinner | Check `Cross-Origin-Opener-Policy` header |
-| Signature fails pre-deploy | Viem handles ERC-6492 automatically |
+- **AI-optimized docs**: [docs.base.org/llms.txt](https://docs.base.org/llms.txt)
+- **Full reference**: [docs.base.org/base-account](https://docs.base.org/base-account)
