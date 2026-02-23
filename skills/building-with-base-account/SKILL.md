@@ -1,6 +1,6 @@
 ---
 name: building-with-base-account
-description: Integrates Base Account SDK for authentication and payments. Covers Sign in with Base (SIWB), Base Pay, Paymasters, Sub Accounts, Spend Permissions, Prolinks, and batch transactions. Use when building apps with wallet authentication, USDC payments, sponsored transactions, smart wallet features, recurring subscriptions, shareable payment links, or any onchain interaction on Base.
+description: Integrates Base Account SDK for authentication and payments. Covers Sign in with Base (SIWB), Base Pay, Paymasters, Sub Accounts, Spend Permissions, Prolinks, and batch transactions. Use when building apps with wallet authentication, USDC payments, sponsored transactions, smart wallet features, recurring subscriptions, shareable payment links, or any onchain interaction on Base. Covers phrases like "add sign in with Base", "SIWB button", "accept USDC payments", "Base Pay", "paymaster setup", "gas sponsorship", "smart wallet", "sub account", "spend permissions", or "payment link".
 ---
 
 # Building with Base Account

@@ -1,11 +1,19 @@
 ---
 name: running-a-base-node
-description: Runs a Base node for production environments. Covers hardware requirements, Reth client setup, networking, and sync troubleshooting. Use when setting up self-hosted RPC infrastructure or running archive nodes.
+description: Runs a Base node for production environments. Covers hardware requirements, Reth client setup, networking, and sync troubleshooting. Use when setting up self-hosted RPC infrastructure or running archive nodes. Covers phrases like "run a Base node", "set up Base RPC", "Base node hardware requirements", "Reth Base setup", "sync Base node", "self-host Base", or "run my own node".
 ---
 
 # Running a Base Node
 
 For production apps requiring reliable, unlimited RPC access.
+
+## Security
+
+- **Restrict RPC access** — bind to `127.0.0.1` or a private interface, never expose RPC ports (`8545`/`8546`) to the public internet without authentication
+- **Firewall rules** — only open ports 9222 (Discovery v5) and 30303 (P2P) to the public; block all other inbound traffic
+- **Run as a non-root user** with minimal filesystem permissions
+- **Use TLS termination** (reverse proxy with nginx/caddy) if exposing the RPC endpoint to remote clients
+- **Monitor for unauthorized access** — log and alert on unexpected RPC calls or connection spikes
 
 ## Hardware Requirements
 

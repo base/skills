@@ -1,6 +1,6 @@
 ---
 name: deploying-contracts-on-base
-description: Deploys smart contracts to Base using Foundry. Covers forge create commands, contract verification, testnet faucet setup via CDP, and BaseScan API key configuration. Use when deploying Solidity contracts to Base Mainnet or Sepolia testnet.
+description: Deploys smart contracts to Base using Foundry. Covers forge create commands, contract verification, testnet faucet setup via CDP, and BaseScan API key configuration. Use when deploying Solidity contracts to Base Mainnet or Sepolia testnet. Covers phrases like "deploy contract to Base", "forge create on Base", "verify contract on BaseScan", "get testnet ETH", "Base Sepolia faucet", "how do I deploy to Base", or "publish my contract".
 ---
 
 # Deploying Contracts on Base
@@ -11,6 +11,25 @@ description: Deploys smart contracts to Base using Foundry. Covers forge create 
 2. Store private keys in Foundry's encrypted keystore — **never commit keys**
 3. [Obtain testnet ETH](#obtaining-testnet-eth-via-cdp-faucet) from CDP faucet (testnet only)
 4. [Get a BaseScan API key](#obtaining-a-basescan-api-key) for contract verification
+
+## Security
+
+- **Never commit private keys** to version control — use Foundry's encrypted keystore (`cast wallet import`)
+- **Never hardcode API keys** in source files — use environment variables or `foundry.toml` with `${ENV_VAR}` references
+- **Never expose `.env` files** — add `.env` to `.gitignore`
+- **Use production RPC providers** (not public endpoints) for mainnet deployments to avoid rate limits and data leaks
+- **Verify contracts on BaseScan** to enable public audit of deployed code
+
+## Input Validation
+
+Before constructing shell commands, validate all user-provided values:
+
+- **contract-path**: Must match `^[a-zA-Z0-9_/.-]+\.sol:[a-zA-Z0-9_]+$`. Reject paths with spaces, semicolons, pipes, or backticks.
+- **rpc-url**: Must be a valid HTTPS URL (`^https://[^\s;|&]+$`). Reject non-HTTPS or malformed URLs.
+- **keystore-account**: Must be alphanumeric with hyphens/underscores (`^[a-zA-Z0-9_-]+$`).
+- **etherscan-api-key**: Must be alphanumeric (`^[a-zA-Z0-9]+$`).
+
+Do not pass unvalidated user input into shell commands.
 
 ## Obtaining Testnet ETH via CDP Faucet
 
