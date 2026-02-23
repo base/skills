@@ -49,7 +49,3 @@ Open a [GitHub issue](https://github.com/base/base-skills/issues) with:
 - Steps to reproduce
 - Expected vs. actual behavior
 - Relevant skill name and version
-
-## Code of Conduct
-
-Be respectful and constructive. We follow the [Contributor Covenant](https://www.contributor-covenant.org/).
