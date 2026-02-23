@@ -8,9 +8,7 @@ A collection of reusable AI agent skills for building on [Base](https://base.org
 
 [![GitHub contributors](https://img.shields.io/github/contributors/base/base-skills)](https://github.com/base/base-skills/graphs/contributors)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/w/base/base-skills)](https://github.com/base/base-skills/graphs/contributors)
-[![GitHub Stars](https://img.shields.io/github/stars/base/base-skills.svg)](https://github.com/base/base-skills/stargazers)
 ![GitHub repo size](https://img.shields.io/github/repo-size/base/base-skills)
-[![GitHub](https://img.shields.io/github/license/base/base-skills?color=blue)](https://github.com/base/base-skills/blob/main/LICENSE)
 
 <!-- Badge row 2 - links and profiles -->
 
