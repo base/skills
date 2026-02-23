@@ -69,4 +69,3 @@ This project is licensed under the terms of the included LICENSE file.
 
 ---
 [Base]: https://base.org
-[Coinbase Developer Platform]: https://portal.cdp.coinbase.com
