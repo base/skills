@@ -30,7 +30,6 @@
 | [Adding Builder Codes](./skills/adding-builder-codes/SKILL.md) | Appends Base builder codes to transactions across Privy, Wagmi, Viem, and standard Ethereum RPC implementations. Automatically detects the user's framework before applying the correct integration pattern. |
 | [Building with Base Account](./skills/building-with-base-account/SKILL.md) | Integrates Base Account SDK for authentication and payments, including SIWB, Base Pay, Paymasters, Sub Accounts, and Spend Permissions. |
 | [Connecting to Base Network](./skills/connecting-to-base-network/SKILL.md) | Provides Base Mainnet and Sepolia network configuration, RPC endpoints, chain IDs, and explorer URLs. |
-| [Converting Farcaster Miniapp to App](./skills/convert-farcaster-miniapp-to-app/SKILL.md) | Converts Farcaster Mini App SDK projects into regular Base web apps, with an option to preserve a small separate Farcaster-specific surface when needed. |
 | [Deploying Contracts on Base](./skills/deploying-contracts-on-base/SKILL.md) | Deploys and verifies contracts on Base with Foundry, plus common troubleshooting guidance. |
 | [Running a Base Node](./skills/running-a-base-node/SKILL.md) | Covers production node setup, hardware requirements, networking ports, and syncing guidance. |
 | [Converting MiniKit to Farcaster](./skills/converting-minikit-to-farcaster/SKILL.md) | Migrates Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK with mappings, examples, and pitfalls. |
@@ -60,10 +59,6 @@ How do I connect to Base mainnet?
 
 ```text
 Add Sign in with Base to my app
-```
-
-```text
-Convert my existing Farcaster miniapp to a standard app on Base
 ```
 
 ## Contributing
