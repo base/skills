@@ -60,7 +60,7 @@ npx apow-cli mine
 
 **Important:** Use a dedicated RPC endpoint (free Alchemy key recommended). The default public RPC (`mainnet.base.org`) has rate limits that cause failures during sustained mining.
 
-**Important:** Use an API-based LLM provider (openai/anthropic/gemini/deepseek/qwen), NOT claude-code/codex. Session-based providers are too slow for the 20-second mint challenge window.
+**Important:** Use a fast, non-thinking LLM for minting (gpt-4o-mini, gemini-2.5-flash, deepseek-chat). Thinking models are too slow for the 20-second mint challenge window.
 
 ## Prerequisites
 
@@ -68,7 +68,7 @@ npx apow-cli mine
 |---|---|
 | **Node.js** | v18 or higher |
 | **Base wallet** | A private key with ETH on Base (for gas + mint fee) |
-| **LLM access** | API key (OpenAI, Anthropic, Gemini, DeepSeek, Qwen), local Ollama, or Claude Code / Codex CLI. **Required for minting only.** |
+| **LLM access** | API key (OpenAI, Gemini, DeepSeek, Qwen, or Anthropic) or local Ollama. **Required for minting only.** |
 
 ## Environment Variables
 
@@ -76,8 +76,8 @@ npx apow-cli mine
 |---|---|---|---|
 | `PRIVATE_KEY` | Yes | - | Wallet private key (0x + 64 hex chars) |
 | `RPC_URL` | Recommended | `https://mainnet.base.org` | Base JSON-RPC endpoint |
-| `LLM_PROVIDER` | No | `openai` | `openai`, `anthropic`, `gemini`, `ollama`, `deepseek`, `qwen`, `claude-code`, or `codex` |
-| `LLM_API_KEY` | Conditional | - | API key (not needed for `ollama`, `claude-code`, `codex`) |
+| `LLM_PROVIDER` | No | `openai` | `openai`, `gemini`, `deepseek`, `qwen`, `anthropic`, or `ollama` |
+| `LLM_API_KEY` | Conditional | - | API key (not needed for `ollama`) |
 | `LLM_MODEL` | No | `gpt-4o-mini` | Model identifier passed to the provider |
 | `MINING_AGENT_ADDRESS` | Yes | - | `0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D` |
 | `AGENT_COIN_ADDRESS` | Yes | - | `0x12577CF0D8a07363224D6909c54C056A183e13b3` |
