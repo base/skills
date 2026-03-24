@@ -3,17 +3,17 @@ name: apow-mining
 description: Mine AGENT tokens on Base using AI proof-of-work. Handles wallet creation, RPC setup, LLM configuration, minting a Mining Rig NFT, and starting the autonomous mining loop. Use when a user wants to mine AGENT, set up an AI miner on Base, earn tokens with proof-of-work, or run an autonomous mining agent. Covers phrases like "mine AGENT tokens", "set up apow miner", "AI mining on Base", "mint a mining rig", or "start mining with my agent".
 ---
 
-# APoW Mining — AI Proof-of-Work on Base
+# APoW Mining: AI Proof-of-Work on Base
 
-Mine $AGENT tokens on Base L2 with Agentic Proof of Work. Prove your agent identity once by minting an ERC-8004 Mining Rig (requires LLM), then compete on hash power — no LLM needed for mining. Your agent can do everything autonomously — generate wallets, configure the miner, mint a rig, and mine. The only step requiring the user is funding the wallet with ETH on Base.
+Mine $AGENT tokens on Base L2 with Agentic Proof of Work. Prove your agent identity once by minting an ERC-8004 Mining Rig (requires LLM), then compete on hash power with no LLM needed for mining. Your agent can do everything autonomously: generate wallets, configure the miner, mint a rig, and mine. The only step requiring the user is funding the wallet with ETH on Base.
 
 **Protocol:** [github.com/Agentoshi/apow-core](https://github.com/Agentoshi/apow-core) | **CLI:** [github.com/Agentoshi/apow-cli](https://github.com/Agentoshi/apow-cli) | **npm:** `apow-cli`
 
 ## What is APoW?
 
-Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-8004 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) — no LLM needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 network mines, with a hard cap of 21,000,000 AGENT.
+Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-8004 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower); no LLM needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 network mines, with a hard cap of 21,000,000 AGENT.
 
-## Contract Addresses — Base Mainnet
+## Contract Addresses (Base Mainnet)
 
 | Contract | Address |
 |----------|---------|
@@ -24,8 +24,8 @@ Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove
 ## Quick Start
 
 ```bash
-npx apow-cli setup     # interactive wizard — wallet, RPC, LLM config
-npx apow-cli fund      # fund wallet — bridge from Solana or show deposit address
+npx apow-cli setup     # interactive wizard -- wallet, RPC, LLM config
+npx apow-cli fund      # fund wallet -- bridge from Solana or show deposit address
 npx apow-cli mint      # mint a mining rig NFT
 npx apow-cli mine      # start mining (auto-detects your best rig)
 ```
@@ -40,7 +40,7 @@ npx apow-cli wallet new
 # Captures address + private key from output (also saved to wallet-<address>.txt)
 
 # 2. Write .env directly (no interactive prompts needed)
-#    LLM config is only needed for minting (one-time) — mining uses algorithmic solving
+#    LLM config is only needed for minting (one-time) -- mining uses algorithmic solving
 cat > .env << 'EOF'
 PRIVATE_KEY=0x<from step 1>
 RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY
@@ -68,19 +68,19 @@ npx apow-cli mine
 |---|---|
 | **Node.js** | v18 or higher |
 | **Base wallet** | A private key with ETH on Base (for gas + mint fee) |
-| **LLM access** | API key (OpenAI, Anthropic, Gemini, DeepSeek, Qwen), local Ollama, or Claude Code / Codex CLI — **required for minting only** |
+| **LLM access** | API key (OpenAI, Anthropic, Gemini, DeepSeek, Qwen), local Ollama, or Claude Code / Codex CLI. **Required for minting only.** |
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `PRIVATE_KEY` | Yes | — | Wallet private key (0x + 64 hex chars) |
+| `PRIVATE_KEY` | Yes | - | Wallet private key (0x + 64 hex chars) |
 | `RPC_URL` | Recommended | `https://mainnet.base.org` | Base JSON-RPC endpoint |
 | `LLM_PROVIDER` | No | `openai` | `openai`, `anthropic`, `gemini`, `ollama`, `deepseek`, `qwen`, `claude-code`, or `codex` |
-| `LLM_API_KEY` | Conditional | — | API key (not needed for `ollama`, `claude-code`, `codex`) |
+| `LLM_API_KEY` | Conditional | - | API key (not needed for `ollama`, `claude-code`, `codex`) |
 | `LLM_MODEL` | No | `gpt-4o-mini` | Model identifier passed to the provider |
-| `MINING_AGENT_ADDRESS` | Yes | — | `0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D` |
-| `AGENT_COIN_ADDRESS` | Yes | — | `0x12577CF0D8a07363224D6909c54C056A183e13b3` |
+| `MINING_AGENT_ADDRESS` | Yes | - | `0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D` |
+| `AGENT_COIN_ADDRESS` | Yes | - | `0x12577CF0D8a07363224D6909c54C056A183e13b3` |
 
 ## LLM Provider Recommendations
 
@@ -95,13 +95,13 @@ npx apow-cli mine
 
 ## How Mining Works
 
-1. **Ownership check** — verifies your wallet owns a Miner NFT
-2. **Fetch challenge** — reads the current mining challenge from AgentCoin
-3. **Solve SMHL** — generates a valid SMHL solution algorithmically (sub-millisecond, no LLM needed)
-4. **Grind nonce** — multi-threaded brute-force search for a valid Keccak-256 proof-of-work
-5. **Submit proof** — calls `mine(nonce, smhlSolution, tokenId)` on-chain
-6. **Collect reward** — AGENT tokens minted directly to your wallet
-7. **Wait for next block** — one mine per block network-wide, then repeat
+1. **Ownership check:** verifies your wallet owns a Miner NFT
+2. **Fetch challenge:** reads the current mining challenge from AgentCoin
+3. **Solve SMHL:** generates a valid SMHL solution algorithmically (sub-millisecond, no LLM needed)
+4. **Grind nonce:** multi-threaded brute-force search for a valid Keccak-256 proof-of-work
+5. **Submit proof:** calls `mine(nonce, smhlSolution, tokenId)` on-chain
+6. **Collect reward:** AGENT tokens minted directly to your wallet
+7. **Wait for next block:** one mine per block network-wide, then repeat
 
 ## Minting a Mining Rig
 
@@ -109,7 +109,7 @@ npx apow-cli mine
 npx apow-cli mint
 ```
 
-The CLI calls `getChallenge()`, solves the SMHL challenge with your LLM, then calls `mint(solution)` with the mint fee. Challenge expires in 20 seconds — use an API-based provider.
+The CLI calls `getChallenge()`, solves the SMHL challenge with your LLM, then calls `mint(solution)` with the mint fee. Challenge expires in 20 seconds, so use an API-based provider.
 
 **Mint price:** Starts at 0.002 ETH, decays by 5% every 100 mints, floors at 0.0002 ETH.
 
@@ -162,14 +162,14 @@ npx apow-cli stats <tokenId>  # stats for a specific rig
 | `429 Too Many Requests` | Switch to a dedicated RPC (Alchemy/QuickNode, both free) |
 | `SMHL solve failed after 3 attempts` | Try a more capable model (`gpt-4o` or `claude-sonnet-4-5-20250929`) |
 | `Not your miner` | Verify `PRIVATE_KEY` matches the NFT owner |
-| `Supply exhausted` | All 18.9M mineable AGENT minted — mining complete |
+| `Supply exhausted` | All 18.9M mineable AGENT minted; mining complete |
 | `10 consecutive failures` | Check RPC, wallet balance, and LLM availability |
 
 ## Security
 
-- Private keys are generated locally via `crypto.randomBytes(32)` — never transmitted
-- LLM calls contain only generic word-puzzle prompts — no wallet data
-- Zero telemetry — no analytics, no error reporting, no phone-home
+- Private keys are generated locally via `crypto.randomBytes(32)` and never transmitted
+- LLM calls contain only generic word-puzzle prompts, with no wallet data exposed
+- Zero telemetry: no analytics, no error reporting, no phone-home
 - Open source and MIT licensed
 - Wallet files created with `0o600` permissions (owner-only)
 
