@@ -280,7 +280,7 @@ CHAIN=base
 | `RPC_URL` | No | Alchemy x402 | Base JSON-RPC endpoint. Default uses Alchemy x402 (premium, paid via USDC). Set to override with a custom endpoint. |
 | `CHAIN` | No | `base` | Network selector; auto-detects `baseSepolia` if RPC URL contains "sepolia" |
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint (only for `apow fund --chain solana`) |
-| `ETHEREUM_RPC_URL` | No | `https://eth.llamarpc.com` | Ethereum mainnet RPC (only for `apow fund --chain ethereum`) |
+| `ETHEREUM_RPC_URL` | No | `https://ethereum-rpc.publicnode.com` | Ethereum mainnet RPC (only for `apow fund --chain ethereum`) |
 | `SQUID_INTEGRATOR_ID` | No | - | Squid Router integrator ID for deposit address flow (free at [squidrouter.com](https://app.squidrouter.com/)) |
 
 ### LLM Provider Recommendations (for Minting)
