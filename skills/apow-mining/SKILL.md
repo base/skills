@@ -724,6 +724,82 @@ cat package.json | grep -A5 "scripts"  # no postinstall hook
 - **Standard:** ERC-721 Enumerable + ERC-8004 (Agent Registry)
 - **Max supply:** 10,000
 
+
+## 14. Dashboard
+
+The `apow dashboard` command group provides a real-time web UI for monitoring your entire mining fleet. Zero external dependencies — it serves vanilla HTML/JS directly from the CLI.
+
+### Subcommands
+
+| Command | Description |
+|---------|-------------|
+| `apow dashboard start` | Launch the dashboard web UI at `http://localhost:3847`. Auto-opens browser. Press Ctrl+C to stop. |
+| `apow dashboard add <address>` | Add a wallet address to monitor. Validates 0x + 40 hex chars. |
+| `apow dashboard remove <address>` | Remove a wallet address from monitoring. |
+| `apow dashboard scan [dir]` | Auto-detect wallets from `wallet-0x*.txt` files in the given directory (default: CWD). Also scans `rig*/` subdirectories. |
+| `apow dashboard wallets` | List all currently monitored wallet addresses. |
+
+### How It Works
+
+- **Wallet storage:** `~/.apow/wallets.json` — a plain JSON array of Ethereum addresses.
+- **Fleet management:** `~/.apow/fleets.json` — optional, defines named groups of wallets from different sources.
+- **Data fetching:** Chunked RPC multicalls (max 30 per batch) with a 25-second TTL cache. Queries ETH balance, AGENT balance, rig ownership, rarity, hashpower, mine count, and earnings for every wallet.
+- **NFT art:** Renders on-chain SVG art for each Mining Rig with rarity-based color coding.
+- **Auto-seed:** On first run, seeds `wallets.json` with the address from your `.env` if configured.
+- **Auto-detect:** `dashboard start` automatically scans CWD for `wallet-0x*.txt` files before launching.
+
+### Fleet Configuration (`~/.apow/fleets.json`)
+
+For managing wallets across multiple machines or directories, create `~/.apow/fleets.json`:
+
+```json
+[
+  { "name": "Local", "type": "array", "path": "/home/user/.apow/wallets.json" },
+  { "name": "Vast.ai Rigs", "type": "rigdirs", "path": "/mnt/mining/rigs" },
+  { "name": "Pool Wallets", "type": "walletfiles", "path": "/mnt/mining/wallets" },
+  { "name": "Solkek Fleet", "type": "solkek", "path": "/home/user/solkek-config.json" }
+]
+```
+
+**Fleet types:**
+
+| Type | Source Format | Description |
+|------|--------------|-------------|
+| `array` | JSON array of addresses | Simple list: `["0xABC...", "0xDEF..."]` |
+| `solkek` | JSON with `master.address` + `miners[].address` | Solkek fleet manager format |
+| `rigdirs` | Directory containing `rig*/wallet-0x*.txt` | Scan rig subdirectories for wallet files |
+| `walletfiles` | Directory containing `wallet-0x*.txt` | Scan flat directory for wallet files |
+
+If `fleets.json` does not exist, the dashboard falls back to `wallets.json` as a single "Main" fleet.
+
+### Example Workflow
+
+```bash
+# 1. Scan a directory with wallet files to populate wallets.json
+npx apow-cli dashboard scan /path/to/mining/dir
+
+# 2. Manually add a wallet not found by scan
+npx apow-cli dashboard add 0x1234567890abcdef1234567890abcdef12345678
+
+# 3. Verify your wallet list
+npx apow-cli dashboard wallets
+
+# 4. Launch the dashboard
+npx apow-cli dashboard start
+# → Opens http://localhost:3847 in your browser
+# → Shows real-time balances, rig stats, earnings, and NFT art
+# → Press Ctrl+C to stop
+```
+
+### Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| "No wallets configured" | Empty `wallets.json` | Run `apow dashboard add <addr>` or `apow dashboard scan .` |
+| Dashboard shows 0 balances | RPC rate limiting | Set a dedicated `RPC_URL` in `.env` (Alchemy recommended) |
+| Browser doesn't open | Headless/SSH environment | Manually open `http://localhost:3847` in a browser |
+| Stale data | 25s cache TTL | Wait for next refresh cycle or restart the dashboard |
+
 ---
 
 **Source:** [github.com/Agentoshi/apow-cli](https://github.com/Agentoshi/apow-cli) | **Protocol:** [github.com/Agentoshi/apow-core](https://github.com/Agentoshi/apow-core)
