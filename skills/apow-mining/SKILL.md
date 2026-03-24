@@ -147,6 +147,8 @@ PRIVATE_KEY=0xKEY_A npx apow-cli mint
 PRIVATE_KEY=0xKEY_A npx apow-cli mine &
 ```
 
+**Want more hash power?** The nonce grinder scales linearly with CPU cores. Rent a high-core-count machine on [vast.ai](https://vast.ai/) for increased throughput. Not required, but effective for competitive mining.
+
 ## Monitoring
 
 ```bash
@@ -158,7 +160,7 @@ npx apow-cli stats <tokenId>  # stats for a specific rig
 
 | Error | Fix |
 |---|---|
-| `Expired` | Switch to an API-based provider (openai/gemini/anthropic/deepseek/qwen) |
+| `Expired` | Use a faster, non-thinking model (gpt-4o-mini, gemini-2.5-flash, deepseek-chat) |
 | `429 Too Many Requests` | Switch to a dedicated RPC (Alchemy/QuickNode, both free) |
 | `SMHL solve failed after 3 attempts` | Try a more capable model (`gpt-4o` or `claude-sonnet-4-5-20250929`) |
 | `Not your miner` | Verify `PRIVATE_KEY` matches the NFT owner |
