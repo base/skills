@@ -25,7 +25,7 @@ metadata:
 configure the miner, mint, and mine. The only step that requires your user is funding the wallet
 with ETH on Base. Everything else you handle yourself.
 
-> **RPC:** The CLI uses [Alchemy x402](https://x402.alchemy.com/) by default -- a premium Base RPC that charges per-request via USDC in your mining wallet. No API key, no account, no rate limits. Just fund your wallet with USDC (the `apow fund` command handles this automatically). If no USDC is available, it falls back to the public RPC. To use a custom RPC, set `RPC_URL` in `.env`.
+> **RPC:** You need a Base RPC endpoint. Either set `RPC_URL` in `.env` (free from Alchemy, QuickNode, etc.) or set `USE_X402=true` to auto-pay via [QuickNode x402](https://x402.quicknode.com/) ($10 USDC for ~1M calls, no API key needed). Run `apow setup` to configure interactively.
 
 ---
 
@@ -277,7 +277,8 @@ CHAIN=base
 | `LLM_API_KEY` | For minting | - | API key for minting. Falls back to `OPENAI_API_KEY` / `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `DASHSCOPE_API_KEY` / `ANTHROPIC_API_KEY` per provider. Not needed for `ollama` or mining. |
 | `LLM_MODEL` | For minting | `gpt-4o-mini` | Model identifier passed to the provider (minting only) |
 | `MINER_THREADS` | No | All CPU cores | Number of threads for parallel nonce grinding |
-| `RPC_URL` | No | Alchemy x402 | Base JSON-RPC endpoint. Default uses Alchemy x402 (premium, paid via USDC). Set to override with a custom endpoint. |
+| `RPC_URL` | Yes* | — | Base JSON-RPC endpoint. Get a free URL from Alchemy or QuickNode. *Not needed if `USE_X402=true`. |
+| `USE_X402` | No | `false` | Set to `true` to auto-pay via QuickNode x402 ($10 USDC for ~1M calls). Replaces `RPC_URL`. |
 | `CHAIN` | No | `base` | Network selector; auto-detects `baseSepolia` if RPC URL contains "sepolia" |
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint (only for `apow fund --chain solana`) |
 | `ETHEREUM_RPC_URL` | No | `https://ethereum-rpc.publicnode.com` | Ethereum mainnet RPC (only for `apow fund --chain ethereum`) |
