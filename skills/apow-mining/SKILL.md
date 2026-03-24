@@ -60,10 +60,10 @@ npx apow-cli wallet new
 # 2. Write .env directly (no interactive prompts needed)
 #    LLM config is only needed for minting (one-time); mining uses algorithmic SMHL.
 #    IMPORTANT: Use an API-based provider for minting (openai/anthropic/gemini/deepseek/qwen).
-#    IMPORTANT: The public Base RPC is unreliable. Get a free Alchemy URL (see RPC Recommendations).
+#    RPC: set RPC_URL (free from Alchemy) or USE_X402=true (auto-pay $10 USDC via QuickNode).
 cat > .env << 'EOF'
 PRIVATE_KEY=0x<from step 1>
-RPC_URL=https://mainnet.base.org
+RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY   # Free from alchemy.com (recommended)
 LLM_PROVIDER=openai               # Required for minting only
 LLM_MODEL=gpt-4o-mini             # Required for minting only
 LLM_API_KEY=<your key>            # Required for minting only
@@ -258,9 +258,9 @@ LLM_MODEL=gpt-4o-mini
 
 # === Network ===
 
-# Base RPC endpoint. The public default is unreliable for sustained mining.
-# Strongly recommend a free Alchemy key: https://www.alchemy.com/ (no credit card)
-RPC_URL=https://mainnet.base.org
+# Base RPC endpoint (required). Get a free URL from alchemy.com (no credit card).
+# Or set USE_X402=true instead for auto-pay via QuickNode ($10 USDC for ~1M calls).
+RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY
 
 # Chain: "base" | "baseSepolia" (auto-detected from RPC_URL if omitted)
 CHAIN=base
@@ -301,7 +301,7 @@ CHAIN=base
 
 ### RPC Recommendations
 
-The default `https://mainnet.base.org` is a public RPC with aggressive rate limits. It **will** fail during sustained mining (frequent `429 Too Many Requests` or timeouts). You need a dedicated RPC endpoint. All providers below offer a **free tier** that is more than sufficient for mining.
+You need a dedicated RPC endpoint. The public `https://mainnet.base.org` has aggressive rate limits and **will** fail during sustained mining. All providers below offer a **free tier** that is more than sufficient for mining. Alternatively, set `USE_X402=true` for zero-setup auto-pay via QuickNode ($10 USDC for ~1M calls).
 
 #### Option 1: Alchemy (Recommended)
 
@@ -532,7 +532,7 @@ pm2 logs
 
 **Economics of multi-wallet mining:** Failed `mine()` calls still cost gas (~0.001 ETH). As more miners compete for each block, the probability of winning decreases while gas costs stay constant. This creates a natural economic equilibrium: scaling is profitable only when the expected reward exceeds the gas cost of losing.
 
-**RPC rate limits:** For 3+ concurrent miners, use a dedicated RPC endpoint (Alchemy, Infura, QuickNode) instead of the default `https://mainnet.base.org`.
+**RPC rate limits:** For 3+ concurrent miners, use a dedicated RPC endpoint (Alchemy, Infura, QuickNode). Free public RPCs will not handle the load.
 
 **Want more hash power?** The nonce grinder scales linearly with CPU cores. Rent a high-core-count machine on [vast.ai](https://vast.ai/) to increase throughput. Not required, but effective for competitive mining.
 
@@ -635,7 +635,7 @@ The CLI contains no analytics, no error reporting, and no phone-home behavior of
 
 The CLI makes only these network calls:
 
-1. **Blockchain RPC** (to user-configured RPC URL, default: `mainnet.base.org`): standard `eth_call`, `eth_sendRawTransaction`, etc.
+1. **Blockchain RPC** (to user-configured RPC URL or QuickNode x402): standard `eth_call`, `eth_sendRawTransaction`, etc.
 2. **LLM API** (to user-configured provider): sends only word-puzzle prompts for SMHL solving, never wallet data
 3. **Bridge APIs** (only when using `apow fund`):
    - **CoinGecko** (`api.coingecko.com`): SOL/ETH price quotes
