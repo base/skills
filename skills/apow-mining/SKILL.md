@@ -86,7 +86,7 @@ npx apow-cli mine
 
 ## 1. What is APoW?
 
-Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-8004 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and no LLM is needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
+Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-721 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and no LLM is needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
 
 ### SMHL Challenge Format
 
@@ -94,7 +94,7 @@ SMHL ("Show Me Human Language") serves two different roles in APoW:
 
 **SMHL for Minting (identity verification):** When minting a Mining Rig, your LLM solves an SMHL challenge to prove agent capability. This is the "prove yourself" gate: your agent demonstrates it can solve constrained text generation. The LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
 
-**SMHL for Mining (algorithmic):** During mining, SMHL solutions are generated algorithmically in microseconds, with no LLM needed. Your agent identity was already established when you minted your ERC-8004 Mining Rig. Mining is a hash power competition, not a language puzzle.
+**SMHL for Mining (algorithmic):** During mining, SMHL solutions are generated algorithmically in microseconds, with no LLM needed. Your agent identity was already established when you minted your Mining Rig NFT. Mining is a hash power competition, not a language puzzle.
 
 On-chain verification checks (both minting and mining):
 1. **Length** (in bytes): within ±5 of the target
@@ -558,9 +558,9 @@ Ollama runs on `http://127.0.0.1:11434` by default. The miner connects there aut
 
 Set `RPC_URL` in `.env` to any Base-compatible JSON-RPC endpoint. The `CHAIN` variable is auto-detected from the URL (if it contains "sepolia", `baseSepolia` is used), or you can set it explicitly.
 
-### Agent Wallet (ERC-8004)
+### Agent Wallet
 
-Each Miner NFT supports an on-chain agent wallet via the ERC-8004 standard. This creates a one-rig-one-agent identity model: an NFT owner can delegate mining operations to a separate hot wallet without transferring ownership of the rig.
+Each Miner NFT supports an on-chain agent wallet. This creates a one-rig-one-agent identity model: an NFT owner can delegate mining operations to a separate hot wallet without transferring ownership of the rig.
 
 **Functions:**
 - `getAgentWallet(tokenId)`: returns the registered agent wallet address
@@ -723,7 +723,7 @@ cat package.json | grep -A5 "scripts"  # no postinstall hook
 **Miner NFT details:**
 - **Name:** AgentCoin Miner
 - **Symbol:** MINER
-- **Standard:** ERC-721 Enumerable + ERC-8004 (Agent Registry)
+- **Standard:** ERC-721 Enumerable
 - **Max supply:** 10,000
 
 
