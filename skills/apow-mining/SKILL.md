@@ -73,8 +73,7 @@ EOF
 
 # 3. Fund the wallet (bridge from any chain, auto-splits into ETH + USDC)
 npx apow-cli fund --chain solana --token sol    # bridge SOL → ETH+USDC on Base
-# Or: npx apow-cli fund --chain solana --token sol --key <base58>  # direct signing (~20s)
-# Or: npx apow-cli fund --chain ethereum --token eth  # bridge from Ethereum mainnet
+# Or: npx apow-cli fund --chain base            # send ETH or USDC on Base directly
 # Or: ask your user to send ETH + USDC on Base directly
 
 # 4. Mint + mine (fully autonomous from here)
@@ -86,13 +85,13 @@ npx apow-cli mine
 
 ## 1. What is APoW?
 
-Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove they're AI by minting an ERC-721 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and no LLM is needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
+Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-721 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and no LLM is needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
 
 ### SMHL Challenge Format
 
 SMHL ("Show Me Human Language") serves two different roles in APoW:
 
-**SMHL for Minting (proof of AI):** When minting a Mining Rig, your LLM solves an SMHL challenge to prove agent capability. This is the "prove yourself" gate: your agent demonstrates it can solve constrained text generation. The LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
+**SMHL for Minting (identity verification):** When minting a Mining Rig, your LLM solves an SMHL challenge to prove agent capability. This is the "prove yourself" gate: your agent demonstrates it can solve constrained text generation. The LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
 
 **SMHL for Mining (algorithmic):** During mining, SMHL solutions are generated algorithmically in microseconds, with no LLM needed. Your AI was already proven when you minted your Mining Rig. Mining is a hash power competition, not a language puzzle.
 
@@ -152,32 +151,19 @@ Your mining wallet needs ETH on Base for gas and the mint fee.
 
 ### Built-in Bridge: `apow fund` (Recommended)
 
-The CLI accepts deposits in 6 forms across 3 chains, auto-bridges to Base, and auto-splits into ETH (gas) + USDC (x402 RPC):
+The CLI bridges from Solana via [Squid Router](https://squidrouter.com/) (Chainflip), or accepts deposits directly on Base. Auto-splits into ETH (gas) + USDC (x402 RPC):
 
 ```bash
 npx apow-cli fund                                          # Interactive: choose chain + token
 npx apow-cli fund --chain solana --token sol               # Bridge SOL → ETH+USDC on Base
-npx apow-cli fund --chain solana --token sol --key <b58>   # Direct Solana signing (~20s)
 npx apow-cli fund --chain solana --token usdc              # Bridge Solana USDC → Base
-npx apow-cli fund --chain ethereum --token eth             # Bridge ETH from mainnet
-npx apow-cli fund --chain ethereum --token usdc            # Bridge USDC from mainnet
 npx apow-cli fund --chain base                             # Show address, wait for deposit
 npx apow-cli fund --chain base --no-swap                   # Skip auto-split
 ```
 
-**Bridge methods per chain:**
-
-| Chain | Direct signing | Deposit address |
-|-------|---------------|-----------------|
-| Solana | deBridge DLN (~20s, `--key`) | Squid Router (~1-3 min) |
-| Ethereum | deBridge DLN (~20s, uses PRIVATE_KEY on mainnet) | Squid Router (~1-3 min) |
-| Base | N/A (already on Base) | Show address + QR code |
+**Solana bridging:** Generates a one-time deposit address with QR code. Send tokens from any Solana wallet (Phantom, Backpack, etc.). Requires `SQUID_INTEGRATOR_ID` in `.env` (free at [squidrouter.com](https://app.squidrouter.com/)). Bridge time: ~1-3 minutes via Chainflip.
 
 **Auto-split:** After bridging, the CLI checks ETH and USDC balances. If either is below the minimum (0.003 ETH for gas, 2.00 USDC for x402 RPC), it swaps the needed amount via Uniswap V3 on Base. Use `--no-swap` to skip.
-
-**Direct signing (Solana `--key`):** Provide your base58 Solana secret key. The CLI calls deBridge DLN to create a bridge order, signs the Solana transaction locally, submits it, and polls until funds arrive on Base. No API key needed.
-
-**Deposit address (no `--key`):** Requires `SQUID_INTEGRATOR_ID` in `.env` (free, apply at [squidrouter.com](https://app.squidrouter.com/)). Generates a one-time deposit address with a QR code. Send tokens from any wallet and the bridge handles the rest.
 
 ### Manual Funding Options
 
@@ -276,19 +262,18 @@ CHAIN=base
 | `LLM_PROVIDER` | For minting | `openai` | LLM provider for minting: `openai`, `gemini`, `deepseek`, `qwen`, `anthropic`, or `ollama`. Not needed for mining. |
 | `LLM_API_KEY` | For minting | - | API key for minting. Falls back to `OPENAI_API_KEY` / `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `DASHSCOPE_API_KEY` / `ANTHROPIC_API_KEY` per provider. Not needed for `ollama` or mining. |
 | `LLM_MODEL` | For minting | `gpt-4o-mini` | Model identifier passed to the provider (minting only) |
-| `MINER_THREADS` | No | All CPU cores | Number of threads for parallel nonce grinding |
+| `MINER_THREADS` | No | All CPU cores | Threads for JS nonce grinding (fallback if no native GPU/CPU grinder detected) |
 | `RPC_URL` | Yes* | — | Base JSON-RPC endpoint. Get a free URL from Alchemy or QuickNode. *Not needed if `USE_X402=true`. |
 | `USE_X402` | No | `false` | Set to `true` to auto-pay via QuickNode x402 ($10 USDC for ~1M calls). Replaces `RPC_URL`. |
 | `CHAIN` | No | `base` | Network selector; auto-detects `baseSepolia` if RPC URL contains "sepolia" |
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint (only for `apow fund --chain solana`) |
-| `ETHEREUM_RPC_URL` | No | `https://ethereum-rpc.publicnode.com` | Ethereum mainnet RPC (only for `apow fund --chain ethereum`) |
 | `SQUID_INTEGRATOR_ID` | No | - | Squid Router integrator ID for deposit address flow (free at [squidrouter.com](https://app.squidrouter.com/)) |
 
 ### LLM Provider Recommendations (for Minting)
 
-> An LLM is only needed for **minting** your Mining Rig NFT (one-time proof of AI). Mining uses optimized algorithmic SMHL solving, with no LLM needed.
+> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Mining uses optimized algorithmic SMHL solving, with no LLM needed.
 >
-> An LLM is only needed for **minting** your Mining Rig NFT (one-time proof of AI). Use a fast, non-thinking model to stay within the 20-second challenge window.
+> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Use a fast, non-thinking model to stay within the 20-second challenge window.
 
 | Provider | Model | Cost per call | Notes |
 |---|---|---|---|
@@ -407,7 +392,7 @@ npx apow-cli mine <tokenId> # or specify a rig by token ID
    - `miningTarget` (uint256): the difficulty target
    - `smhl`: the SMHL format challenge
 4. **Solve SMHL:** generates a valid SMHL solution algorithmically (sub-millisecond, no LLM needed).
-5. **Grind nonce:** multi-threaded brute-force search for a `nonce` where `keccak256(challengeNumber, minerAddress, nonce) < miningTarget`. Uses all CPU cores by default.
+5. **Grind nonce:** brute-force search for a `nonce` where `keccak256(challengeNumber, minerAddress, nonce) < miningTarget`. Works on any CPU out of the box. Add a GPU for 100x+ faster grinding.
 6. **Submit proof:** calls `mine(nonce, smhlSolution, tokenId)` on AgentCoin. The contract verifies both the hash and SMHL solution on-chain.
 7. **Collect reward:** AGENT tokens are minted directly to your wallet.
 8. **Wait for next block:** the protocol enforces one mine per block network-wide. The client waits for block advancement before the next cycle.
@@ -534,7 +519,7 @@ pm2 logs
 
 **RPC rate limits:** For 3+ concurrent miners, use a dedicated RPC endpoint (Alchemy, Infura, QuickNode). Free public RPCs will not handle the load.
 
-**Want more hash power?** The nonce grinder scales linearly with CPU cores. Rent a high-core-count machine on [vast.ai](https://vast.ai/) to increase throughput. Not required, but effective for competitive mining.
+**GPU mining (v0.9.0+):** The miner auto-detects native GPU grinder binaries for 50-1000x faster nonce grinding. Build Metal (macOS) or CPU-C grinders from `local/gpu/`, or rent a CUDA GPU on [vast.ai](https://vast.ai/) with `./local/vast-setup.sh`. All grinders race in parallel -- first nonce wins. Falls back to JS automatically.
 
 ### Local LLM Setup (Ollama)
 
@@ -639,12 +624,11 @@ The CLI makes only these network calls:
 2. **LLM API** (to user-configured provider): sends only word-puzzle prompts for SMHL solving, never wallet data
 3. **Bridge APIs** (only when using `apow fund`):
    - **CoinGecko** (`api.coingecko.com`): SOL/ETH price quotes
-   - **deBridge DLN** (`dln.debridge.finance`): bridge order creation and status (direct signing flow)
-   - **Squid Router** (`v2.api.squidrouter.com`): deposit address generation (deposit address flow)
+   - **Squid Router** (`v2.api.squidrouter.com`): deposit address generation and bridge status
    - **Uniswap V3** (on-chain, Base): ETH/USDC swaps for auto-split
-   - **Solana RPC** (`api.mainnet-beta.solana.com` or custom): balance checks and tx submission
+   - **Solana RPC** (`api.mainnet-beta.solana.com` or custom): balance checks
 
-No private keys are transmitted to bridge providers. deBridge returns a serialized Solana transaction that is signed locally. Squid generates a deposit address, and the user sends SOL themselves.
+No private keys are transmitted to bridge providers. Squid generates a deposit address, and the user sends tokens from their own wallet.
 
 ### LLM Calls Are Data-Isolated
 
