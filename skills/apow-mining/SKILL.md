@@ -247,7 +247,7 @@ AGENT_COIN_ADDRESS=0x12577CF0D8a07363224D6909c54C056A183e13b3
 
 # === LLM Configuration (required for minting only; mining uses optimized solving) ===
 
-# Provider: "clawrouter" (recommended) | "openai" | "gemini" | "deepseek" | "qwen" | "anthropic" | "ollama"
+# Provider: "clawrouter" (recommended) | "openai" | "gemini" | "deepseek" | "qwen" | "anthropic" | "ollama" | "claude-code" | "codex"
 # clawrouter: zero credentials, pays with USDC from your wallet via x402
 LLM_PROVIDER=clawrouter
 
@@ -274,22 +274,29 @@ CHAIN=base
 | `PRIVATE_KEY` | Yes | - | Wallet private key (0x + 64 hex chars) |
 | `MINING_AGENT_ADDRESS` | Yes | - | Deployed MiningAgent contract address |
 | `AGENT_COIN_ADDRESS` | Yes | - | Deployed AgentCoin contract address |
-| `LLM_PROVIDER` | For minting | `clawrouter` | LLM provider for minting: `clawrouter` (recommended, zero credentials), `openai`, `gemini`, `deepseek`, `qwen`, `anthropic`, or `ollama`. Not needed for mining. |
-| `LLM_API_KEY` | For minting* | - | API key for minting. Not needed for `clawrouter`, `ollama`, `claude-code`, `codex`, or mining. Falls back to provider-specific env vars. |
-| `LLM_MODEL` | For minting | `blockrun/eco` | Model identifier passed to the provider (minting only) |
+| `LLM_PROVIDER` | For minting | `openai` | LLM provider for minting: `clawrouter` (recommended, zero credentials), `openai`, `gemini`, `deepseek`, `qwen`, `anthropic`, `ollama`, `claude-code`, `codex`. Not needed for mining. |
+| `LLM_API_KEY` | For minting* | - | API key for minting. Not needed for `clawrouter`, `ollama`, `claude-code`, `codex`, or mining. Falls back to `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, `DASHSCOPE_API_KEY`. |
+| `LLM_MODEL` | For minting | `gpt-4o-mini` | Model identifier passed to the provider (minting only). Use `blockrun/eco` for clawrouter. |
 | `CLAWROUTER_PORT` | No | `8402` | Port for ClawRouter local proxy (only if default is in use) |
 | `MINER_THREADS` | No | All CPU cores | Threads for JS nonce grinding (fallback if no native GPU/CPU grinder detected) |
 | `RPC_URL` | Yes* | — | Base JSON-RPC endpoint. Get a free URL from Alchemy or QuickNode. *Not needed if `USE_X402=true`. |
 | `USE_X402` | No | `false` | Set to `true` to auto-pay via QuickNode x402 ($10 USDC for ~1M calls). Replaces `RPC_URL`. |
 | `CHAIN` | No | `base` | Network selector; auto-detects `baseSepolia` if RPC URL contains "sepolia" |
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint (only for `apow fund --chain solana`) |
+| `OLLAMA_URL` | No | `http://127.0.0.1:11434` | Ollama server URL (only if `LLM_PROVIDER=ollama`) |
+| `GRINDER_MODE` | No | `auto` | Grinder mode: `auto` (detect native binaries) or `js` (force JS worker_threads) |
+| `GPU_GRINDER_PATH` | No | auto-detected | Explicit path to Metal GPU grinder binary |
+| `CUDA_GRINDER_PATH` | No | auto-detected | Explicit path to local CUDA grinder binary |
+| `CPU_GRINDER_PATH` | No | auto-detected | Explicit path to CPU-C grinder binary |
+| `CPU_THREADS` | No | All CPU cores | Thread count for CPU-C grinder |
+| `VAST_IP` | No | - | Remote VAST.ai GPU host IP (for remote CUDA mining) |
+| `VAST_PORT` | No | - | Remote VAST.ai GPU SSH port |
+| `REMOTE_GRINDER` | No | `/root/grinder-cuda` | Path to CUDA binary on remote host |
 | `SQUID_INTEGRATOR_ID` | No | - | Squid Router integrator ID for deposit address flow (free at [squidrouter.com](https://app.squidrouter.com/)) |
 
 ### LLM Provider Recommendations (for Minting)
 
-> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Mining uses optimized algorithmic SMHL solving, with no LLM needed.
->
-> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Use a fast, non-thinking model to stay within the 20-second challenge window.
+> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Mining uses optimized algorithmic SMHL solving, with no LLM needed. Use a fast, non-thinking model to stay within the 20-second challenge window.
 
 | Provider | Model | Cost per call | Notes |
 |---|---|---|---|
@@ -536,7 +543,18 @@ pm2 logs
 
 **RPC rate limits:** For 3+ concurrent miners, use a dedicated RPC endpoint (Alchemy, Infura, QuickNode). Free public RPCs will not handle the load.
 
-**GPU mining (v0.9.0+):** The miner auto-detects native GPU grinder binaries for 50-1000x faster nonce grinding. Build Metal (macOS) or CPU-C grinders from `local/gpu/`, or rent a CUDA GPU on [vast.ai](https://vast.ai/) with `./local/vast-setup.sh`. All grinders race in parallel -- first nonce wins. Falls back to JS automatically.
+**GPU mining (v0.9.2+):** The miner auto-detects native grinder binaries for 50-1000x faster nonce grinding. Grinder source files ship with the npm package -- run `apow build-grinders` to compile and install to `~/.apow/`:
+
+```bash
+npx apow-cli build-grinders              # auto-detects compilers + GPU arch
+npx apow-cli build-grinders --cuda-arch sm_89  # override CUDA architecture
+```
+
+Supported grinders (all race in parallel -- first nonce wins, falls back to JS automatically):
+- **Metal GPU** (macOS): requires Xcode CLI tools (`clang`)
+- **CUDA** (NVIDIA GPU): requires CUDA toolkit (`nvcc`), auto-detects GPU arch via `nvidia-smi`
+- **CPU-C** (any platform): requires `clang` or `gcc`
+- **Remote CUDA** (VAST.ai): set `VAST_IP` + `VAST_PORT` env vars for SSH-based remote grinding
 
 ### Local LLM Setup (Ollama)
 
@@ -555,7 +573,7 @@ LLM_MODEL=llama3.1
 
 Ollama runs on `http://127.0.0.1:11434` by default. The miner connects there automatically.
 
-**Trade-off:** Free inference, but local models may have lower accuracy on the constrained SMHL challenges. The miner retries up to 3 times per challenge, but persistent failures will slow mining.
+**Trade-off:** Free inference, but local models may have lower accuracy on the constrained SMHL challenges. The miner retries up to 5 times per challenge, but persistent failures will slow mining.
 
 ### Custom RPC Endpoints
 
@@ -608,7 +626,7 @@ Use the corresponding testnet contract addresses.
 | `Nonce too high` | Wallet nonce desync | Reset nonce in wallet or wait for pending transactions to confirm |
 | `Anthropic request failed: 429` | Rate limited by Anthropic API | Reduce mining frequency or upgrade API plan |
 | `Ollama request failed: 500` | Ollama server error | Check `ollama serve` is running; restart if needed |
-| `SMHL solve failed after 3 attempts` | LLM cannot satisfy constraints | Switch to a more capable model (e.g., `gpt-4o` or `claude-sonnet-4-5-20250929`) |
+| `SMHL solve failed after 5 attempts` | LLM cannot satisfy constraints | Switch to a more capable model (e.g., `gpt-4o` or `claude-sonnet-4-5-20250929`) |
 | `Fee forward failed` | LPVault rejected the ETH transfer | LPVault may not be set; check contract deployment |
 | `10 consecutive failures` | Repeated transient errors | Check RPC connectivity, wallet balance, and LLM availability |
 | `Timed out waiting for next block (60s)` | RPC not responding or network stalled | Check RPC connectivity; try a different RPC endpoint |
@@ -676,7 +694,7 @@ The SMHL solver sends only generic word-generation prompts to the LLM (e.g., "Wr
    cd apow-cli && npm install && npm run build
    node dist/index.js setup
    ```
-5. **Review dependencies.** The dependency tree is minimal and standard: `viem` (Ethereum library), `commander` (CLI framework), `dotenv` (env loading), `@solana/web3.js` (Solana signing, lazy-loaded only for bridging), `qrcode-terminal` (QR codes for fund command), and an LLM client. No exotic or suspicious packages.
+5. **Review dependencies.** The dependency tree is minimal and standard: `viem` (Ethereum library), `commander` (CLI framework), `dotenv` (env loading), `openai` (LLM client), `@blockrun/clawrouter` (x402 LLM proxy), `@quicknode/x402` (x402 RPC payment), `@solana/web3.js` (Solana signing, lazy-loaded only for bridging), `qrcode-terminal` (QR codes for fund command), `ox` (utilities). No exotic or suspicious packages.
 
 ### How to Verify These Claims Yourself
 
