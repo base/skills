@@ -1,6 +1,6 @@
 ---
 name: apow-mine
-description: Set up and start mining AGENT tokens on Base L2 using apow-cli. Handles wallet creation, RPC setup, LLM config, minting a rig, and starting the mining loop.
+description: Set up and start mining AGENT tokens on Base L2 using apow-cli. Handles wallet creation, RPC setup, LLM config, minting a rig, and starting the mining loop. Zero credentials needed — only ETH + USDC on Base.
 allowed-tools: Bash(npx:*), Bash(node:*), Bash(curl:*)
 argument-hint: [setup|mint|mine|stats]
 metadata:
@@ -8,9 +8,6 @@ metadata:
     requires:
       env:
         - PRIVATE_KEY
-        - RPC_URL
-        - LLM_PROVIDER
-        - LLM_API_KEY
       anyBins:
         - npx
         - node
@@ -48,35 +45,51 @@ npx tsx src/index.ts mint
 npx tsx src/index.ts mine
 ```
 
-### Autonomous Agent Flow (non-interactive)
+### Autonomous Agent Flow — Zero Credentials (non-interactive)
 
-If you're an AI agent, skip the interactive wizard and write the `.env` directly:
+If you're an AI agent, skip the interactive wizard and write the `.env` directly.
+**No API keys needed.** ClawRouter pays for LLM inference with USDC from your mining wallet via x402. Same private key, same USDC balance, zero credentials.
 
 ```bash
 # 1. Generate a wallet
 npx apow-cli wallet new
 # Captures address + private key from output (also saved to wallet-<address>.txt)
 
-# 2. Write .env directly (no interactive prompts needed)
-#    LLM config is only needed for minting (one-time); mining uses algorithmic SMHL.
-#    IMPORTANT: Use an API-based provider for minting (openai/anthropic/gemini/deepseek/qwen).
-#    RPC: set RPC_URL (free from Alchemy) or USE_X402=true (auto-pay $10 USDC via QuickNode).
+# 2. Write .env directly — ZERO API keys needed
 cat > .env << 'EOF'
 PRIVATE_KEY=0x<from step 1>
-RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY   # Free from alchemy.com (recommended)
-LLM_PROVIDER=openai               # Required for minting only
-LLM_MODEL=gpt-4o-mini             # Required for minting only
-LLM_API_KEY=<your key>            # Required for minting only
+USE_X402=true
+LLM_PROVIDER=clawrouter
+LLM_MODEL=blockrun/eco
 MINING_AGENT_ADDRESS=0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D
 AGENT_COIN_ADDRESS=0x12577CF0D8a07363224D6909c54C056A183e13b3
 EOF
 
-# 3. Fund the wallet (bridge from any chain, auto-splits into ETH + USDC)
+# 3. Fund the wallet with ETH (gas) + USDC (x402 RPC + LLM payments)
 npx apow-cli fund --chain solana --token sol    # bridge SOL → ETH+USDC on Base
 # Or: npx apow-cli fund --chain base            # send ETH or USDC on Base directly
 # Or: ask your user to send ETH + USDC on Base directly
 
-# 4. Mint + mine (fully autonomous from here)
+# 4. Mint + mine (fully autonomous from here — zero human intervention)
+npx apow-cli mint
+npx apow-cli mine
+```
+
+### Legacy Flow (with API keys)
+
+If you prefer to use your own LLM API key instead of ClawRouter:
+
+```bash
+cat > .env << 'EOF'
+PRIVATE_KEY=0x<your key>
+RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY   # Free from alchemy.com
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=<your key>
+MINING_AGENT_ADDRESS=0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D
+AGENT_COIN_ADDRESS=0x12577CF0D8a07363224D6909c54C056A183e13b3
+EOF
+
 npx apow-cli mint
 npx apow-cli mine
 ```
@@ -108,9 +121,10 @@ The miner client validates locally before submitting.
 
 | Requirement | Details |
 |---|---|
-| **Node.js** | v18 or higher |
+| **Node.js** | v20 or higher |
 | **Base wallet** | A private key with ETH on Base (for gas + mint fee) |
-| **LLM access** | API key (OpenAI, Gemini, DeepSeek, Qwen, or Anthropic) or local Ollama (**required for minting only**) |
+| **USDC on Base** | ~$10 covers both x402 RPC and ClawRouter LLM calls (only if using zero-credential path) |
+| **LLM access** | ClawRouter (zero credentials, recommended) OR API key (OpenAI, Gemini, etc.) OR local Ollama (**required for minting only**) |
 | **git** | Only if installing from source (not needed for npm) |
 
 ---
@@ -233,14 +247,15 @@ AGENT_COIN_ADDRESS=0x12577CF0D8a07363224D6909c54C056A183e13b3
 
 # === LLM Configuration (required for minting only; mining uses optimized solving) ===
 
-# Provider: "openai" | "gemini" | "deepseek" | "qwen" | "anthropic" | "ollama"
-LLM_PROVIDER=openai
+# Provider: "clawrouter" (recommended) | "openai" | "gemini" | "deepseek" | "qwen" | "anthropic" | "ollama"
+# clawrouter: zero credentials, pays with USDC from your wallet via x402
+LLM_PROVIDER=clawrouter
 
-# API key (not required if LLM_PROVIDER=ollama)
-LLM_API_KEY=sk-your-api-key
+# API key (not required if LLM_PROVIDER=clawrouter, ollama, claude-code, or codex)
+# LLM_API_KEY=sk-your-api-key
 
 # Model name (provider-specific)
-LLM_MODEL=gpt-4o-mini
+LLM_MODEL=blockrun/eco
 
 # === Network ===
 
@@ -259,9 +274,10 @@ CHAIN=base
 | `PRIVATE_KEY` | Yes | - | Wallet private key (0x + 64 hex chars) |
 | `MINING_AGENT_ADDRESS` | Yes | - | Deployed MiningAgent contract address |
 | `AGENT_COIN_ADDRESS` | Yes | - | Deployed AgentCoin contract address |
-| `LLM_PROVIDER` | For minting | `openai` | LLM provider for minting: `openai`, `gemini`, `deepseek`, `qwen`, `anthropic`, or `ollama`. Not needed for mining. |
-| `LLM_API_KEY` | For minting | - | API key for minting. Falls back to `OPENAI_API_KEY` / `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `DASHSCOPE_API_KEY` / `ANTHROPIC_API_KEY` per provider. Not needed for `ollama` or mining. |
-| `LLM_MODEL` | For minting | `gpt-4o-mini` | Model identifier passed to the provider (minting only) |
+| `LLM_PROVIDER` | For minting | `clawrouter` | LLM provider for minting: `clawrouter` (recommended, zero credentials), `openai`, `gemini`, `deepseek`, `qwen`, `anthropic`, or `ollama`. Not needed for mining. |
+| `LLM_API_KEY` | For minting* | - | API key for minting. Not needed for `clawrouter`, `ollama`, `claude-code`, `codex`, or mining. Falls back to provider-specific env vars. |
+| `LLM_MODEL` | For minting | `blockrun/eco` | Model identifier passed to the provider (minting only) |
+| `CLAWROUTER_PORT` | No | `8402` | Port for ClawRouter local proxy (only if default is in use) |
 | `MINER_THREADS` | No | All CPU cores | Threads for JS nonce grinding (fallback if no native GPU/CPU grinder detected) |
 | `RPC_URL` | Yes* | — | Base JSON-RPC endpoint. Get a free URL from Alchemy or QuickNode. *Not needed if `USE_X402=true`. |
 | `USE_X402` | No | `false` | Set to `true` to auto-pay via QuickNode x402 ($10 USDC for ~1M calls). Replaces `RPC_URL`. |
@@ -277,7 +293,8 @@ CHAIN=base
 
 | Provider | Model | Cost per call | Notes |
 |---|---|---|---|
-| OpenAI | `gpt-4o-mini` | ~$0.001 | **Recommended.** Cheapest, fastest, reliable |
+| ClawRouter | `blockrun/eco` | <$0.01 | **Recommended.** Zero credentials, pays with USDC via x402 |
+| OpenAI | `gpt-4o-mini` | ~$0.001 | Cheapest API key option, fast, reliable |
 | Gemini | `gemini-2.5-flash` | ~$0.001 | Fast, good accuracy |
 | DeepSeek | `deepseek-chat` | ~$0.001 | Fast, accessible in China |
 | Qwen | `qwen-plus` | ~$0.002 | Alibaba Cloud, accessible in China |
