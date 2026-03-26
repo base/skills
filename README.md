@@ -35,6 +35,7 @@
 | [Running a Base Node](./skills/running-a-base-node/SKILL.md) | Covers production node setup, hardware requirements, networking ports, and syncing guidance. |
 | [Converting MiniKit to Farcaster](./skills/converting-minikit-to-farcaster/SKILL.md) | Migrates Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK with mappings, examples, and pitfalls. |
 | [Migrating an OnchainKit App](./skills/migrating-an-onchainkit-app/SKILL.md) | Migrates apps from @coinbase/onchainkit to standalone wagmi/viem components, replacing the provider, wallet, and transaction components. |
+| [Registering an Agent on Base](./skills/registering-agent-base-dev/SKILL.md) | Registers an agent wallet with the Base builder code API and wires ERC-8021 transaction attribution into viem, ethers, or managed signing services. |
 
 ## Installation
 
@@ -64,6 +65,10 @@ Add Sign in with Base to my app
 
 ```text
 Convert my existing Farcaster miniapp to a standard app on Base
+```
+
+```text
+Register my trading bot and add builder code attribution to its transactions
 ```
 
 ## Contributing
