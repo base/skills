@@ -1,8 +1,3 @@
----
-name: building-with-base-account
-description: Integrates Base Account SDK for authentication and payments. Covers Sign in with Base (SIWB), Base Pay, Paymasters, Sub Accounts, Spend Permissions, Prolinks, and batch transactions. Use when building apps with wallet authentication, USDC payments, sponsored transactions, smart wallet features, recurring subscriptions, shareable payment links, or any onchain interaction on Base. Covers phrases like "add sign in with Base", "SIWB button", "accept USDC payments", "Base Pay", "paymaster setup", "gas sponsorship", "smart wallet", "sub account", "spend permissions", or "payment link".
----
-
 # Building with Base Account
 
 Base Account is an ERC-4337 smart wallet providing universal sign-on, one-tap USDC payments, and multi-chain support (Base, Arbitrum, Optimism, Zora, Polygon, BNB, Avalanche, Lordchain, Ethereum Mainnet).
@@ -31,13 +26,13 @@ Read the reference for the feature you're implementing:
 
 | Feature | Reference | When to Read |
 |---------|-----------|-------------|
-| Sign in with Base | [references/authentication.md](references/authentication.md) | Wallet auth, SIWE, backend verification, SignInWithBaseButton, Wagmi/Privy setup |
-| Base Pay | [references/payments.md](references/payments.md) | One-tap USDC payments, payerInfo, server-side verification, BasePayButton |
-| Subscriptions | [references/subscriptions.md](references/subscriptions.md) | Recurring charges, spend permissions, CDP wallet setup, charge/revoke lifecycle |
-| Sub Accounts | [references/sub-accounts.md](references/sub-accounts.md) | App-specific embedded wallets, key generation, funding |
-| Capabilities | [references/capabilities.md](references/capabilities.md) | Batch transactions, gas sponsorship (paymasters), atomic execution, auxiliaryFunds, attribution |
-| Prolinks | [references/prolinks.md](references/prolinks.md) | Shareable payment links, QR codes, encoded transaction URLs |
-| Troubleshooting | [references/troubleshooting.md](references/troubleshooting.md) | Popup issues, gas usage, unsupported calls, migration, doc links |
+| Sign in with Base | [authentication.md](authentication.md) | Wallet auth, SIWE, backend verification, SignInWithBaseButton, Wagmi/Privy setup |
+| Base Pay | [payments.md](payments.md) | One-tap USDC payments, payerInfo, server-side verification, BasePayButton |
+| Subscriptions | [subscriptions.md](subscriptions.md) | Recurring charges, spend permissions, CDP wallet setup, charge/revoke lifecycle |
+| Sub Accounts | [sub-accounts.md](sub-accounts.md) | App-specific embedded wallets, key generation, funding |
+| Capabilities | [capabilities.md](capabilities.md) | Batch transactions, gas sponsorship (paymasters), atomic execution, auxiliaryFunds, attribution |
+| Prolinks | [prolinks.md](prolinks.md) | Shareable payment links, QR codes, encoded transaction URLs |
+| Troubleshooting | [troubleshooting.md](troubleshooting.md) | Popup issues, gas usage, unsupported calls, migration, doc links |
 
 ## Critical Requirements
 

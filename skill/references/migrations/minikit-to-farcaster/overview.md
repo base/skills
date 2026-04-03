@@ -1,9 +1,6 @@
----
-name: converting-minikit-to-farcaster
-description: Converts Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK. Use when migrating from @coinbase/onchainkit/minikit, converting MiniKit hooks, removing MiniKitProvider, or when user mentions MiniKit, OnchainKit, or Farcaster SDK migration.
----
-
 # MiniKit to Farcaster SDK
+
+Converts Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK.
 
 ## Breaking Changes (SDK v0.2.0+)
 
@@ -27,7 +24,7 @@ Check version: `npm list @farcaster/miniapp-sdk`
 | `useComposeCast()` | `await sdk.actions.composeCast({ text, embeds })` | |
 | `useAddFrame()` | `await sdk.actions.addMiniApp()` | |
 | `usePrimaryButton(opts, cb)` | `await sdk.actions.setPrimaryButton(opts)` | No callback |
-| `useAuthenticate()` | `sdk.quickAuth.getToken()` | See [AUTH.md](AUTH.md) |
+| `useAuthenticate()` | `sdk.quickAuth.getToken()` | See [auth.md](auth.md) |
 
 ## Context Access Pattern
 
@@ -57,11 +54,11 @@ useEffect(() => {
 ## Conversion Workflow
 
 1. Verify Node.js >= 22.11.0
-2. Update dependencies — see [DEPENDENCIES.md](DEPENDENCIES.md)
+2. Update dependencies — see [dependencies.md](dependencies.md)
 3. Replace imports: `@coinbase/onchainkit/minikit` → `@farcaster/miniapp-sdk`
 4. Convert hooks using reference above
-5. Add FrameProvider — see [PROVIDER.md](PROVIDER.md)
-6. Update manifest: `frame` → `miniapp` — see [MANIFEST.md](MANIFEST.md)
+5. Add FrameProvider — see [provider.md](provider.md)
+6. Update manifest: `frame` → `miniapp` — see [manifest.md](manifest.md)
 
 ## Common Errors
 
@@ -76,10 +73,10 @@ useEffect(() => {
 
 ## References
 
-- [MAPPING.md](MAPPING.md) — Complete hook-by-hook conversion reference
-- [EXAMPLES.md](EXAMPLES.md) — Before/after code examples
-- [PROVIDER.md](PROVIDER.md) — Provider setup with FrameProvider
-- [PITFALLS.md](PITFALLS.md) — Common errors and solutions
-- [DEPENDENCIES.md](DEPENDENCIES.md) — Package updates
-- [AUTH.md](AUTH.md) — Quick Auth migration
-- [MANIFEST.md](MANIFEST.md) — farcaster.json changes
+- [mapping.md](mapping.md) — Complete hook-by-hook conversion reference
+- [examples.md](examples.md) — Before/after code examples
+- [provider.md](provider.md) — Provider setup with FrameProvider
+- [pitfalls.md](pitfalls.md) — Common errors and solutions
+- [dependencies.md](dependencies.md) — Package updates
+- [auth.md](auth.md) — Quick Auth migration
+- [manifest.md](manifest.md) — farcaster.json changes

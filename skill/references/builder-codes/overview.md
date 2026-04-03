@@ -1,15 +1,10 @@
----
-name: adding-builder-codes
-description: Integrate Base Builder Codes (ERC-8021) into web3 applications for onchain transaction attribution and referral fee earning. Use when a project needs to append a builder code or dataSuffix to transactions on Base L2, whether using Wagmi, Viem, Privy, ethers.js, or raw window.ethereum. Covers phrases like "add builder codes", "integrate builder codes", "earn referral fees on Base transactions", "append a builder code to my transactions", "transaction attribution", "Builder Code integration", or "attribute transactions to my app". Handles project analysis to detect frameworks, locating transaction call sites, and replacing them with attributed versions.
----
-
 # Adding Builder Codes
 
 Integrate [Base Builder Codes](https://base.dev) into an onchain application. Builder Codes append an ERC-8021 attribution suffix to transaction calldata so Base can attribute activity to your app and you can earn referral fees. No smart contract changes required.
 
-## When to Use This Skill
+## When to Use
 
-Use this skill when a developer asks to:
+Use when a developer asks to:
 
 - "Add builder codes to my application"
 - "How do I append a builder code to my transactions?"
@@ -76,10 +71,10 @@ Wait for user confirmation before implementing.
 
 ### Implementation Path
 
-- **Privy** (`@privy-io/react-auth` v3.13.0+) → See [references/privy.md](references/privy.md)
-- **Wagmi** (without Privy) → See [references/wagmi.md](references/wagmi.md)
-- **Viem only** (no React framework) → See [references/viem.md](references/viem.md)
-- **Standard RPC** (ethers.js or raw `window.ethereum`) → See [references/rpc.md](references/rpc.md)
+- **Privy** (`@privy-io/react-auth` v3.13.0+) → See [privy.md](privy.md)
+- **Wagmi** (without Privy) → See [wagmi.md](wagmi.md)
+- **Viem only** (no React framework) → See [viem.md](viem.md)
+- **Standard RPC** (ethers.js or raw `window.ethereum`) → See [rpc.md](rpc.md)
 
 ### Step 2: Install dependencies
 
@@ -107,23 +102,23 @@ Follow the framework-specific guide:
 
 #### Privy Implementation
 
-See [references/privy.md](references/privy.md) — plugin-based, one config change required.
+See [privy.md](privy.md) — plugin-based, one config change required.
 
 #### Wagmi Implementation
 
-See [references/wagmi.md](references/wagmi.md) — add `dataSuffix` to Wagmi client config.
+See [wagmi.md](wagmi.md) — add `dataSuffix` to Wagmi client config.
 
 #### Viem Implementation
 
-See [references/viem.md](references/viem.md) — add `dataSuffix` to wallet client.
+See [viem.md](viem.md) — add `dataSuffix` to wallet client.
 
 #### Standard RPC Implementation
 
-See [references/rpc.md](references/rpc.md) — append `DATA_SUFFIX` to transaction data for ethers.js or raw `window.ethereum`.
+See [rpc.md](rpc.md) — append `DATA_SUFFIX` to transaction data for ethers.js or raw `window.ethereum`.
 
 **Preferred approach**: Configure at the **client level** so all transactions are automatically attributed. Only use the per-transaction approach if you need conditional attribution.
 
-For Smart Wallets (EIP-5792 `sendCalls`): See [references/smart-wallets.md](references/smart-wallets.md) — pass via `capabilities`.
+For Smart Wallets (EIP-5792 `sendCalls`): See [smart-wallets.md](smart-wallets.md) — pass via `capabilities`.
 
 ### Step 5: Verify attribution
 

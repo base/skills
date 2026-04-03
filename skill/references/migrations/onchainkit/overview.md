@@ -1,16 +1,4 @@
----
-name: migrating-an-onchainkit-app
-description: >
-  Migrates apps from @coinbase/onchainkit to standalone wagmi/viem components.
-  Handles provider replacement (OnchainKitProvider to WagmiProvider),
-  wallet component replacement (Wallet/ConnectWallet to custom WalletConnect),
-  and transaction component replacement. Use when the user says "migrate my
-  onchainkit", "replace onchainkit provider", "migrate my wallet component",
-  "replace my onchainkit wallet", "migrate my transaction component",
-  "remove onchainkit dependency", or "move off onchainkit".
----
-
-# OnchainKit Migration Skill
+# OnchainKit Migration
 
 Migrate apps from `@coinbase/onchainkit` to standalone `wagmi`/`viem` components with zero OnchainKit dependency.
 
@@ -50,7 +38,7 @@ Scan the project to understand current OnchainKit usage:
 
 ### Step 2: Provider Migration (always first)
 
-Read [references/provider-migration.md](references/provider-migration.md) for detailed instructions and code.
+Read [provider.md](provider.md) for detailed instructions and code.
 
 Summary:
 1. Ensure `wagmi`, `viem`, and `@tanstack/react-query` are installed
@@ -63,7 +51,7 @@ Summary:
 
 ### Step 3: Wallet Migration (after provider)
 
-Read [references/wallet-migration.md](references/wallet-migration.md) for detailed instructions and code.
+Read [wallet.md](wallet.md) for detailed instructions and code.
 
 Summary:
 1. Create a `WalletConnect` component using wagmi hooks (`useAccount`, `useConnect`, `useDisconnect`)
@@ -75,7 +63,7 @@ Summary:
 
 ### Step 4: Transaction Migration (after wallet)
 
-Read [references/transaction-migration.md](references/transaction-migration.md) for detailed instructions and code.
+Read [transaction.md](transaction.md) for detailed instructions and code.
 
 Summary:
 1. Check the `chainId` prop on existing `<Transaction />` components -- add any missing chains to `wagmi-config.ts`
@@ -95,6 +83,8 @@ Summary:
 4. Update `mistakes.md` with final lessons learned
 
 ## Troubleshooting
+
+See [troubleshooting.md](troubleshooting.md) for common build and runtime errors.
 
 ### Build fails after provider migration
 - **Missing dependencies**: Ensure `wagmi`, `viem`, `@tanstack/react-query` are installed

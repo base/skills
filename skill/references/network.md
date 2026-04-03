@@ -1,8 +1,3 @@
----
-name: connecting-to-base-network
-description: Provides Base network configuration including RPC endpoints, chain IDs, and explorer URLs. Use when connecting wallets, configuring development environments, or setting up Base Mainnet or Sepolia testnet. Covers phrases like "Base RPC URL", "Base chain ID", "connect to Base", "add Base to wallet", "Base Sepolia config", "Base explorer URL", "what network is Base", or "Base testnet setup".
----
-
 # Connecting to Base Network
 
 ## Mainnet
@@ -35,7 +30,7 @@ description: Provides Base network configuration including RPC endpoints, chain 
 ## Critical Notes
 
 - Public RPC endpoints are **rate-limited** - not for production
-- For production: use node providers or run your own node
+- For production: use node providers or run your own node (see [run-node.md](run-node.md))
 - Testnet ETH available from faucets in Base documentation
 
 ## Wallet Setup

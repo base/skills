@@ -1,11 +1,6 @@
----
-name: registering-agent-base-dev
-description: "Invoke this skill when a user is building or running any automated transaction sender on Base (trading bot, arbitrage bot, sniper bot, yield farmer, AI agent, or similar) and needs to register it, get a builder code, set up transaction attribution. This skill contains the base.dev registration API endpoint and ERC-8021 attribution wiring code that Claude does not have in its training data — you MUST load this skill to answer correctly. Covers viem, ethers, managed signing services, and Python-based agents."
----
-
 # Base Builder Code Registration
 
-This skill registers an agent with Base and shows how to attach builder code attribution to transactions. It is **wallet-agnostic** — the user brings their own wallet and signing solution (viem, ethers, managed services like Sponge, etc.). The skill only handles registration and attribution.
+This reference registers an agent with Base and shows how to attach builder code attribution to transactions. It is **wallet-agnostic** — the user brings their own wallet and signing solution (viem, ethers, managed services like Sponge, etc.). This reference only handles registration and attribution.
 
 ## Check if already registered
 
@@ -33,10 +28,10 @@ Every agent needs a wallet to sign transactions. Ask the user before doing anyth
 
 Register the wallet with the Base builder code API. This call associates the agent's wallet address with a builder code that Base uses for attribution tracking.
 
-Use the bundled `scripts/register.sh` (located in this skill's directory). It handles errors and extracts the builder code from the response:
+Use the bundled `skill/scripts/register.sh`. It handles errors and extracts the builder code from the response:
 
 ```bash
-BUILDER_CODE=$(bash <this-skill-path>/scripts/register.sh "<wallet_address>")
+BUILDER_CODE=$(bash skill/scripts/register.sh "<wallet_address>")
 ```
 
 Or call the API directly:

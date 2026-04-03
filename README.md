@@ -23,19 +23,22 @@
 [![GitHub pull requests by-label](https://img.shields.io/github/issues-pr-raw/base/base-skills)](https://github.com/base/base-skills/pulls)
 [![GitHub Issues](https://img.shields.io/github/issues-raw/base/base-skills.svg)](https://github.com/base/base-skills/issues)
 
-## Available Skills
+## Skill
 
-| Skill | Description |
-| ----- | ----------- |
-| [Adding Builder Codes](./skills/adding-builder-codes/SKILL.md) | Appends Base builder codes to transactions across Privy, Wagmi, Viem, and standard Ethereum RPC implementations. Automatically detects the user's framework before applying the correct integration pattern. |
-| [Building with Base Account](./skills/building-with-base-account/SKILL.md) | Integrates Base Account SDK for authentication and payments, including SIWB, Base Pay, Paymasters, Sub Accounts, and Spend Permissions. |
-| [Connecting to Base Network](./skills/connecting-to-base-network/SKILL.md) | Provides Base Mainnet and Sepolia network configuration, RPC endpoints, chain IDs, and explorer URLs. |
-| [Converting Farcaster Miniapp to App](./skills/convert-farcaster-miniapp-to-app/SKILL.md) | Converts Farcaster Mini App SDK projects into regular Base web apps, with an option to preserve a small separate Farcaster-specific surface when needed. |
-| [Deploying Contracts on Base](./skills/deploying-contracts-on-base/SKILL.md) | Deploys and verifies contracts on Base with Foundry, plus common troubleshooting guidance. |
-| [Running a Base Node](./skills/running-a-base-node/SKILL.md) | Covers production node setup, hardware requirements, networking ports, and syncing guidance. |
-| [Converting MiniKit to Farcaster](./skills/converting-minikit-to-farcaster/SKILL.md) | Migrates Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK with mappings, examples, and pitfalls. |
-| [Migrating an OnchainKit App](./skills/migrating-an-onchainkit-app/SKILL.md) | Migrates apps from @coinbase/onchainkit to standalone wagmi/viem components, replacing the provider, wallet, and transaction components. |
-| [Registering an Agent on Base](./skills/registering-agent-base-dev/SKILL.md) | Registers an agent wallet with the Base builder code API and wires ERC-8021 transaction attribution into viem, ethers, or managed signing services. |
+One unified skill with progressive reference discovery — the skill loads a single entry point and pulls in detailed references only when needed.
+
+| | |
+|-|-|
+| **Skill** | [skill/SKILL.md](./skill/SKILL.md) |
+| **Network config** | [references/network.md](./skill/references/network.md) |
+| **Deploy contracts** | [references/deploy-contracts.md](./skill/references/deploy-contracts.md) |
+| **Run a node** | [references/run-node.md](./skill/references/run-node.md) |
+| **Builder Codes** | [references/builder-codes/](./skill/references/builder-codes/) |
+| **Base Account SDK** | [references/base-account/](./skill/references/base-account/) |
+| **Register agent/bot** | [references/agents/register.md](./skill/references/agents/register.md) |
+| **Migrate OnchainKit** | [references/migrations/onchainkit/](./skill/references/migrations/onchainkit/) |
+| **MiniKit → Farcaster SDK** | [references/migrations/minikit-to-farcaster/](./skill/references/migrations/minikit-to-farcaster/) |
+| **Farcaster miniapp → app** | [references/migrations/farcaster-miniapp-to-app.md](./skill/references/migrations/farcaster-miniapp-to-app.md) |
 
 ## Installation
 
