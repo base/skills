@@ -30,19 +30,14 @@ on Base. Everything else you handle yourself.
 
 **Via npm (recommended):**
 ```bash
-npx apow-cli setup     # choose Easy Mode for zero-config x402 setup
-npx apow-cli fund      # fund wallet: bridge from Solana or show deposit address
-npx apow-cli mint      # mint a mining rig NFT
-npx apow-cli mine      # start mining (auto-detects your best rig)
+npx apow-cli start     # zero-config happy path: setup -> fund -> mint -> mine
 ```
 
 **Via source:**
 ```bash
 git clone https://github.com/Agentoshi/apow-cli.git
 cd apow-cli && npm install
-npx tsx src/index.ts setup
-npx tsx src/index.ts mint
-npx tsx src/index.ts mine
+npx tsx src/index.ts start
 ```
 
 ### Autonomous Agent Flow — Zero Credentials (non-interactive)
@@ -66,15 +61,8 @@ LLM_MODEL=blockrun/eco
 ALLOW_LOCAL_FALLBACK_WITH_X402=false
 EOF
 
-# 3. Fund the wallet with ETH (gas) + USDC (x402 RPC + LLM payments)
-npx apow-cli fund --chain solana --token sol    # bridge SOL → ETH+USDC on Base
-# Or: npx apow-cli fund --chain ethereum        # bridge ETH from Ethereum mainnet
-# Or: npx apow-cli fund --chain base            # send ETH or USDC on Base directly
-# Or: ask your user to send ETH + USDC on Base directly
-
-# 4. Mint + mine (fully autonomous from here — zero human intervention)
-npx apow-cli mint
-npx apow-cli mine
+# 3. Start mining — the CLI handles funding checks, minting, and mining
+npx apow-cli start
 ```
 
 ### Legacy Flow (with API keys)
@@ -125,7 +113,7 @@ The miner client validates locally before submitting.
 |---|---|
 | **Node.js** | v20 or higher |
 | **Base wallet** | A private key with ETH on Base (for gas + mint fee) |
-| **USDC on Base** | ~$10 covers both x402 RPC and ClawRouter LLM calls (only if using zero-credential path) |
+| **USDC on Base** | 2.00 USDC minimum starting balance for x402 RPC/ClawRouter; more gives headroom |
 | **LLM access** | ClawRouter (zero credentials, recommended) OR API key (OpenAI, Gemini, etc.) OR local Ollama (**required for minting only**) |
 | **git** | Only if installing from source (not needed for npm) |
 
@@ -167,7 +155,7 @@ Your mining wallet needs ETH on Base for gas and the mint fee.
 
 ### Built-in Bridge: `apow fund` (Recommended)
 
-The CLI bridges from Solana or Ethereum via [Squid Router](https://squidrouter.com/) (Chainflip), or accepts deposits directly on Base. Auto-splits into ETH (gas) + USDC (x402 RPC):
+The CLI bridges from Solana or Ethereum via [Squid Router](https://squidrouter.com/) (Chainflip), or accepts deposits directly on Base. `apow start` can use this flow automatically. Auto-splits into ETH (gas) + USDC (x402 RPC):
 
 ```bash
 npx apow-cli fund                                          # Interactive: choose chain + token
@@ -180,7 +168,7 @@ npx apow-cli fund --chain base --no-swap                   # Skip auto-split
 
 **Solana/Ethereum bridging:** Generates a one-time deposit address with QR code. Send tokens from any wallet (Phantom, MetaMask, etc.). Requires `SQUID_INTEGRATOR_ID` in `.env` (free at [squidrouter.com](https://app.squidrouter.com/)). Bridge time: ~1-3 minutes via Chainflip.
 
-**Auto-split:** After bridging, the CLI checks ETH and USDC balances. If either is below the minimum (0.003 ETH for gas, 2.00 USDC for x402 RPC), it swaps the needed amount via Uniswap V3 on Base. Use `--no-swap` to skip.
+**Auto-split:** After bridging, the CLI checks ETH and USDC balances. If either is below the minimum (0.003 ETH for gas, 2.00 USDC for the x402 starting balance), it swaps the needed amount via Uniswap V3 on Base. Use `--no-swap` to skip.
 
 ### Manual Funding Options
 
@@ -263,7 +251,7 @@ LLM_MODEL=blockrun/eco
 # === Network ===
 
 # Base RPC endpoint (required). Get a free URL from alchemy.com (no credit card).
-# Or set USE_X402=true instead for auto-pay via QuickNode ($10 USDC for ~1M calls).
+# Or set USE_X402=true instead for auto-pay via QuickNode (2.00 USDC minimum starting balance; add more for headroom).
 RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY
 
 # Chain: "base" | "baseSepolia" (auto-detected from RPC_URL if omitted)
@@ -283,7 +271,7 @@ CHAIN=base
 | `CLAWROUTER_PORT` | No | `8402` | Port for ClawRouter local proxy (only if default is in use) |
 | `MINER_THREADS` | No | All CPU cores | Threads for JS nonce grinding (fallback if no native GPU/CPU grinder detected) |
 | `RPC_URL` | Yes* | — | Base JSON-RPC endpoint. Get a free URL from Alchemy or QuickNode. *Not needed if `USE_X402=true`. |
-| `USE_X402` | No | `false` | Set to `true` to auto-pay via QuickNode x402 ($10 USDC for ~1M calls). Replaces `RPC_URL`. |
+| `USE_X402` | No | `false` | Set to `true` to auto-pay via QuickNode x402 (2.00 USDC minimum starting balance; add more for headroom). Replaces `RPC_URL`. |
 | `CHAIN` | No | `base` | Network selector; auto-detects `baseSepolia` if RPC URL contains "sepolia" |
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint (only for `apow fund --chain solana`) |
 | `ETHEREUM_RPC_URL` | No | `https://cloudflare-eth.com` | Ethereum mainnet RPC (only for `apow fund --chain ethereum`) |
@@ -316,7 +304,7 @@ CHAIN=base
 
 ### RPC Recommendations
 
-You need a dedicated RPC endpoint. The public `https://mainnet.base.org` has aggressive rate limits and **will** fail during sustained mining. All providers below offer a **free tier** that is more than sufficient for mining. Alternatively, set `USE_X402=true` for zero-setup auto-pay via QuickNode ($10 USDC for ~1M calls).
+You need a dedicated RPC endpoint. The public `https://mainnet.base.org` has aggressive rate limits and **will** fail during sustained mining. All providers below offer a **free tier** that is more than sufficient for mining. Alternatively, set `USE_X402=true` for zero-setup auto-pay via QuickNode (2.00 USDC minimum starting balance; add more for headroom).
 
 #### Option 1: Alchemy (Recommended)
 
@@ -460,7 +448,7 @@ A Mythic miner (5.00x) earns 15.00 AGENT per mine in Era 0.
 ### Error Handling
 
 The miner has built-in resilience:
-- **Exponential backoff** on transient failures (starts at 2s, caps at 60s)
+- **Flat retry delay** on transient failures (about 2s with a small jitter)
 - **Max 10 consecutive failures** before the miner exits
 - **Fatal errors** cause immediate exit: `"Not your miner"`, `"Supply exhausted"`, `"No contracts"`
 - **Block timing** is handled automatically: if the block hasn't advanced, the miner waits
