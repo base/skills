@@ -92,7 +92,7 @@ npm install @clicks-protocol/mcp-server
 npx @clicks-protocol/mcp-server
 ```
 
-## SKD
+## SDK
 
 ```bash
 npm install @clicks-protocol/sdk
@@ -113,10 +113,15 @@ console.log(`APY : ${yieldInfo.apy}%`);
 
 ## Contract Addresses (Base Mainnet)
 
-- **Registry**: `0x...` (Clicks Protocol Registry)
-- **Fee Contract**: `0x...` (Fee Distribution)
-- **YieldRouter**: `0x...` (Yield Strategy Router)
-- **Splitter**: `0x...` (80/20 Splitter)
+Clicks Protocol contracts are deployed on Base Mainnet (Chain 8453):
+
+- **Registry**: `0x23bb0Ea69b2BD2e527D5DbA6093155A6E1D0C0a3` (Clicks Protocol Registry)
+- **Fee Contract**: `0xc47B162D3c456B6C56a3cE6EE89A828CFd34E6bE` (Fee Distribution)
+- **YieldRouter**: `0x4E29571FCCE958823c0B184a66EEb7bCbe1c849F` (Yield Strategy Router)
+- **Splitter**: `0x24323A30626BBE78C00beA45A3c0eE36bA31FcB4` (80/20 Splitter)
+- **Deployer/Treasury**: `0xf873BB73e10D24cD3CF9bBed917F5E2d07dA8B80`
+
+All contracts are verified on [Basescan](https://basescan.org).
 
 ## Resources
 
