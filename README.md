@@ -23,6 +23,15 @@
 [![GitHub pull requests by-label](https://img.shields.io/github/issues-pr-raw/base/base-skills)](https://github.com/base/base-skills/pulls)
 [![GitHub Issues](https://img.shields.io/github/issues-raw/base/base-skills.svg)](https://github.com/base/base-skills/issues)
 
+## Recommended Skills
+
+Two consolidated skills that cover the most common use cases. Each uses progressive reference loading — the skill loads a single entry point and pulls in detailed references only when needed.
+
+| Skill | Install | Description |
+| ----- | ------- | ----------- |
+| [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/base-skills --skill build-on-base` | Complete Base development playbook: network, contracts, wallet auth, payments, attribution, and migrations. Consolidates all individual skills into one. |
+| [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/base-skills --skill base-mcp` | Base Account MCP server — gives your AI assistant a wallet via mcp.base.org. Tools for sending, swapping, signing, batching calls, and checking balances. Includes Morpho lending plugin. |
+
 ## Available Skills
 
 | Skill | Description |
