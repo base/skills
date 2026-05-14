@@ -75,5 +75,5 @@ Read the reference for your task:
 ## Installation
 
 ```bash
-npx skills add base/base-skills --skill build-on-base
+npx skills add base/skills --skill build-on-base
 ```

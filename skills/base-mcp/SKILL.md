@@ -49,5 +49,5 @@ Additional protocol capabilities via plugin MCPs:
 ## Installation
 
 ```bash
-npx skills add base/base-skills --skill base-mcp
+npx skills add base/skills --skill base-mcp
 ```
