@@ -6,9 +6,9 @@
 
 <!-- Badge row 1 - status -->
 
-[![GitHub contributors](https://img.shields.io/github/contributors/base/base-skills)](https://github.com/base/base-skills/graphs/contributors)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/base/base-skills)](https://github.com/base/base-skills/graphs/contributors)
-![GitHub repo size](https://img.shields.io/github/repo-size/base/base-skills)
+[![GitHub contributors](https://img.shields.io/github/contributors/base/skills)](https://github.com/base/skills/graphs/contributors)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/base/skills)](https://github.com/base/skills/graphs/contributors)
+![GitHub repo size](https://img.shields.io/github/repo-size/base/skills)
 
 <!-- Badge row 2 - links and profiles -->
 
@@ -20,8 +20,8 @@
 
 <!-- Badge row 3 - detailed status -->
 
-[![GitHub pull requests by-label](https://img.shields.io/github/issues-pr-raw/base/base-skills)](https://github.com/base/base-skills/pulls)
-[![GitHub Issues](https://img.shields.io/github/issues-raw/base/base-skills.svg)](https://github.com/base/base-skills/issues)
+[![GitHub pull requests by-label](https://img.shields.io/github/issues-pr-raw/base/skills)](https://github.com/base/skills/pulls)
+[![GitHub Issues](https://img.shields.io/github/issues-raw/base/skills.svg)](https://github.com/base/skills/issues)
 
 ## Available Skills
 
@@ -42,7 +42,7 @@
 Install with [Vercel's Skills CLI](https://skills.sh):
 
 ```bash
-npx skills add base/base-skills
+npx skills add base/skills
 ```
 
 ## Usage
