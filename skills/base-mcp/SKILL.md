@@ -20,14 +20,14 @@ Before anything else, attempt to call `get_wallets`. If the tool is not availabl
 
 ## Step 2 — Install the MCP server
 
-Tell the user the MCP is not connected and offer the right install command for their environment:
+Tell the user the MCP is not connected and provide the right install method for their platform. See [references/install.md](references/install.md) for full platform-specific instructions including Cursor, troubleshooting, and OAuth details.
 
-**Claude Code (CLI)**
+**Claude Code (CLI · VS Code · JetBrains)**
 ```bash
 claude mcp add base-account --transport http https://mcp.base.org
 ```
 
-**Claude Desktop** — add to `claude_desktop_config.json`:
+**Claude Desktop** (macOS / Windows) — add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
@@ -36,11 +36,11 @@ claude mcp add base-account --transport http https://mcp.base.org
 }
 ```
 
-**Other MCP-compatible clients** — server URL: `https://mcp.base.org`
+**Claude.ai (web)** — Settings → Integrations → Add MCP server → enter `https://mcp.base.org`
 
-After adding the server, the client will open an OAuth flow. The user authorizes via Base Account at mcp.base.org — no Coinbase account required.
+**Any other MCP client** — HTTP server URL: `https://mcp.base.org`
 
-Once installed, re-run `get_wallets` to confirm the connection, then continue to Step 3.
+After adding the server, the client opens an OAuth flow at mcp.base.org — no Coinbase account required. Once installed, re-run `get_wallets` to confirm the connection, then continue to Step 3.
 
 ## Step 3 — Get wallets
 
@@ -61,6 +61,7 @@ Read this table first. For the current task, load ONLY the matching reference fi
 
 | Task | Tool | Reference |
 |------|------|-----------|
+| Install the MCP / platform-specific setup | — | [references/install.md](references/install.md) |
 | List wallets / check session status | `get_wallets` | [references/wallets.md](references/wallets.md) |
 | Check balance / portfolio / token lookup | `get_portfolio`, `search_tokens` | [references/portfolio.md](references/portfolio.md) |
 | Send ETH or ERC-20 | `send` | [references/send.md](references/send.md) |
