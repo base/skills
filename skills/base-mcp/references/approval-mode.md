@@ -22,3 +22,4 @@ All write tools (send, swap, sign, send_calls) operate in approval mode. The use
 
 ## When approval is NOT needed
 Agent wallets marked `inSession: true` (from `get_wallets`) can transact without approval in M2 mode. The `agentWalletId` parameter on send/swap enables this.
+

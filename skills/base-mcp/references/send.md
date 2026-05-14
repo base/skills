@@ -12,7 +12,7 @@ Send native ETH or any ERC-20 token to an address. Operates in approval mode: th
 - `chain` — `base` or `base-sepolia`
 
 ## Optional parameters
-- `decimals` — required when `asset` is a contract address (not a symbol)
+- `decimals` — required when `asset` is a contract address (not a symbol); must be 0–18
 - `agentWalletId` — scope to a specific agent wallet (M2 mode only)
 
 ## Approval mode flow
