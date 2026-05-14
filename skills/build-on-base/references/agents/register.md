@@ -28,10 +28,10 @@ Every agent needs a wallet to sign transactions. Ask the user before doing anyth
 
 Register the wallet with the Base builder code API. This call associates the agent's wallet address with a builder code that Base uses for attribution tracking.
 
-Use the bundled `skill/scripts/register.sh`. It handles errors and extracts the builder code from the response:
+Use the bundled `scripts/register.sh` (located at the skill root). It handles errors and extracts the builder code from the response:
 
 ```bash
-BUILDER_CODE=$(bash skill/scripts/register.sh "<wallet_address>")
+BUILDER_CODE=$(bash scripts/register.sh "<wallet_address>")
 ```
 
 Or call the API directly:

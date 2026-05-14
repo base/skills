@@ -80,3 +80,10 @@ useEffect(() => {
 - [dependencies.md](dependencies.md) — Package updates
 - [auth.md](auth.md) — Quick Auth migration
 - [manifest.md](manifest.md) — farcaster.json changes
+
+## Helper Scripts
+
+Two Python scripts are bundled at `scripts/` (skill root) to automate analysis and validation:
+
+- **`scripts/analyze_project.py <project_dir>`** — Scans all source files and reports every MiniKit import, hook usage, and provider location. Run before starting conversion to understand blast radius.
+- **`scripts/validate_conversion.py <project_dir>`** — Validates the converted project: no remaining MiniKit imports/hooks/providers, Farcaster SDK wired correctly, `package.json` updated, manifest uses `miniapp` key. Exit code 0 = pass, 1 = errors found.
