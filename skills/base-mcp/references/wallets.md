@@ -1,6 +1,6 @@
 # get_wallets
 
-Returns all wallets in the user's wallet group: the Base Account (primary) plus any agent wallets.
+Returns all wallets in the user's wallet group: the Base account (primary) plus any agent wallets.
 
 ## When to use
 - User asks "show me my wallets", "what wallets do I have", "which wallet is active"
@@ -14,7 +14,7 @@ None.
 - `type` — `base-account` or `agent-wallet`
 - `address` — 0x address
 - `inSession` — boolean; only `true` wallets can be used with transactional tools
-- `delegationStatus` — whether the agent wallet has delegated authority from the Base Account
+- `delegationStatus` — whether the agent wallet has delegated authority from the Base account
 - `spendPolicy` — summary of spend limits (agent wallets only)
 
 ## Key patterns

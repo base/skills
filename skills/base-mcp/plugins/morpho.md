@@ -1,12 +1,12 @@
 # Morpho Plugin
 
-Morpho is a lending protocol on Base. The Morpho MCP server prepares lending operations (deposit, borrow, withdraw, repay, supply collateral) which are then executed via Base Account MCP's `send_calls`.
+Morpho is a lending protocol on Base. The Morpho MCP server prepares lending operations (deposit, borrow, withdraw, repay, supply collateral) which are then executed via Base MCP's `send_calls`.
 
 ## MCP Server
 
 URL: `https://mcp.morpho.org/`
 
-## Installation (alongside Base Account MCP)
+## Installation (alongside Base MCP)
 
 Add both servers to your MCP config:
 
@@ -47,7 +47,7 @@ Claude Code: `claude mcp add morpho --transport http https://mcp.morpho.org/`
 
 ## Orchestration Pattern
 
-Morpho `prepare_*` tools return unsigned call data. Pass the result to Base Account MCP's `send_calls` to execute.
+Morpho `prepare_*` tools return unsigned call data. Pass the result to Base MCP's `send_calls` to execute.
 
 ```
 morpho_prepare_deposit(vaultAddress, amount) → { calls: [...], chainId }

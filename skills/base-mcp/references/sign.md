@@ -1,6 +1,6 @@
 # sign
 
-Request a user-approved signature from the Base Account. Supports EIP-712 typed data and personal_sign. Operates in approval mode.
+Request a user-approved signature from the Base account. Supports EIP-712 typed data and personal_sign. Operates in approval mode.
 
 ## When to use
 - "Sign this message", "Sign this typed data", agent needs a signature for authentication

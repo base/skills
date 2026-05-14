@@ -1,7 +1,7 @@
 ---
 name: base-mcp
 description: >
-  Base Account MCP — gives your AI assistant a wallet via the Base Account MCP server (mcp.base.org).
+  Base MCP — gives your AI assistant access to your Base account via the Base MCP server (mcp.base.org).
   Tools: get_wallets (list wallets), get_portfolio (balances, any address), send (ETH/ERC-20 transfers),
   swap (token swaps via Coinbase), sign (EIP-712/personal_sign), send_calls (EIP-5792 batch),
   get_transaction_history (paginated tx history), get_request_status (poll approval), search_tokens (token lookup),
@@ -10,9 +10,9 @@ description: >
   Plugins: Morpho lending protocol available via plugins/morpho.md. Moonwell lending on Base/Optimism via plugins/moonwell.md.
 ---
 
-# Base Account MCP
+# Base MCP
 
-The Base Account MCP server gives your AI assistant direct access to the user's Base Account (smart wallet) on Base.
+The Base MCP server gives your AI assistant access to your Base account on Base.
 
 ## Step 1 — Check if the MCP is installed
 
@@ -20,32 +20,20 @@ Before anything else, attempt to call `get_wallets`. If the tool is not availabl
 
 ## Step 2 — Install the MCP server
 
-Tell the user the MCP is not connected and provide the right install method for their platform. See [references/install.md](references/install.md) for full platform-specific instructions including Cursor, troubleshooting, and OAuth details.
+Tell the user the MCP is not connected and point them to [references/install.md](references/install.md) for step-by-step UI instructions. That file covers Claude Desktop, ChatGPT app, Claude.ai web, Claude Code CLI, and Cursor — with beginner-friendly walkthroughs for each.
 
-**Claude Code (CLI · VS Code · JetBrains)**
-```bash
-claude mcp add base-account --transport http https://mcp.base.org
-```
+Quick reference:
+- **Claude Desktop** — Claude menu → Settings → Integrations → Add integration → `https://mcp.base.org`
+- **ChatGPT app** — Settings → Connectors → Add connector → MCP server → `https://mcp.base.org`
+- **Claude.ai web** — Settings → Integrations → Add integration → `https://mcp.base.org`
+- **Claude Code CLI** — `claude mcp add base-account --transport http https://mcp.base.org`
 
-**Claude Desktop** (macOS / Windows) — add to `claude_desktop_config.json`:
-```json
-{
-  "mcpServers": {
-    "base-account": { "url": "https://mcp.base.org" }
-  }
-}
-```
-
-**Claude.ai (web)** — Settings → Integrations → Add MCP server → enter `https://mcp.base.org`
-
-**Any other MCP client** — HTTP server URL: `https://mcp.base.org`
-
-After adding the server, the client opens an OAuth flow at mcp.base.org — no Coinbase account required. Once installed, re-run `get_wallets` to confirm the connection, then continue to Step 3.
+After connecting, the user signs in to authorize via Base account — no Coinbase account required. Once installed, re-run `get_wallets` to confirm the connection, then continue to Step 3.
 
 ## Step 3 — Get wallets
 
 Call `get_wallets` immediately at the start of any session involving transactions. This returns:
-- The user's Base Account address
+- The user's Base account address
 - Any agent wallets and their delegation status
 - `inSession: true/false` — determines whether approval mode is required
 
