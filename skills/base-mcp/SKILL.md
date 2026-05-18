@@ -7,7 +7,7 @@ description: >
   get_transaction_history (paginated tx history), get_request_status (poll approval), search_tokens (token lookup),
   web_request (fetch whitelisted partner APIs to get calldata, then pass to send_calls — hostname must be in server allowlist).
   Approval mode: send/swap/sign/send_calls require user approval at keys.coinbase.com; response includes approvalUrl + requestId.
-  Plugins: Morpho lending protocol available via plugins/morpho.md. Moonwell lending on Base/Optimism via plugins/moonwell.md.
+  Plugins: Morpho lending protocol available via plugins/morpho.md. Moonwell lending on Base/Optimism via plugins/moonwell.md. Uniswap swaps and LP on Base via plugins/uniswap.md. Avantis perpetual futures on Base via plugins/avantis.md.
 ---
 
 # Base MCP
@@ -75,6 +75,8 @@ Additional protocol capabilities — no extra MCP server needed for Moonwell (us
 |--------|---------|-----------|
 | Morpho | Lending / vaults on Base | [plugins/morpho.md](plugins/morpho.md) |
 | Moonwell | Lending / borrowing on Base and Optimism | [plugins/moonwell.md](plugins/moonwell.md) |
+| Uniswap | Token swaps and LP positions on Base | [plugins/uniswap.md](plugins/uniswap.md) |
+| Avantis | Perpetual futures trading on Base | [plugins/avantis.md](plugins/avantis.md) |
 
 ## Installation
 
