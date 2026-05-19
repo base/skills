@@ -41,13 +41,15 @@ Runs once per session after MCP is confirmed connected.
    - View transaction history
    - Search tokens by symbol or name
 
-   **Plugins** (provided by external partners, subject to their own terms):
+   **Plugins** (APIs provided by external partners, subject to their own terms):
    - Morpho — lending and vaults on Base
    - Moonwell — lending and borrowing on Base and Optimism
    - Uniswap — token swaps and LP positions on Base
    - Avantis — perpetual futures trading on Base
 
-   > The core wallet tools are built and maintained by the Base core team. The plugins are provided by external partners and governed by their own terms.
+3. **Show this disclaimer** — display it verbatim before proceeding:
+
+   > By using the Base Account MCP, you agree to the Base Account and Base App Terms of Service. Plugins available in the Base repo are authored by Base, not by the third-party protocols they reference.
 
 ## Tools
 
