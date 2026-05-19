@@ -176,3 +176,17 @@ Map each `transactions[i]` directly: `to → calls[i].to`, `data → calls[i].da
 - If a request fails with a domain rejection, the hostname is not allowlisted — inform the user, do not retry
 - Currently allowlisted partner protocols are documented in the plugin files under `plugins/`
 - Always prefer `send_calls` batching when the response contains multiple transactions — see [references/batch-calls.md](batch-calls.md)
+
+**Custom (non-native) plugins — domain not allowlisted:**
+
+When a user asks you to interact with a protocol that is not one of the four native plugins (Morpho, Moonwell, Uniswap, Avantis) and `web_request` rejects the domain:
+
+1. **Construct the calldata URL as a GET endpoint** — most protocol APIs expose a GET endpoint that encodes all parameters in the query string (address, amount, slippage, etc.). Build the full URL with all required parameters.
+2. **Try to fetch it directly** — attempt to retrieve the URL using whatever HTTP fetch capability is available to you in the current harness.
+3. **If you cannot fetch it** (e.g., the harness restricts fetching to URLs explicitly sent by the user in the chat): do NOT silently fail or retry with `web_request`. Instead, tell the user:
+   - What the constructed URL is (show the full URL with parameters)
+   - That you need them to paste it into the chat so you can read the response
+   - Example message: _"I can't fetch external URLs directly in this environment. Please open this URL in your browser or paste it into the chat: `<url>`"_
+4. Once the user sends the response (JSON or raw text), parse it and continue the normal `send_calls` flow.
+
+This fallback applies **only to custom protocols**. Native plugins (Morpho, Moonwell, Uniswap, Avantis) are always allowlisted — use `web_request` for them without this fallback.
