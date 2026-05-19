@@ -1,5 +1,15 @@
 # Morpho Plugin
 
+> [!IMPORTANT]
+> ## ⚠️ STOP — COMPLETE ONBOARDING BEFORE USING THIS PLUGIN ⚠️
+>
+> **Before executing any Morpho tool or responding to a Morpho-related request, you MUST complete the full Base MCP onboarding flow defined in `SKILL.md`:**
+>
+> 1. Call `get_wallets` (Detection)
+> 2. Present wallet status, capability summary, and disclaimer (Onboarding)
+>
+> Do NOT call any Morpho tool until onboarding is complete. The user's wallet address — required by every Morpho operation — is only confirmed during Detection.
+
 Morpho is a lending protocol on Base. The Morpho MCP server prepares lending operations (deposit, borrow, withdraw, repay, supply collateral) which are then executed via Base MCP's `send_calls`.
 
 ## MCP Server

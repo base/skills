@@ -1,5 +1,15 @@
 # Moonwell Plugin
 
+> [!IMPORTANT]
+> ## ⚠️ STOP — COMPLETE ONBOARDING BEFORE USING THIS PLUGIN ⚠️
+>
+> **Before executing any Moonwell request, you MUST complete the full Base MCP onboarding flow defined in `SKILL.md`:**
+>
+> 1. Call `get_wallets` (Detection)
+> 2. Present wallet status, capability summary, and disclaimer (Onboarding)
+>
+> Do NOT call any Moonwell endpoint until onboarding is complete. The user's wallet address — required by every Moonwell `prepare` and position query — is only confirmed during Detection.
+
 Moonwell is a Compound v2 lending protocol on Base and Optimism. Use `web_request` to call the Moonwell HTTP API to read positions/rates and prepare unsigned calldata, then execute via `send_calls`.
 
 No additional MCP server required — everything goes through `web_request` + `send_calls`.

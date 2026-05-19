@@ -10,6 +10,20 @@ description: >
 
 # Base MCP
 
+> [!IMPORTANT]
+> ## ⚠️ MANDATORY: RUN THE FULL ONBOARDING FLOW AT THE START OF EVERY CONVERSATION ⚠️
+>
+> **Every new conversation that touches Base MCP — including plugin-only conversations (Morpho, Moonwell, Uniswap, Avantis) — MUST begin with the Detection → Onboarding sequence below.**
+>
+> Do NOT skip Detection. Do NOT skip Onboarding. Do NOT load a plugin before completing both.
+>
+> Order is strictly:
+> 1. **Detection** — call `get_wallets`, confirm MCP is connected
+> 2. **Onboarding** — show wallet status, capability summary, and disclaimer
+> 3. **Then and only then** — proceed with the user's request or load a plugin
+>
+> This is required even if the user jumps straight to a plugin topic. The onboarding establishes wallet context that every subsequent tool call depends on.
+
 ## Detection
 
 Call `get_wallets` immediately on session start.
@@ -22,6 +36,9 @@ Call `get_wallets` immediately on session start.
 Load [references/tone.md](references/tone.md) at session start. Its rules apply for the entire conversation.
 
 ## Onboarding
+
+> [!WARNING]
+> **This section is NOT optional.** Onboarding runs at the start of EVERY conversation — including conversations that jump straight to a plugin topic. Never proceed to plugin or tool use without completing all three steps below.
 
 Runs once per session after MCP is confirmed connected.
 
