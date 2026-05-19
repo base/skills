@@ -41,7 +41,7 @@ Runs once per session after MCP is confirmed connected.
    - View transaction history
    - Search tokens by symbol or name
 
-   **Plugins** (APIs provided by external partners, subject to their own terms):
+   **Plugins** (APIs provided by external partners, but plugins authored by Base core team):
    - Morpho — lending and vaults on Base
    - Moonwell — lending and borrowing on Base and Optimism
    - Uniswap — token swaps and LP positions on Base
