@@ -1,4 +1,6 @@
-# send_calls
+# send_calls (Batch Calls)
+
+> **Batching is always preferred** for plugin interactions that require a token approval followed by a protocol action (e.g. approve + supply, approve + deposit). Also use batching any time a plugin's `/prepare/*` endpoint returns multiple transactions in its `transactions[]` array. Never split these into sequential single `send` calls when `send_calls` can execute them atomically in a single user approval.
 
 Submit a batch of EIP-5792 wallet_sendCalls for user approval. Use for arbitrary contract interactions, multi-step transactions, or batched operations.
 

@@ -138,7 +138,7 @@ Use `pairInfos["<pairIndex>"]` to inspect a pair. Important fields:
 
 | Field | Meaning |
 | --- | --- |
-| `index` | Pair index used by tx-builder and on-chain calls |
+| `index` | Pair index used by tx-builder and onchain calls |
 | `from`, `to` | Symbol components, for example `BTC` and `USD` |
 | `isPairListed` | Must be true to open new trades |
 | `leverages.minLeverage`, `leverages.maxLeverage` | Fixed-fee leverage envelope for `market`, `limit`, `stop_limit` |
@@ -148,6 +148,23 @@ Use `pairInfos["<pairIndex>"]` to inspect a pair. Important fields:
 | `groupIndex` | Lookup key into `groupInfo` |
 | `feed.attributes.is_open` or `feed.attributes.isOpen` | Market-open flag |
 | `lazerFeed.state` | `stable` generally maps to `priceSourcing=1` for Lazer endpoints |
+
+Minimum position check (BELOW_MIN_POS):
+
+The tx-builder rejects with `400 BAD_REQUEST` when `collateralUsdc * leverage < pairMinLevPosUSDC`. This is the `BELOW_MIN_POS` condition. Always validate before calling `/trade/open`:
+
+```
+positionSize = collateralUsdc * leverage
+if positionSize < pair.pairMinLevPosUSDC -> BELOW_MIN_POS error, increase collateral or leverage
+```
+
+To compute the minimum collateral required for a given leverage:
+
+```
+minCollateral = ceil(pair.pairMinLevPosUSDC / leverage)
+```
+
+Example: `pairMinLevPosUSDC=100`, `leverage=10` → minimum `collateralUsdc` is `10`. With `leverage=1` → minimum is `100`.
 
 Liquidity check:
 
@@ -218,7 +235,7 @@ GET https://tx-builder.avantisfi.com/token/approve
   &spender=<address>
 ```
 
-`spender` defaults to `TradingStorage`. Pass the returned `response.data` call to `send_calls`. Approval must be confirmed on-chain before trade calls that require allowance can succeed, unless approval and action are submitted as a valid batch and the wallet/account contract supports the batch.
+`spender` defaults to `TradingStorage`. Pass the returned `response.data` call to `send_calls`. Approval must be confirmed onchain before trade calls that require allowance can succeed, unless approval and action are submitted as a valid batch and the wallet/account contract supports the batch.
 
 ---
 
@@ -421,7 +438,7 @@ Unknown hashes can return HTTP 200 with:
 }
 ```
 
-Use exponential backoff and stop after a reasonable timeout. Do not claim a position opened or closed until on-chain state or the settlement API confirms it.
+Use exponential backoff and stop after a reasonable timeout. Do not claim a position opened or closed until onchain state or the settlement API confirms it.
 
 ---
 
@@ -485,6 +502,18 @@ Recommended handling:
 - For `/trade/open`, inspect `meta.validation` on success and show the user the position size, min position, leverage envelope, and available liquidity when useful.
 - For history endpoints, check `success`; if false, show `errorMessage`.
 - For management actions, do not rely on tx-builder to prove the position/order exists. Verify with `core /user-data`.
+
+BELOW_MIN_POS recovery:
+
+When the error message indicates a minimum position violation (`collateral * leverage < pairMinLevPosUSDC`), do not retry blindly. Compute what is needed and suggest corrections:
+
+```
+minPositionUsdc = pair.pairMinLevPosUSDC   // from data API or meta.validation.minPositionUsdc
+minCollateral   = ceil(minPositionUsdc / requestedLeverage)
+minLeverage     = ceil(minPositionUsdc / requestedCollateral)
+```
+
+Present the user with concrete options: increase collateral to `minCollateral`, increase leverage to `minLeverage` (within the pair envelope), or both. Do not silently adjust parameters without user confirmation.
 
 ---
 

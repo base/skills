@@ -2,81 +2,79 @@
 name: base-mcp
 description: >
   Base MCP — gives your AI assistant access to your Base account via the Base MCP server (mcp.base.org).
-  Tools: get_wallets (list wallets), get_portfolio (balances, any address), send (ETH/ERC-20 transfers),
-  swap (token swaps via Coinbase), sign (EIP-712/personal_sign), send_calls (EIP-5792 batch),
-  get_transaction_history (paginated tx history), get_request_status (poll approval), search_tokens (token lookup),
-  web_request (fetch whitelisted partner APIs to get calldata, then pass to send_calls — hostname must be in server allowlist).
+  Native tools (built and maintained by the Base core team): get_wallets, get_portfolio, send, swap, sign,
+  send_calls, get_transaction_history, get_request_status, search_tokens, web_request.
   Approval mode: send/swap/sign/send_calls require user approval at keys.coinbase.com; response includes approvalUrl + requestId.
-  Plugins: Morpho lending protocol available via plugins/morpho.md. Moonwell lending on Base/Optimism via plugins/moonwell.md. Uniswap swaps and LP on Base via plugins/uniswap.md. Avantis perpetual futures on Base via plugins/avantis.md.
+  Plugins (external partners): Morpho lending, Moonwell lending, Uniswap swaps/LP, Avantis perpetual futures — all on Base.
 ---
 
 # Base MCP
 
-The Base MCP server gives your AI assistant access to your Base account on Base.
+## Detection
 
-## Step 1 — Check if the MCP is installed
+Call `get_wallets` immediately on session start.
 
-Before anything else, attempt to call `get_wallets`. If the tool is not available or the call fails with a connection error, the MCP server is not installed. Go to **Step 2**. If it succeeds, skip to **Step 3**.
+- **Tool unavailable or connection error** → the MCP server is not installed. Tell the user clearly, direct them to install it at https://docs.base.org/ai-agents/quickstart, and stop. Do not attempt to offer any functionality without the MCP.
+- **Call succeeds** → MCP is connected. Load `references/tone.md`, then continue to Onboarding.
 
-## Step 2 — Install the MCP server
+## Tone
 
-Tell the user the MCP is not connected and point them to [references/install.md](references/install.md) for step-by-step UI instructions. That file covers Claude Desktop, ChatGPT app, Claude.ai web, Claude Code CLI, and Cursor — with beginner-friendly walkthroughs for each.
+Load [references/tone.md](references/tone.md) at session start. Its rules apply for the entire conversation.
 
-Quick reference:
-- **Claude Desktop** — Claude menu → Settings → Integrations → Add integration → `https://mcp.base.org`
-- **ChatGPT app** — Settings → Connectors → Add connector → MCP server → `https://mcp.base.org`
-- **Claude.ai web** — Settings → Integrations → Add integration → `https://mcp.base.org`
-- **Claude Code CLI** — `claude mcp add base-account --transport http https://mcp.base.org`
+## Onboarding
 
-After connecting, the user signs in to authorize via Base account — no Coinbase account required. Once installed, re-run `get_wallets` to confirm the connection, then continue to Step 3.
+Runs once per session after MCP is confirmed connected.
 
-## Step 3 — Get wallets
+1. **Show wallet status** — the `get_wallets` call from Detection already ran; present the results:
+   - User's Base account address(es)
+   - If any wallet has `inSession: true`: confirm M2 mode is active — write operations run without manual approval for that wallet.
+   - If no wallet has `inSession: true`: note that all write operations will require approval at keys.coinbase.com.
 
-Call `get_wallets` immediately at the start of any session involving transactions. This returns:
-- The user's Base account address
-- Any agent wallets and their delegation status
-- `inSession: true/false` — determines whether approval mode is required
+2. **Show capability summary** — present what is available:
 
-**If `inSession: true`** on an agent wallet: transactions can execute without manual approval (M2 mode). Pass `agentWalletId` to send/swap.
+   **Native tools** (built and maintained by the Base core team):
+   - Send ETH or any token
+   - Swap tokens via Coinbase
+   - Sign messages and typed data
+   - Batch contract calls
+   - View portfolio and balances
+   - View transaction history
+   - Search tokens by symbol or name
 
-**If no wallet is `inSession: true`**: all write tools use approval mode — every transaction goes to keys.coinbase.com for the user to approve.
+   **Plugins** (provided by external partners, subject to their own terms):
+   - Morpho — lending and vaults on Base
+   - Moonwell — lending and borrowing on Base and Optimism
+   - Uniswap — token swaps and LP positions on Base
+   - Avantis — perpetual futures trading on Base
 
-Load [references/wallets.md](references/wallets.md) for full field reference.
+   > The core wallet tools are built and maintained by the Base core team. The plugins are provided by external partners and governed by their own terms.
 
-## Tool Routing
+## Tools
 
-Read this table first. For the current task, load ONLY the matching reference file — do not preload all references.
+Load [references/tools.md](references/tools.md) for the full tool catalogue. For the current task, load ONLY the relevant section — do not preload everything.
 
 | Task | Tool | Reference |
 |------|------|-----------|
-| Install the MCP / platform-specific setup | — | [references/install.md](references/install.md) |
-| List wallets / check session status | `get_wallets` | [references/wallets.md](references/wallets.md) |
-| Check balance / portfolio / token lookup | `get_portfolio`, `search_tokens` | [references/portfolio.md](references/portfolio.md) |
-| Send ETH or ERC-20 | `send` | [references/send.md](references/send.md) |
-| Swap tokens | `swap` | [references/swap.md](references/swap.md) |
-| Sign a message or typed data | `sign` | [references/sign.md](references/sign.md) |
+| List wallets / check session status | `get_wallets` | [references/tools.md](references/tools.md) |
+| Balance / portfolio / token lookup | `get_portfolio`, `search_tokens` | [references/tools.md](references/tools.md) |
+| Send ETH or ERC-20 | `send` | [references/tools.md](references/tools.md) |
+| Swap tokens | `swap` | [references/tools.md](references/tools.md) |
+| Sign message or typed data | `sign` | [references/tools.md](references/tools.md) |
 | Batch contract calls | `send_calls` | [references/batch-calls.md](references/batch-calls.md) |
-| View transaction history | `get_transaction_history` | [references/history.md](references/history.md) |
-| Check pending approval status | `get_request_status` | [references/approval-mode.md](references/approval-mode.md) |
-| Resolve token by symbol | `search_tokens` | [references/tokens.md](references/tokens.md) |
-| Fetch protocol API calldata (Moonwell, etc.) | `web_request` | [references/web-request.md](references/web-request.md) |
-
-## Approval Mode
-
-All write tools (send, swap, sign, send_calls) return an `approvalUrl` and `requestId`. Direct the user to open the URL to approve, then call `get_request_status` to confirm completion. Never report success before `get_request_status` returns confirmed.
-
-Load [references/approval-mode.md](references/approval-mode.md) for full details.
+| Transaction history | `get_transaction_history` | [references/tools.md](references/tools.md) |
+| Poll approval status | `get_request_status` | [references/approval-mode.md](references/approval-mode.md) |
+| Fetch protocol calldata | `web_request` | [references/tools.md](references/tools.md) |
+| Platform install | — | [references/install.md](references/install.md) |
+| Tone and language rules | — | [references/tone.md](references/tone.md) |
 
 ## Plugins
 
-Additional protocol capabilities — no extra MCP server needed for Moonwell (uses `web_request`); Morpho requires its own MCP server.
-
-| Plugin | Protocol | Reference |
-|--------|---------|-----------|
-| Morpho | Lending / vaults on Base | [plugins/morpho.md](plugins/morpho.md) |
-| Moonwell | Lending / borrowing on Base and Optimism | [plugins/moonwell.md](plugins/moonwell.md) |
-| Uniswap | Token swaps and LP positions on Base | [plugins/uniswap.md](plugins/uniswap.md) |
-| Avantis | Perpetual futures trading on Base | [plugins/avantis.md](plugins/avantis.md) |
+| Plugin | Protocol | Operated by | Reference |
+|--------|----------|-------------|-----------|
+| Morpho | Lending / vaults on Base | Morpho Labs | [plugins/morpho.md](plugins/morpho.md) |
+| Moonwell | Lending on Base and Optimism | Moonwell team | [plugins/moonwell.md](plugins/moonwell.md) |
+| Uniswap | Swaps and LP on Base | Uniswap Labs | [plugins/uniswap.md](plugins/uniswap.md) |
+| Avantis | Perpetual futures on Base | Avantis team | [plugins/avantis.md](plugins/avantis.md) |
 
 ## Installation
 

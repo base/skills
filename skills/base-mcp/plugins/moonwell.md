@@ -133,7 +133,7 @@ Pass all items as the `calls` array to `send_calls`, using `chainId` from any tr
 
 - **mTokens** — ERC-20 receipt tokens (mUSDC, mWETH…); exchange rate accrues over time
 - **WETH special-case** — borrow/withdraw deliver native ETH; supply/repay require ERC-20 WETH. Both `asset=ETH` and `asset=WETH` resolve to the same mWETH market
-- **Compound v2 error codes** — `mint`, `borrow`, `repay` return non-zero codes for business-logic failures without reverting. Check the on-chain receipt after broadcast
+- **Compound v2 error codes** — `mint`, `borrow`, `repay` return non-zero codes for business-logic failures without reverting. Check the onchain receipt after broadcast
 - **Base has two mUSDC entries** — the current market and a deprecated bridged-USDC market. Disambiguate by `marketAddress` or `deprecated: true`
 
 ### Health factor guide
