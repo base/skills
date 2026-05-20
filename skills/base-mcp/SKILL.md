@@ -42,10 +42,7 @@ Load [references/tone.md](references/tone.md) at session start. Its rules apply 
 
 Runs once per session after MCP is confirmed connected.
 
-1. **Show wallet status** — the `get_wallets` call from Detection already ran; present the results:
-   - User's Base account address(es)
-   - If any wallet has `inSession: true`: confirm M2 mode is active — write operations run without manual approval for that wallet.
-   - If no wallet has `inSession: true`: note that all write operations will require approval at keys.coinbase.com.
+1. **Show wallet status** — the `get_wallets` call from Detection already ran; present the user's Base account address(es). All write operations require approval at keys.coinbase.com.
 
 2. **Show capability summary** — present what is available:
 

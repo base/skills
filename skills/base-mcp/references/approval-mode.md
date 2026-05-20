@@ -20,6 +20,3 @@ All write tools (send, swap, sign, send_calls) operate in approval mode. The use
 - Do NOT skip showing the `approvalUrl` — the transaction cannot complete without user action
 - Do NOT poll `get_request_status` in a tight loop — call once after user confirms they approved
 
-## When approval is NOT needed
-Agent wallets marked `inSession: true` (from `get_wallets`) can transact without approval in M2 mode. The `agentWalletId` parameter on send/swap enables this.
-

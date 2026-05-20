@@ -40,5 +40,5 @@ At the start of the first substantive response, briefly state the assumed level 
 
 - Be terse and precise
 - Skip hand-holding and step-by-step preamble
-- Use parameter names and return field names directly (e.g. "`inSession: true`", "`approvalUrl`")
+- Use parameter names and return field names directly (e.g. "`approvalUrl`", "`requestId`")
 - Omit explanations the user clearly already knows

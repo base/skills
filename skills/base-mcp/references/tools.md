@@ -10,12 +10,11 @@ Returns all wallets in the user's wallet group.
 
 **Parameters:** none
 
-**Return fields (per wallet):** `id`, `type` (`base-account` or `agent-wallet`), `address`, `inSession`, `delegationStatus`, `spendPolicy`
+**Return fields (per wallet):** `id`, `type` (`base-account` or `agent-wallet`), `address`
 
 **Key patterns:**
-- Call at session start — `inSession` determines whether approval mode applies
-- Agent wallets with `inSession: true` can transact without manual approval (M2 mode)
-- If no wallet is `inSession: true`, all write tools use approval mode
+- Call at session start to confirm the MCP is connected and to retrieve the user's address(es)
+- All write tools (send, swap, sign, send_calls) operate in approval mode — see [approval-mode.md](approval-mode.md)
 
 ---
 
@@ -66,7 +65,6 @@ Send native ETH or any ERC-20 token. Operates in approval mode.
 
 **Optional parameters:**
 - `decimals` — required when `asset` is a contract address (0–18)
-- `agentWalletId` — scope to a specific agent wallet (M2 mode)
 
 **Key patterns:**
 - For non-standard tokens, call `search_tokens` first to get `address` + `decimals`
