@@ -94,7 +94,7 @@ Headers: auth headers plus `"x-permit2-disabled": "true"`.
 }
 ```
 
-Use `"slippageTolerance": <0-20>` instead of `autoSlippage` if the user specifies slippage.
+Use `"slippageTolerance": <0-20>` instead of `autoSlippage` if the user specifies slippage. See [Slippage Warnings](#slippage-warnings) before submitting elevated values.
 
 Response includes a top-level `quote` object plus metadata. Keep the response as a flat object for `/swap`; do not nest it under a `quote` key.
 
@@ -307,7 +307,7 @@ Prefer `tickBounds` when possible. `priceBounds` can be accepted by the API, but
 | Collect fees | `POST /lp/claim_fees` | `walletAddress`, `chainId`, `protocol`, `tokenId`; optional `simulateTransaction` |
 | Create V2 position | `POST /lp/create_classic` | `walletAddress`, `poolParameters { token0Address, token1Address, chainId }`, `independentToken { tokenAddress, amount }` |
 
-Optional on LP operation endpoints: `"slippageTolerance": <decimal>` where `0.5` means 0.5%.
+Optional on LP operation endpoints: `"slippageTolerance": <decimal>` where `0.5` means 0.5%. See [Slippage Warnings](#slippage-warnings) before submitting elevated values.
 
 Important: LP APIs can return calldata for syntactically valid `nftTokenId` values even if the connected wallet may not own the position. Treat generated calldata as a transaction preview input, not proof of ownership or guaranteed execution.
 
@@ -434,6 +434,21 @@ const calls = [
 1. `get_wallets` -> address.
 2. `web_request POST /lp/claim_fees` with `tokenId`.
 3. `send_calls` claim transaction.
+
+---
+
+## Slippage Warnings
+
+High slippage tolerance exposes the user to worse fills and sandwich/MEV attacks. Before calling `/swap` or any LP endpoint with an elevated value, warn the user and get explicit confirmation:
+
+| Tolerance | Level | Action |
+| --- | --- | --- |
+| ≤ 1% | Normal | Proceed. |
+| > 1% and ≤ 5% | Elevated | Mention the value and ask the user to confirm. |
+| > 5% and ≤ 20% | High | Warn that the trade can fill significantly below quote and is a likely sandwich target. Require explicit confirmation. |
+| > 20% | Very high | Strongly warn; do not submit without the user re-confirming the exact number. |
+
+Apply the same thresholds to swap and LP slippage. If the user did not specify a value, prefer `autoSlippage: "DEFAULT"` on swaps rather than picking a high number.
 
 ---
 
