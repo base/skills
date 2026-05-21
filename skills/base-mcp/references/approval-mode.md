@@ -1,22 +1,24 @@
+> Today the Base MCP exposes a single execution mode for write tools: **approval mode** (the user manually approves each transaction via a returned URL). Other modes may be added later. Treat the tool descriptions exposed by the MCP as the source of truth — if a future write tool returns a different shape or skips the approval step, follow what the MCP describes, not this file.
+
 # Approval Mode
 
-All write tools (send, swap, sign, send_calls) operate in approval mode. The user must manually approve every transaction at keys.coinbase.com.
+In approval mode, every write call (send, swap, sign, batched calls, and any plugin-prepared transaction routed through Base MCP) returns an **approval URL** plus a **request ID**. The user opens the URL, approves the transaction in their wallet UI, and then the agent polls the request ID for completion.
 
 ## Flow
 
-1. **Call the write tool** (send, swap, sign, or send_calls)
-2. **Response includes**:
-   - `approvalUrl` — URL the user must open to approve
-   - `requestId` — ID to poll for completion
-3. **Direct the user** to open `approvalUrl` immediately. Say: "Please open this link to approve the transaction: [approvalUrl]"
-4. **After user confirms they approved**, call `get_request_status` with the `requestId`
-5. **Only report success** when `get_request_status` returns a completed/confirmed status
-
-## get_request_status parameters
-- `requestId` — the ID from the write tool response (required)
+1. **Call the write tool.** The response includes:
+   - an approval URL (the field name is on the MCP response — typically `approvalUrl`)
+   - a request ID (typically `requestId`)
+2. **Show the user the link.** Present it as **"Approve Transaction"** (or similar neutral language). Do not name or describe the wallet provider behind the link, even when the URL hostname suggests one — the underlying wallet UI is an implementation detail and may change. Just give the user the link to click.
+   - Beginner-friendly phrasing: _"Open this to approve the transaction: [Approve Transaction](<url>)"_
+   - Terse phrasing: _"[Approve Transaction](<url>)"_
+3. **Wait for the user to confirm they approved.** Don't poll in a tight loop while they're still acting.
+4. **Call the status-poll tool** (typically `get_request_status`) with the request ID once.
+5. **Only report success** when the status tool confirms completion.
 
 ## Common mistakes
-- Do NOT report success before calling `get_request_status` — the user may not have approved yet
-- Do NOT skip showing the `approvalUrl` — the transaction cannot complete without user action
-- Do NOT poll `get_request_status` in a tight loop — call once after user confirms they approved
 
+- Reporting success before the status tool confirms it — the user may not have approved yet.
+- Skipping the approval link — the transaction cannot complete without user action.
+- Naming the wallet/approval provider, or surfacing the raw hostname as the link text — say "Approve Transaction".
+- Polling the status tool in a tight loop instead of once after the user confirms.

@@ -1,14 +1,7 @@
 # Uniswap Plugin
 
 > [!IMPORTANT]
-> ## ⚠️ STOP — COMPLETE ONBOARDING BEFORE USING THIS PLUGIN ⚠️
->
-> **Before executing any Uniswap swap or LP operation, you MUST complete the full Base MCP onboarding flow defined in `SKILL.md`:**
->
-> 1. Call `get_wallets` (Detection)
-> 2. Present wallet status, capability summary, and disclaimer (Onboarding)
->
-> Do NOT call any Uniswap endpoint until onboarding is complete. The user's wallet address — passed as `walletAddress` in every swap and LP call — is only confirmed during Detection.
+> Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any Uniswap endpoint. The user's wallet address — passed as `walletAddress` in every swap and LP call — is fetched lazily when needed.
 
 Uniswap on Base: token swaps using the proxy-approval flow (no Permit2 signing) and LP position management for V2, V3, and V4. Use `web_request` to fetch unsigned calldata from the Uniswap API, then execute transaction previews with `send_calls`.
 

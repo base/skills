@@ -1,16 +1,11 @@
 # Morpho Plugin
 
 > [!IMPORTANT]
-> ## ⚠️ STOP — COMPLETE ONBOARDING BEFORE USING THIS PLUGIN ⚠️
->
-> **Before executing any Morpho tool or responding to a Morpho-related request, you MUST complete the full Base MCP onboarding flow defined in `SKILL.md`:**
->
-> 1. Call `get_wallets` (Detection)
-> 2. Present wallet status, capability summary, and disclaimer (Onboarding)
->
-> Do NOT call any Morpho tool until onboarding is complete. The user's wallet address — required by every Morpho operation — is only confirmed during Detection.
+> Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any Morpho tool — the user's wallet address (required by Morpho write/position calls) is fetched lazily, and the disclaimer must be shown once per session.
 
-Morpho is a lending protocol on Base. The Morpho MCP server prepares lending operations (deposit, borrow, withdraw, repay, supply collateral) which are then executed via Base MCP's `send_calls`.
+Morpho is a lending protocol on Base. The Morpho MCP server prepares lending operations (deposit, borrow, withdraw, repay, supply collateral) and returns unsigned calldata that is then executed via Base MCP's batched-calls tool.
+
+The exact list of Morpho tools, their parameters, and supported chains are exposed by the Morpho MCP itself — read its tool descriptions rather than relying on a fixed catalog in this file. Tools may be added, renamed, or removed over time.
 
 ## MCP Server
 
@@ -18,82 +13,55 @@ URL: `https://mcp.morpho.org/`
 
 ## Installation (alongside Base MCP)
 
-Add both servers to your MCP config:
-
 ```json
 {
   "mcpServers": {
     "base-account": { "url": "https://mcp.base.org" },
-    "morpho": { "url": "https://mcp.morpho.org/" }
+    "morpho":       { "url": "https://mcp.morpho.org/" }
   }
 }
 ```
 
 Claude Code: `claude mcp add morpho --transport http https://mcp.morpho.org/`
 
-## Morpho Tools (17 total)
-
-### Read
-- `morpho_health_check` — server connectivity
-- `morpho_get_supported_chains` — supported chains
-- `morpho_query_vaults` — list vaults with filtering/sorting
-- `morpho_get_vault` — details for a specific vault
-- `morpho_query_markets` — list markets with filtering
-- `morpho_get_market` — details for a specific market
-- `morpho_get_positions` — all positions for an address (all vaults + markets)
-- `morpho_get_token_balance` — token balance and approval state
-
-### Write (prepare_ returns unsigned calls for send_calls)
-- `morpho_prepare_deposit` — prepare vault deposit with approvals
-- `morpho_prepare_withdraw` — prepare vault withdrawal (supports max)
-- `morpho_prepare_supply` — prepare market supply with approvals
-- `morpho_prepare_borrow` — prepare market borrow with health check
-- `morpho_prepare_repay` — prepare market repay (supports max)
-- `morpho_prepare_supply_collateral` — supply collateral to market
-- `morpho_prepare_withdraw_collateral` — withdraw collateral with health check
-
-### Simulate
-- `morpho_simulate_transactions` — simulate with post-state analysis
-
 ## Orchestration Pattern
 
-Morpho `prepare_*` tools return unsigned call data. Pass the result to Base MCP's `send_calls` to execute.
+Morpho's prepare-style tools (deposit, withdraw, supply, borrow, repay, supply/withdraw collateral) return an unsigned `calls` array plus a `chainId`. Pass them straight to Base MCP's batched-calls tool.
 
 ```
-morpho_prepare_deposit(vaultAddress, amount) → { calls: [...], chainId }
-↓
-send_calls(chainId, calls) → approvalUrl + requestId
-↓
-User approves at keys.coinbase.com
-↓
-get_request_status(requestId) → confirmed
+morpho prepare tool → { calls: [...], chainId }
+   ↓
+batched-calls tool (chainId, calls) → approval URL + request ID
+   ↓ user approves
+status-poll tool (request ID) → confirmed
 ```
+
+See [../references/batch-calls.md](../references/batch-calls.md) and [../references/approval-mode.md](../references/approval-mode.md).
 
 ## Example Prompts
 
 ```
 Find the best USDC vault on Base by APY and deposit 100 USDC
 ```
-1. `morpho_query_vaults` (filter by USDC, sort by APY)
-2. `morpho_prepare_deposit` (selected vault, 100 USDC)
-3. `send_calls` (chainId + calls from prepare_deposit)
-4. Direct user to approvalUrl, poll get_request_status
+1. Query Morpho vaults filtered by USDC, sorted by APY.
+2. Call the Morpho prepare-deposit tool for the chosen vault and amount.
+3. Pass the returned `calls` + `chainId` to Base MCP's batched-calls tool.
+4. Hand the user the approval link; once they confirm, poll the request status.
 
 ```
 Show all my Morpho positions on Base
 ```
-1. `get_wallets` (get user's address)
-2. `morpho_get_positions` (user's address)
+1. Fetch the user's address (if not already known).
+2. Call the Morpho positions tool with that address.
 
 ```
 Check if my Morpho borrow position is healthy
 ```
-1. `get_wallets` (get address)
-2. `morpho_get_positions` (address)
-3. Report health factor from position data
+1. Fetch the user's address.
+2. Call the Morpho positions tool and report the health factor from the response.
 
 ## Important Notes
 
-- Morpho `prepare_*` tools simulate before returning — review simulation output before calling `send_calls`
-- Always use `morpho_simulate_transactions` for novel or large operations
-- Morpho operates on Base mainnet; check `morpho_get_supported_chains` for current list
+- Morpho's prepare tools typically simulate before returning — review simulation output before submitting the batch.
+- Use the Morpho simulation tool for novel or large operations.
+- Always check the supported-chains tool for the current list rather than assuming a fixed set.

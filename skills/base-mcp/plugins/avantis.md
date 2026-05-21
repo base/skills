@@ -1,14 +1,7 @@
 # Avantis Plugin
 
 > [!IMPORTANT]
-> ## ⚠️ STOP — COMPLETE ONBOARDING BEFORE USING THIS PLUGIN ⚠️
->
-> **Before executing any Avantis trade or query, you MUST complete the full Base MCP onboarding flow defined in `SKILL.md`:**
->
-> 1. Call `get_wallets` (Detection)
-> 2. Present wallet status, capability summary, and disclaimer (Onboarding)
->
-> Do NOT call any Avantis endpoint until onboarding is complete. The user's wallet address — used as `trader` in every tx-builder call — is only confirmed during Detection.
+> Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any Avantis endpoint. The user's wallet address — used as `trader` in every tx-builder call — is fetched lazily when needed.
 
 Avantis is a perpetual futures DEX on Base mainnet (`chainId` 8453). Use `web_request` to fetch unsigned calldata from the Avantis tx-builder, then preview or execute it with account MCP `send_calls`.
 

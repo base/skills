@@ -1,25 +1,35 @@
-# send_calls (Batch Calls)
+# Batched Contract Calls (EIP-5792)
 
-> **Batching is always preferred** for plugin interactions that require a token approval followed by a protocol action (e.g. approve + supply, approve + deposit). Also use batching any time a plugin's `/prepare/*` endpoint returns multiple transactions in its `transactions[]` array. Never split these into sequential single `send` calls when `send_calls` can execute them atomically in a single user approval.
+Base MCP exposes a batched-calls tool (typically `send_calls`) that submits multiple EIP-5792 `wallet_sendCalls` for a single user approval. Use it for arbitrary contract interactions, multi-step transactions, or any flow that combines an approval with a follow-up action.
 
-Submit a batch of EIP-5792 wallet_sendCalls for user approval. Use for arbitrary contract interactions, multi-step transactions, or batched operations.
+> **Batching is preferred whenever a flow involves a token approval followed by a protocol action** (approve + deposit, approve + supply, approve + swap, etc.). Also batch whenever a plugin or protocol endpoint returns multiple transactions in a single response. Don't split these into sequential single-`send` calls when one batched approval can execute them atomically.
 
 ## When to use
-- Protocol interactions not covered by send/swap (e.g. DeFi, NFT mints, approvals)
-- Batching multiple operations into one user approval
-- Morpho plugin: Morpho prepares `prepare_*` calls → pass the raw calls array to `send_calls`
 
-## Required parameters
-- `chainId` — hex chain ID with 0x prefix (`0x2105` for Base mainnet, `0x14a34` for Base Sepolia)
-- `calls` — array of call objects, each with:
-  - `to` — target address (0x-prefixed, required)
+- Protocol interactions not covered by `send` or `swap` (DeFi, NFT mints, approvals, governance actions).
+- Combining multiple operations into one user approval.
+- Executing a transaction array returned by a plugin's prepare-style endpoint — pass the array straight through.
+
+## Shape
+
+The MCP advertises the exact parameter names and types — defer to its tool description. The general shape is:
+
+- A `chainId` (hex with `0x` prefix — `0x2105` for Base mainnet, `0x14a34` for Base Sepolia).
+- A `calls` array of `{ to, value, data }` objects:
+  - `to` — target address, `0x`-prefixed (required)
   - `value` — hex ETH in wei (e.g. `0x0`), optional
-  - `data` — calldata hex (e.g. `0xa9059cbb...`), optional
+  - `data` — calldata hex, optional
 
-## Approval mode flow
-Same as send: get `approvalUrl` + `requestId`, direct user to URL, poll `get_request_status`.
+## Approval flow
 
-## Common use case with Morpho plugin
-1. Morpho `prepare_deposit` (or other prepare_* tool) returns `calls` array
-2. Pass that array directly to `send_calls` with the appropriate `chainId`
-3. Direct user to `approvalUrl` for signing
+Same as any write tool: the response returns an approval URL and request ID. See [approval-mode.md](approval-mode.md).
+
+## Generic orchestration
+
+```
+plugin or protocol API → { transactions: [...] } (or equivalent)
+   ↓ map each transaction to a { to, value, data } call
+batched-calls tool (chainId, calls) → approval URL + request ID
+   ↓ user approves
+status-poll tool (request ID) → confirmed
+```

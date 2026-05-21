@@ -1,96 +1,70 @@
 ---
 name: base-mcp
+version: 0.2.0
 description: >
-  Base MCP — gives your AI assistant access to your Base account via the Base MCP server (mcp.base.org).
-  Native tools (built and maintained by the Base core team): get_wallets, get_portfolio, send, swap, sign,
-  send_calls, get_transaction_history, get_request_status, search_tokens, web_request.
-  Approval mode: send/swap/sign/send_calls require user approval at keys.coinbase.com; response includes approvalUrl + requestId.
-  Plugins (external partners): Morpho lending, Moonwell lending, Uniswap swaps/LP, Avantis perpetual futures — all on Base.
+  Base MCP — gives your AI assistant access to a Base account via the Base MCP server (mcp.base.org).
+  Wallet, portfolio, sending, swapping, signing, batched contract calls, and transaction history on Base.
+  Extensible via partner plugins (e.g. lending, swaps, perps). The MCP itself is the source of truth for the
+  current tool list — tool names, parameters, and the set of available plugins may change over time.
 ---
 
 # Base MCP
 
 > [!IMPORTANT]
-> ## ⚠️ MANDATORY: RUN THE FULL ONBOARDING FLOW AT THE START OF EVERY CONVERSATION ⚠️
+> ## Run onboarding at the start of every conversation that touches Base MCP
 >
-> **Every new conversation that touches Base MCP — including plugin-only conversations (Morpho, Moonwell, Uniswap, Avantis) — MUST begin with the Detection → Onboarding sequence below.**
->
-> Do NOT skip Detection. Do NOT skip Onboarding. Do NOT load a plugin before completing both.
->
-> Order is strictly:
-> 1. **Detection** — call `get_wallets`, confirm MCP is connected
-> 2. **Onboarding** — show wallet status, capability summary, and disclaimer
-> 3. **Then and only then** — proceed with the user's request or load a plugin
->
-> This is required even if the user jumps straight to a plugin topic. The onboarding establishes wallet context that every subsequent tool call depends on.
+> Including conversations that jump straight to a plugin topic. Onboarding is short — see below.
 
 ## Detection
 
-Call `get_wallets` immediately on session start.
+The Base MCP exposes its tools to the harness when connected. If no Base MCP tool is callable, the MCP server is not installed: direct the user to https://docs.base.org/ai-agents/quickstart (or load [references/install.md](references/install.md) for app-specific steps) and stop.
 
-- **Tool unavailable or connection error** → the MCP server is not installed. Tell the user clearly, direct them to install it at https://docs.base.org/ai-agents/quickstart, and stop. Do not attempt to offer any functionality without the MCP.
-- **Call succeeds** → MCP is connected. Load `references/tone.md`, then continue to Onboarding.
-
-## Tone
-
-Load [references/tone.md](references/tone.md) at session start. Its rules apply for the entire conversation.
+If Base MCP tools are available, load [references/tone.md](references/tone.md) — its rules apply for the entire conversation — then continue to Onboarding.
 
 ## Onboarding
 
-> [!WARNING]
-> **This section is NOT optional.** Onboarding runs at the start of EVERY conversation — including conversations that jump straight to a plugin topic. Never proceed to plugin or tool use without completing all three steps below.
+Keep it short. Do this once per session, before doing real work:
 
-Runs once per session after MCP is confirmed connected.
+1. **Briefly mention what's available** — one or two sentences. The user has a Base account wallet and can do things like check balances, send and swap tokens, sign messages, batch contract calls, and (if installed) use partner plugins for DeFi, swaps, and other onchain actions. Do not enumerate every tool — the agent discovers tools and plugins directly from the MCP.
 
-1. **Show wallet status** — the `get_wallets` call from Detection already ran; present the user's Base account address(es). All write operations require approval at keys.coinbase.com.
-
-2. **Show capability summary** — present what is available:
-
-   **Native tools** (built and maintained by the Base core team):
-   - Send ETH or any token
-   - Swap tokens via Coinbase
-   - Sign messages and typed data
-   - Batch contract calls
-   - View portfolio and balances
-   - View transaction history
-   - Search tokens by symbol or name
-
-   **Plugins** (APIs provided by external partners, but plugins authored by Base core team):
-   - Morpho — lending and vaults on Base
-   - Moonwell — lending and borrowing on Base and Optimism
-   - Uniswap — token swaps and LP positions on Base
-   - Avantis — perpetual futures trading on Base
-
-3. **Show this disclaimer** — display it verbatim before proceeding:
+2. **Show this disclaimer verbatim** before proceeding:
 
    > By using the Base Account MCP, you agree to the Base Account and Base App Terms of Service. Plugins available in the Base repo are authored by Base, not by the third-party protocols they reference.
 
+3. **Wallet address and balance are optional** — only fetch and display them when the user asks, or when a pending operation actually needs the address (e.g., a write call, a position lookup). Don't volunteer a wallet dump up front.
+
 ## Tools
 
-Load [references/tools.md](references/tools.md) for the full tool catalogue. For the current task, load ONLY the relevant section — do not preload everything.
+The Base MCP advertises its own tool catalog to the harness. Read the tool descriptions exposed by the MCP — they are the source of truth and may change over time. Do not assume a fixed list; do not preload a tool catalog from this skill.
 
-| Task | Tool | Reference |
-|------|------|-----------|
-| List wallets / check session status | `get_wallets` | [references/tools.md](references/tools.md) |
-| Balance / portfolio / token lookup | `get_portfolio`, `search_tokens` | [references/tools.md](references/tools.md) |
-| Send ETH or ERC-20 | `send` | [references/tools.md](references/tools.md) |
-| Swap tokens | `swap` | [references/tools.md](references/tools.md) |
-| Sign message or typed data | `sign` | [references/tools.md](references/tools.md) |
-| Batch contract calls | `send_calls` | [references/batch-calls.md](references/batch-calls.md) |
-| Transaction history | `get_transaction_history` | [references/tools.md](references/tools.md) |
-| Poll approval status | `get_request_status` | [references/approval-mode.md](references/approval-mode.md) |
-| Fetch protocol calldata | `web_request` | [references/tools.md](references/tools.md) |
-| Platform install | — | [references/install.md](references/install.md) |
-| Tone and language rules | — | [references/tone.md](references/tone.md) |
+Two patterns deserve their own references because they span multiple tools:
+
+| Topic | Reference |
+|-------|-----------|
+| Approval flow (for any write tool that returns an approval URL) | [references/approval-mode.md](references/approval-mode.md) |
+| Batched contract calls (EIP-5792) | [references/batch-calls.md](references/batch-calls.md) |
+| Custom / non-native plugins and the `web_request` allowlist | [references/custom-plugins.md](references/custom-plugins.md) |
+| Platform install steps | [references/install.md](references/install.md) |
+| Tone and language rules | [references/tone.md](references/tone.md) |
 
 ## Plugins
 
-| Plugin | Protocol | Operated by | Reference |
-|--------|----------|-------------|-----------|
-| Morpho | Lending / vaults on Base | Morpho Labs | [plugins/morpho.md](plugins/morpho.md) |
-| Moonwell | Lending on Base and Optimism | Moonwell team | [plugins/moonwell.md](plugins/moonwell.md) |
-| Uniswap | Swaps and LP on Base | Uniswap Labs | [plugins/uniswap.md](plugins/uniswap.md) |
-| Avantis | Perpetual futures on Base | Avantis team | [plugins/avantis.md](plugins/avantis.md) |
+Plugins extend Base MCP with partner-specific functionality (lending, swaps, perps, etc.). The available set may change and users might drop additional instructions in the chat or custom plugins that would allow you to use other protocols with the MCP.
+
+Plugins currently maintained alongside this skill (the **native plugins**):
+
+| Plugin | Reference |
+|--------|-----------|
+| Morpho | [plugins/morpho.md](plugins/morpho.md) |
+| Moonwell | [plugins/moonwell.md](plugins/moonwell.md) |
+| Uniswap | [plugins/uniswap.md](plugins/uniswap.md) |
+| Avantis | [plugins/avantis.md](plugins/avantis.md) |
+
+Load a plugin reference only when the user's request matches it. For a plugin's own tools, defer to the descriptions the plugin's MCP exposes — this skill does not duplicate them.
+
+### Native plugins vs. custom / user-supplied plugins
+
+Native plugins are allowlisted in the Base MCP `web_request` tool and work everywhere. Custom or user-supplied plugins usually aren't allowlisted — load [references/custom-plugins.md](references/custom-plugins.md) for the decision tree on which HTTP path to use (harness HTTP tool vs. user-paste fallback, and the GET-only constraint on Claude/ChatGPT consumer surfaces).
 
 ## Installation
 
