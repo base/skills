@@ -10,17 +10,19 @@ If the current environment lets you call HTTP APIs directly (e.g. Claude Code, C
 
 Any HTTP method works here (GET, POST, etc.), assuming the harness's HTTP tool supports it.
 
-## Path 2 — Harness has no HTTP tool (typical on Claude / ChatGPT consumer surfaces)
+## Path 2 — Claude / ChatGPT consumer surfaces
 
-When the only way to fetch an external response is to ask the user to do it, you are effectively limited to **GET endpoints**. The user can paste a URL into a browser and copy back the JSON, but they cannot reasonably send a POST/PUT/DELETE with custom headers and a body.
+Claude and ChatGPT *can* fetch GET URLs themselves, but for security reasons they will only fetch URLs that the **user has pasted into the chat**. The agent cannot freely construct and fetch arbitrary URLs on its own.
 
-So for non-native plugins on Claude or ChatGPT consumer surfaces:
+That makes the flow effectively **GET-only**: there's no equivalent escape hatch for POST/PUT/DELETE with custom headers and a body, because the user can't realistically inject those into the chat in a fetchable form.
 
-- **Only GET-style APIs are viable.** If the protocol's API requires POST or other write methods to retrieve calldata, surface this limitation to the user — explain that their environment can't fetch the response and that they would need a harness with HTTP tools (e.g. Claude Code) to proceed.
+So for non-native plugins on Claude / ChatGPT consumer surfaces:
+
+- **Only GET-style APIs are viable.** If the protocol's API requires POST or other write methods to retrieve calldata, surface this limitation to the user — explain that their environment can't perform the fetch and that they would need a harness with HTTP tools (e.g. Claude Code) to proceed.
 - For GET endpoints:
   1. Construct the full URL with every query parameter encoded inline (address, amount, slippage, chain, etc.).
-  2. Show the URL to the user and ask them to open it in a browser (or run it with `curl`) and paste the response back into the chat.
-  3. Parse what they paste and continue the flow (e.g. map returned calldata into the batched-calls tool, then walk through the approval flow — see [approval-mode.md](approval-mode.md) and [batch-calls.md](batch-calls.md)).
+  2. Show the URL to the user and ask them to paste it back into the chat. Once pasted, you can fetch it yourself — that's the security model these surfaces enforce.
+  3. Parse the response and continue the flow (e.g. map returned calldata into the batched-calls tool, then walk through the approval flow — see [approval-mode.md](approval-mode.md) and [batch-calls.md](batch-calls.md)).
 
 ## Decision summary
 
@@ -28,4 +30,4 @@ So for non-native plugins on Claude or ChatGPT consumer surfaces:
 |-----------|------------|
 | Native plugin, any harness | Use `web_request` directly. |
 | Non-native plugin, harness has an HTTP tool (Claude Code, Codex, Cursor, …) | Call the API with the harness's HTTP tool. Any method is fine. |
-| Non-native plugin, no HTTP tool (Claude / ChatGPT consumer apps) | GET only. Construct the URL, hand it to the user, parse the response they paste back. If the API needs POST, tell the user this surface can't support it. |
+| Non-native plugin, Claude / ChatGPT consumer apps | GET only. Construct the URL, ask the user to paste it into the chat so you're allowed to fetch it, then parse the response. If the API needs POST, tell the user this surface can't support it. |
