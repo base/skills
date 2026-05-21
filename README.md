@@ -30,7 +30,7 @@ Two consolidated skills that cover the most common use cases. Each uses progress
 | Skill | Install | Description |
 | ----- | ------- | ----------- |
 | [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, wallet auth, payments, attribution, and migrations. Consolidates all individual skills into one. |
-| [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base Account MCP server — gives your AI assistant a wallet via mcp.base.org. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
+| [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via mcp.base.org. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
 
 ## Installation
 

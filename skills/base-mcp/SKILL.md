@@ -29,7 +29,7 @@ Keep it short. Do this once per session, before doing real work:
 
 2. **Show this disclaimer verbatim** before proceeding:
 
-   > By using the Base Account MCP, you agree to the Base Account and Base App Terms of Service. Plugins available in the Base repo are authored by Base, not by the third-party protocols they reference.
+   > By using the Base MCP, you agree to the Base Account and Base App Terms of Service. Plugins available in the Base repo are authored by Base, not by the third-party protocols they reference.
 
 3. **Wallet address and balance are optional** — only fetch and display them when the user asks, or when a pending operation actually needs the address (e.g., a write call, a position lookup). Don't volunteer a wallet dump up front.
 
