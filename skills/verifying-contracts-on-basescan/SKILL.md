@@ -205,7 +205,7 @@ For Sepolia, replace `--chain 8453` with `--chain 84532`. No `--etherscan-api-ke
 | `Missing or invalid chainid` | V2 endpoint called without `chainid` param | Include `?chainid=8453` or `?chainid=84532` in the verifier URL |
 | `Bytecode does not match` | Compiler version, optimizer runs, or EVM version differs from deployment | Re-verify with exact original settings; inspect `foundry.toml` or Hardhat config |
 | `Constructor arguments not matching` | Args absent or incorrectly encoded | Re-encode with `cast abi-encode "constructor(...)" ...` |
-| `Already Verified` | Contract is already verified | Not an error — check Basescan to confirm the source is visible |
+| `already verified. Skipping verification` | Contract is already verified | Not an error — Foundry skips automatically; check Basescan to confirm source is visible |
 | Library not linked | Linked library not verified or wrong address | Verify the library first, then re-run with `--libraries` |
 | Proxy shows unverified implementation | Implementation contract not marked as proxy | Verify the implementation address, then use the "Is this a Proxy?" button on Basescan |
 
