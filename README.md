@@ -33,6 +33,8 @@
 | [Converting Farcaster Miniapp to App](./skills/convert-farcaster-miniapp-to-app/SKILL.md) | Converts Farcaster Mini App SDK projects into regular Base web apps, with an option to preserve a small separate Farcaster-specific surface when needed. |
 | [Deploying Contracts on Base](./skills/deploying-contracts-on-base/SKILL.md) | Deploys and verifies contracts on Base with Foundry, plus common troubleshooting guidance. |
 | [Running a Base Node](./skills/running-a-base-node/SKILL.md) | Covers production node setup, hardware requirements, networking ports, and syncing guidance. |
+| [Verifying Contracts on Basescan](./skills/verifying-contracts-on-basescan/SKILL.md) | Verifies contracts on Base via the unified Etherscan V2 API (chainid 8453/84532), covering Foundry, Hardhat, manual UI, Sourcify, and common errors. |
+| [Registering an ERC-8004 Agent on Base](./skills/registering-an-erc-8004-agent-on-base/SKILL.md) | Registers trustless agents in the ERC-8004 Identity Registry on Base Mainnet and Sepolia, covering agent registration files, agentURI hosting, and agentWallet binding via EIP-712. |
 | [Converting MiniKit to Farcaster](./skills/converting-minikit-to-farcaster/SKILL.md) | Migrates Mini Apps from MiniKit (OnchainKit) to native Farcaster SDK with mappings, examples, and pitfalls. |
 | [Migrating an OnchainKit App](./skills/migrating-an-onchainkit-app/SKILL.md) | Migrates apps from @coinbase/onchainkit to standalone wagmi/viem components, replacing the provider, wallet, and transaction components. |
 | [Registering an Agent on Base](./skills/registering-agent-base-dev/SKILL.md) | Registers an agent wallet with the Base builder code API and wires ERC-8021 transaction attribution into viem, ethers, or managed signing services. |
