@@ -1,3 +1,8 @@
+---
+title: "Batched Contract Calls"
+description: "Skill reference for Base MCP's EIP-5792 batched contract calls."
+---
+
 # Batched Contract Calls (EIP-5792)
 
 Base MCP exposes a batched-calls tool (typically `send_calls`) that submits multiple EIP-5792 `wallet_sendCalls` for a single user approval. Use it for arbitrary contract interactions, multi-step transactions, or any flow that combines an approval with a follow-up action.

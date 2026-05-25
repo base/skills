@@ -1,3 +1,8 @@
+---
+title: "Morpho Plugin"
+description: "Skill plugin reference for lending on Morpho through Base MCP."
+---
+
 # Morpho Plugin
 
 > [!IMPORTANT]
@@ -23,19 +28,6 @@ If no `morpho` tools are exposed to the harness, the Morpho MCP isn't installed 
 - **Other / unknown harness:** show the JSON snippet from [Installation](#installation-alongside-base-mcp) and ask the user where their MCP config lives.
 
 After install, ask the user to reconnect or restart the session so the new tools register, then retry the original request.
-
-## Installation (alongside Base MCP)
-
-```json
-{
-  "mcpServers": {
-    "base-account": { "url": "https://mcp.base.org" },
-    "morpho":       { "url": "https://mcp.morpho.org/" }
-  }
-}
-```
-
-Claude Code: `claude mcp add morpho --transport http https://mcp.morpho.org/`
 
 ## Orchestration Pattern
 

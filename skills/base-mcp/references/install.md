@@ -1,6 +1,11 @@
+---
+title: "Installing Base MCP"
+description: "Skill reference for installing the Base MCP server in Claude, ChatGPT, Cursor, Codex, and other surfaces."
+---
+
 # Installing Base MCP
 
-> Canonical source: **<https://docs.base.org/ai-agents/quickstart>**. That page is kept up to date with the latest one-click install links, deep-links, and connector flows for each surface. Send the user there first; the instructions below are a backup so the agent can still walk a user through install without leaving the chat.
+> Canonical source: **[https://base-a060aa97-youssef-update-agents.mintlify.app/ai-agents/quickstart](https://base-a060aa97-youssef-update-agents.mintlify.app/ai-agents/quickstart)**. That page is kept up to date with the latest one-click install links, deep-links, and connector flows for each surface. Send the user there first; the instructions below are a backup so the agent can still walk a user through install without leaving the chat.
 
 The MCP server URL is the same everywhere: **`https://mcp.base.org`**
 
@@ -28,7 +33,7 @@ A browser tab opens to authorize on first use — sign in with Base.
 
 ## ChatGPT
 
-Open <https://chatgpt.com/#settings/Connectors> (or **Settings → Connectors**), then:
+Open [https://chatgpt.com/#settings/Connectors](https://chatgpt.com/#settings/Connectors) (or **Settings → Connectors**), then:
 
 1. Enable **Developer Mode** if prompted (under Advanced)
 2. Click **Create** → **New App** modal opens
@@ -112,7 +117,7 @@ Restart Cursor, then **Settings → MCP** to confirm `base` is active.
 Hand the agent the quickstart and let it install itself:
 
 ```
-Install the Base MCP server from https://docs.base.org/ai-agents/quickstart
+Install the Base MCP server from https://base-a060aa97-youssef-update-agents.mintlify.app/ai-agents/quickstart
 ```
 
 Manual install — edit `~/.hermes/config.yaml`:
@@ -151,4 +156,4 @@ If it replies with a wallet address, the MCP is connected. If it says it doesn't
 | "Integration not found" / "Tool not available" | Restart the app — the server may not have finished loading. |
 | Integrations / Connectors tab missing | App version is too old — update to the latest. |
 | `web_request` rejects a hostname | The hostname isn't in the allowlist. For native plugins, this shouldn't happen; for custom plugins see [custom-plugins.md](custom-plugins.md). |
-| Anything else | Send the user to <https://docs.base.org/ai-agents/quickstart>. |
+| Anything else | Send the user to [https://base-a060aa97-youssef-update-agents.mintlify.app/ai-agents/quickstart](https://base-a060aa97-youssef-update-agents.mintlify.app/ai-agents/quickstart). |

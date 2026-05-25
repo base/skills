@@ -1,3 +1,8 @@
+---
+title: "Base MCP Skill — Disclaimer"
+description: "Terms, risks, and limitations for using the Base MCP skill with AI agents."
+---
+
 # Base MCP — Disclaimer
 
 > ⚠️ **Important: Read Before Use**

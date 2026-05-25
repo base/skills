@@ -1,3 +1,8 @@
+---
+title: "Virtuals Plugin"
+description: "Skill plugin reference for creating and operating Virtuals (ACP) AI agents through the Virtuals MCP, signed in via Base MCP."
+---
+
 # Virtuals Plugin
 
 > [!IMPORTANT]
@@ -23,19 +28,6 @@ If no Virtuals tools (e.g. `login_start`, `agent_list`, `agent_card_*`, `agent_e
 - **Other / unknown harness:** show the JSON snippet from [Installation](#installation-alongside-base-mcp) and ask the user where their MCP config lives.
 
 After install, ask the user to reconnect or restart the session so the new tools register, then run the [Auth flow](#auth-flow) and retry.
-
-## Installation (alongside Base MCP)
-
-```json
-{
-  "mcpServers": {
-    "base-account": { "url": "https://mcp.base.org" },
-    "virtuals":     { "url": "https://mcp.acp.virtuals.io/" }
-  }
-}
-```
-
-Claude Code: `claude mcp add virtuals --transport http https://mcp.acp.virtuals.io/`
 
 ## Capabilities Overview
 
