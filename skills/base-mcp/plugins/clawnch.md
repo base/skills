@@ -280,6 +280,120 @@ write call. Surface the URL neutrally ("Approve Swap"), then poll
 
 ---
 
+## Launch flow (non-custodial)
+
+In addition to discovery + buys, Clawnch exposes a non-custodial deploy
+path: a GET endpoint returns unsigned Clanker factory calldata so the
+user's own wallet pays gas and ends up as `tokenAdmin`. No Clawnch API
+key, no captcha, no server-side deployer. The platform's 20% trading-fee
+share is preserved in the rewards array of the prepared calldata.
+
+### `GET /api/prepare/deploy`
+
+Query parameters:
+
+| Param          | Required | Notes                                                                    |
+| -------------- | -------- | ------------------------------------------------------------------------ |
+| `from`         | yes      | The user's wallet address. Becomes `tokenAdmin` + 80% reward recipient.  |
+| `name`         | yes      | Token name (≤ 64 chars).                                                 |
+| `symbol`       | yes      | Ticker (≤ 16 chars).                                                     |
+| `description`  | no       | Optional metadata.                                                       |
+| `image`        | no       | Optional image URL.                                                      |
+| `twitter`      | no       | Social URL.                                                              |
+| `website`      | no       | Social URL.                                                              |
+| `telegram`     | no       | Social URL.                                                              |
+| `farcaster`    | no       | Social URL.                                                              |
+| `discord`      | no       | Social URL.                                                              |
+| `burnTxHash`   | no       | Pre-existing CLAWNCH burn tx hash. If valid, vault % is applied.         |
+
+Response (envelope shape — matches Base MCP custom-plugin pattern):
+
+```json
+{
+  "ok": true,
+  "data": {
+    "to": "0xE85A59c628F7d27878ACeB4bf3b35733630083a9",
+    "data": "0xdf40224a...<encoded deployToken calldata>",
+    "value": "0x0",
+    "chainId": 8453
+  },
+  "meta": {
+    "tokenName": "MyCoin",
+    "symbol": "MYC",
+    "platformFeeBps": 2000,
+    "userFeeBps": 8000,
+    "vaultPercentage": 0,
+    "vaultLockupSeconds": 0,
+    "source": "base-mcp",
+    "from": "0x...",
+    "platformFeeRecipient": "0x..."
+  }
+}
+```
+
+Error shape:
+
+```json
+{ "ok": false, "error": "burnTxHash failed verification: …", "code": "invalid_burn" }
+```
+
+Error codes: `missing_required`, `invalid_from`, `invalid_name`,
+`invalid_symbol`, `invalid_burn`, `rate_limited`, `misconfigured`,
+`sdk_error`, `encode_error`.
+
+### Launch orchestration
+
+```text
+1. get_wallets → from
+2. Confirm token params with the user (name, symbol, optional metadata, optional burn tx)
+3. web_request GET https://www.clawn.ch/api/prepare/deploy?from=<addr>&name=<...>&symbol=<...>
+4. Parse the envelope — bail on `ok: false`, surface `error`
+5. send_calls (Base MCP) with chain="base", calls=[{ to: data.to, value: data.value, data: data.data }]
+6. Open the approvalUrl
+7. Poll get_request_status until confirmed
+8. Surface tx hash + the new token's eventual Basescan URL
+```
+
+### Burn-to-vault flow
+
+To claim a vault allocation (creator-locked tokens released after a
+7-day Clanker lockup):
+
+```text
+1. User burns CLAWNCH to 0x000000000000000000000000000000000000dEaD
+   on Base. Minimum 1,000,000 CLAWNCH = 1% vault. Cap 10,000,000 = 10%.
+2. User waits for the burn tx to confirm.
+3. Call /api/prepare/deploy with ?burnTxHash=<burn-tx-hash>
+4. Server verifies the burn (sender = `from`, recipient = burn address,
+   amount, 24h pre-launch window) and applies the vault percentage to
+   the prepared calldata.
+5. Continue with the standard send_calls flow.
+```
+
+Verification rejections surface as `{ ok: false, code: "invalid_burn" }`
+with a specific message ("amount below minimum", "transaction too old",
+"sender mismatch", etc.).
+
+### Launch example prompts
+
+**Launch a token called "Cool Project" with symbol $COOL**
+
+1. `get_wallets` → `from`.
+2. Confirm with the user: name, symbol, any optional metadata.
+3. `web_request` GET `https://www.clawn.ch/api/prepare/deploy?from=<addr>&name=Cool%20Project&symbol=COOL`.
+4. Bail if `ok: false`; surface `error` and `code`.
+5. Show the user: "Deploy `Cool Project` (`COOL`) on Base via Clanker? 80% fee share to you, 20% to Clawnch (standard launchpad fee). Approve?"
+6. On confirmation: `send_calls` with the returned `data`. Open `approvalUrl`. Poll `get_request_status`.
+
+**Deploy with a 5% vault claim using my prior CLAWNCH burn**
+
+1. Confirm the burn tx exists + is the user's. (User pastes a tx hash.)
+2. `web_request` GET `https://www.clawn.ch/api/prepare/deploy?from=<addr>&name=<...>&symbol=<...>&burnTxHash=<0xburn...>`.
+3. Read `meta.vaultPercentage` from the response. If less than expected, surface the discrepancy and let the user re-confirm.
+4. `send_calls` with the returned `data`. The vault clause is baked into the calldata.
+
+---
+
 ## Example Prompts
 
 **Show me the latest token launches on Clawnch**
