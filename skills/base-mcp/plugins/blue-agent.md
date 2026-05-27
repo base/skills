@@ -307,5 +307,4 @@ Do not chain multiple paid calls without per-call confirmation. Each POST charge
 - USDC on Base: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 - All prices are in USD, paid in USDC on Base (chainId `8453`)
 - Full tool list and docs: [blueagent.dev/api-docs](https://blueagent.dev/api-docs)
-- X/Twitter: [@blocky_agent](https://x.com/blocky_agent)
-- Built by [Blocky Studio](https://blocky.studio)
+- X/Twitter: [@blueagent_](https://x.com/blueagent_)
