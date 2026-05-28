@@ -231,7 +231,7 @@ Chain IDs: base=8453, ethereum=1, arbitrum=42161, optimism=10, polygon=137, bsc=
 **Swap 0.1 ETH to USDC on Arbitrum**
 
 1. `get_wallets` → address
-2. `web_request GET /api/v1/routes` — tokenIn=`0xEeee...eEEE`, tokenOut=USDC on arbitrum=`0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8`, amountIn=`100000000000000000`, chain=`arbitrum`
+2. `web_request GET /api/v1/routes` — tokenIn=`0xEeee...eEEE`, tokenOut=USDC on arbitrum=`0xaf88d065e77c8cC2239327C5EDb3A432268e5831`, amountIn=`100000000000000000`, chain=`arbitrum`
 3. `web_request POST /api/v1/route/build` → encodedSwapData, transactionValue=`0xde0b6b3a7640000` (non-zero, native input)
 4. No approval needed for native ETH
 5. `send_calls("arbitrum", [swap_call])` with value=transactionValue
@@ -242,12 +242,12 @@ Chain IDs: base=8453, ethereum=1, arbitrum=42161, optimism=10, polygon=137, bsc=
 
 | Tolerance | Level | Action |
 |---|---|---|
-| ≤ 50 bps (0.5%) | Normal | Proceed. |
-| > 50 and ≤ 200 bps | Elevated | Mention the value and ask the user to confirm. |
-| > 200 and ≤ 500 bps | High | Warn that the trade can fill significantly below quote and is a likely sandwich target. Require explicit confirmation. |
-| > 500 bps | Very high | Strongly warn; do not submit without the user re-confirming the exact number. |
+| ≤ 1% (100 bps) | Normal | Proceed. |
+| > 1% and ≤ 5% | Elevated | Mention the value and ask the user to confirm. |
+| > 5% and ≤ 20% | High | Warn that the trade can fill significantly below quote and is a likely sandwich target. Require explicit confirmation. |
+| > 20% | Very high | Strongly warn; do not submit without the user re-confirming the exact number. |
 
-Default: use `50` bps for common pairs (ETH/USDC, WBTC/ETH), `100` bps for long-tail or volatile tokens. If the user did not specify a value, prefer `autoSlippage` behavior by omitting the param and letting the API use its default.
+If the user does not specify slippage, use `50` bps for common pairs (ETH/USDC, WBTC/ETH) and `100` bps for long-tail or volatile tokens. Always pass an explicit value — the API defaults to 0 bps if `slippageTolerance` is omitted, which will cause most trades to fail.
 
 ---
 
