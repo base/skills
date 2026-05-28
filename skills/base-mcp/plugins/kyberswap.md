@@ -18,16 +18,32 @@ No additional MCP server is required.
 
 ---
 
+## Orchestration Pattern
+
+```
+web_request GET /api/v1/routes
+  → { data: { routeSummary, routerAddress, amountOut, amountOutUsd, gasUsd } }
+      ↓
+web_request POST /api/v1/route/build
+  → { data: { encodedSwapData, transactionValue, routerAddress } }
+      ↓
+send_calls(chain, [approval_call?, swap_call])
+  → approvalUrl + requestId
+      ↓
+User approves at the returned approval URL
+      ↓
+get_request_status(requestId) → confirmed
+```
+
+Include an ERC-20 approval call before the swap whenever `tokenIn` is not a native token. Batch both calls together so the user approves once.
+
+---
+
 ## Swap Flow
 
 Base URL: `https://aggregator-api.kyberswap.com/{chain}`
 
 Chain slugs: `base` · `ethereum` · `arbitrum` · `optimism` · `polygon` · `bsc` · `avalanche`
-
-```
-GET  /api/v1/routes       →  best route + quote (read-only)
-POST /api/v1/route/build  →  unsigned swap transaction calldata
-```
 
 ### 1. `GET /api/v1/routes`
 
@@ -45,7 +61,7 @@ https://aggregator-api.kyberswap.com/{chain}/api/v1/routes
 |---|---|---|
 | `tokenIn` | ✅ | Token address. Use `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE` for native (ETH, BNB, MATIC, etc.) |
 | `tokenOut` | ✅ | Token address |
-| `amountIn` | ✅ | Integer string in base units — no decimals, no scientific notation |
+| `amountIn` | ✅ | Amount in base units — plain integer string, no decimals, no scientific notation. Multiply the human amount by `10^decimals`: 1 ETH = `1000000000000000000`, 100 USDC = `100000000` |
 | `to` | recommended | Recipient wallet address |
 | `slippageTolerance` | recommended | Basis points (50 = 0.5%). See [Slippage Warnings](#slippage-warnings) |
 | `source` | recommended | Pass `base-mcp` for attribution |
@@ -55,49 +71,50 @@ Response shape:
 ```json
 {
   "data": {
-    "routeSummary": { ... },
+    "routeSummary": { "...": "keep this object verbatim for the build step" },
     "routerAddress": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5",
-    "amountIn": "...",
-    "amountInUsd": "...",
-    "amountOut": "...",
-    "amountOutUsd": "...",
-    "gas": "...",
-    "gasUsd": "..."
+    "amountIn": "100000000",
+    "amountInUsd": "100.00",
+    "amountOut": "38650000000000000",
+    "amountOutUsd": "99.71",
+    "gas": "300000",
+    "gasUsd": "0.29"
   }
 }
 ```
 
-Keep the **complete `routeSummary` object** — it is required verbatim for the build step.
+Keep the **complete `routeSummary` object** exactly as returned — it is required verbatim in the build step body.
 
 ### 2. `POST /api/v1/route/build`
 
-```
-https://aggregator-api.kyberswap.com/{chain}/api/v1/route/build
-```
-
-Request body:
+Use `web_request` with `method: POST`:
 
 ```json
 {
-  "routeSummary": { ... },
-  "sender": "<walletAddress>",
-  "recipient": "<walletAddress>",
-  "slippageTolerance": 50,
-  "deadline": "<unix_timestamp + 1200>",
-  "source": "base-mcp"
+  "url": "https://aggregator-api.kyberswap.com/{chain}/api/v1/route/build",
+  "method": "POST",
+  "headers": { "content-type": "application/json", "x-client-id": "base-mcp" },
+  "body": {
+    "routeSummary": { "...": "complete object from GET response" },
+    "sender": "<walletAddress>",
+    "recipient": "<walletAddress>",
+    "slippageTolerance": 50,
+    "deadline": "<current unix timestamp + 1200>",
+    "source": "base-mcp"
+  }
 }
 ```
 
-Pass `routeSummary` exactly as returned from the GET step — do not modify or truncate it.
+Do not modify or truncate `routeSummary`. Routes expire in ~30 seconds — if this step fails with "return amount is not enough", re-fetch the route and retry.
 
 Response shape:
 
 ```json
 {
   "data": {
-    "amountIn": "...",
-    "amountOut": "...",
-    "gas": "...",
+    "amountIn": "100000000",
+    "amountOut": "38650000000000000",
+    "gas": "300000",
     "transactionValue": "0x0",
     "routerAddress": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5",
     "encodedSwapData": "0x..."
@@ -105,40 +122,50 @@ Response shape:
 }
 ```
 
-### 3. ERC-20 Approval Check
+`transactionValue` is a hex wei string — pass it directly as `value` in the swap call. It is non-zero only for native token input (e.g. `"0xde0b6b3a7640000"` for 1 ETH).
 
-Before calling send_calls, check whether the router has enough allowance for `tokenIn`:
+### 3. ERC-20 Approval
 
-- **Native tokens** (ETH, BNB, MATIC, AVAX, etc.): no approval needed — proceed directly to send_calls.
-- **ERC-20 tokens**: if current allowance < `amountIn`, include a standard ERC-20 approve call in the batch.
+For ERC-20 `tokenIn`, always include a standard `approve` call before the swap. Skip this step only for native tokens (ETH, BNB, MATIC, AVAX, etc.).
 
-Approval call:
+Function: `approve(address spender, uint256 amount)`
+- `spender`: `0x6131B5fae19EA4f9D964eAc0408E4408b66337b5`
+- `amount`: `amountIn` value from the GET routes response (exact amount, in base units)
 
-```json
-{
-  "to": "<tokenIn contract address>",
-  "value": "0x0",
-  "data": "<approve(address,uint256) selector + ABI-encoded (router, amountInWei)>"
-}
+Calldata encoding:
+```
+selector:  0x095ea7b3
+spender:   000000000000000000000000 + {router without 0x}
+amount:    {amountIn as 32-byte hex, left-padded with zeros}
+
+Example (approve 100 USDC = 100000000):
+0x095ea7b3
+  0000000000000000000000006131b5fae19ea4f9d964eac0408e4408b66337b5
+  0000000000000000000000000000000000000000000000000000000005f5e100
 ```
 
-`approve` selector: `0x095ea7b3`
+Approval call shape:
+```json
+{ "to": "<tokenIn address>", "value": "0x0", "data": "<approve calldata>" }
+```
+
+**USDT on Ethereum mainnet**: if the existing allowance is non-zero, the approve call will revert. Send a zero-approval first (`amount = 0x0...0`), then send the real approval.
 
 ### 4. `send_calls`
 
-Batch approval (if needed) and swap into a single user approval:
+For ERC-20 `tokenIn` — batch approval + swap:
 
 ```json
 {
   "chain": "base",
   "calls": [
-    { "to": "<tokenIn address>", "value": "0x0", "data": "<approval calldata>" },
+    { "to": "<tokenIn address>", "value": "0x0", "data": "<approve calldata>" },
     { "to": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5", "value": "<transactionValue>", "data": "<encodedSwapData>" }
   ]
 }
 ```
 
-For native token input (no approval):
+For native `tokenIn` — swap only:
 
 ```json
 {
@@ -156,12 +183,11 @@ Use chain name strings (`base`, `ethereum`, `arbitrum`, `optimism`, `polygon`, `
 ```
 1. get_wallets → walletAddress
 2. web_request GET /api/v1/routes → routeSummary, amountOut, gasUsd
-3. Check approval:
-     native token? → skip
-     ERC-20 allowance ≥ amountIn? → skip
-     otherwise → prepare approval calldata
-4. web_request POST /api/v1/route/build → encodedSwapData, transactionValue
-5. send_calls(chain, [approval_call?, swap_call])
+3. web_request POST /api/v1/route/build → encodedSwapData, transactionValue
+4. Build calls array:
+     native tokenIn  → [swap_call]
+     ERC-20 tokenIn  → [approval_call, swap_call]
+5. send_calls(chain, calls)
 6. Open approvalUrl if requested; do not approve unless the user explicitly asks
 7. get_request_status only after the user acts
 ```
@@ -180,13 +206,13 @@ For common tokens on Base:
 | DAI | `0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb` |
 | cbBTC | `0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf` |
 
-For unknown tokens, resolve via the KyberSwap token API (GET):
+For unknown tokens, resolve via the KyberSwap token API:
 
 ```
 web_request: https://token-api.kyberswap.com/api/v1/public/tokens?chainIds={chainId}&name={symbol}&isWhitelisted=true
 ```
 
-Pick the result with exact `symbol` match and highest `marketCap`.
+Pick the result with exact `symbol` match and highest `marketCap`. If no whitelisted match, retry without `isWhitelisted`.
 
 Chain IDs: base=8453, ethereum=1, arbitrum=42161, optimism=10, polygon=137, bsc=56, avalanche=43114
 
@@ -197,18 +223,18 @@ Chain IDs: base=8453, ethereum=1, arbitrum=42161, optimism=10, polygon=137, bsc=
 **Swap 100 USDC to ETH on Base**
 
 1. `get_wallets` → address
-2. `web_request GET /api/v1/routes` tokenIn=`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`, tokenOut=`0xEeee...eEEE`, amountIn=`100000000`, chain=`base`
-3. USDC is ERC-20: prepare approval calldata for router
-4. `web_request POST /api/v1/route/build` → encodedSwapData
-5. `send_calls` batching approval + swap
+2. `web_request GET /api/v1/routes` — tokenIn=`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (USDC, 6 dec), tokenOut=`0xEeee...eEEE`, amountIn=`100000000`, chain=`base`
+3. `web_request POST /api/v1/route/build` → encodedSwapData, transactionValue=`0x0`
+4. Build approval calldata: approve router to spend `100000000` USDC
+5. `send_calls("base", [approval_call, swap_call])`
 
 **Swap 0.1 ETH to USDC on Arbitrum**
 
 1. `get_wallets` → address
-2. `web_request GET /api/v1/routes` tokenIn=`0xEeee...eEEE`, tokenOut=USDC on arbitrum, amountIn=`100000000000000000`, chain=`arbitrum`
-3. Native token: no approval needed
-4. `web_request POST /api/v1/route/build` → encodedSwapData, transactionValue (non-zero hex)
-5. `send_calls` with value=transactionValue
+2. `web_request GET /api/v1/routes` — tokenIn=`0xEeee...eEEE`, tokenOut=USDC on arbitrum=`0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8`, amountIn=`100000000000000000`, chain=`arbitrum`
+3. `web_request POST /api/v1/route/build` → encodedSwapData, transactionValue=`0xde0b6b3a7640000` (non-zero, native input)
+4. No approval needed for native ETH
+5. `send_calls("arbitrum", [swap_call])` with value=transactionValue
 
 ---
 
@@ -221,9 +247,7 @@ Chain IDs: base=8453, ethereum=1, arbitrum=42161, optimism=10, polygon=137, bsc=
 | > 200 and ≤ 500 bps | High | Warn that the trade can fill significantly below quote and is a likely sandwich target. Require explicit confirmation. |
 | > 500 bps | Very high | Strongly warn; do not submit without the user re-confirming the exact number. |
 
-If the user does not specify slippage: use `50` bps for common pairs (ETH/USDC, WBTC/ETH), `100` bps for long-tail or volatile tokens.
-
-If the build step returns error code `4227` with "return amount is not enough", the price moved since the route was fetched — re-fetch the route and retry before adjusting slippage.
+Default: use `50` bps for common pairs (ETH/USDC, WBTC/ETH), `100` bps for long-tail or volatile tokens. If the user did not specify a value, prefer `autoSlippage` behavior by omitting the param and letting the API use its default.
 
 ---
 
@@ -231,7 +255,5 @@ If the build step returns error code `4227` with "return amount is not enough", 
 
 - Native token sentinel (ETH/BNB/MATIC/AVAX/etc.): `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE`
 - Router address is the same on all chains: `0x6131B5fae19EA4f9D964eAc0408E4408b66337b5`
-- `transactionValue` from the build response is a hex wei string — pass it directly as `value` in send_calls. It is non-zero only for native token input.
-- Routes expire in ~30 seconds. If the build step fails with "return amount not enough", re-fetch the route and retry.
-- USDT on Ethereum mainnet requires setting allowance to 0 before a new non-zero approval. If approval fails, suggest revoking first.
-- KyberSwap splits trades across multiple DEX pools when beneficial — the `routeSummary` may describe a multi-hop or split route. Pass it as-is to the build endpoint.
+- KyberSwap splits trades across multiple pools when beneficial — `routeSummary` may describe a multi-hop or split route. Pass it as-is; do not modify it.
+- USDC on Base: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` · WETH on Base: `0x4200000000000000000000000000000000000006`
