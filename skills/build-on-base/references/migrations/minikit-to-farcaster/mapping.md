@@ -409,7 +409,7 @@ function AuthButton() {
 
 ## useNotification
 
-Notifications require server-side implementation. See [NOTIFICATIONS.md](NOTIFICATIONS.md) for details.
+Notifications require server-side implementation. See [notifications.md](notifications.md) for details.
 
 ### Before (MiniKit)
 ```typescript
@@ -449,4 +449,4 @@ function NotifyButton() {
 }
 ```
 
-See [NOTIFICATIONS.md](NOTIFICATIONS.md) for server-side implementation.
+See [notifications.md](notifications.md) for server-side implementation.
