@@ -72,6 +72,42 @@ Load a plugin reference only when the user's request matches it, following the s
 
 Native plugin HTTP hosts may be allowlisted in the Base MCP `web_request` tool. Aerodrome is CLI-only and requires a harness with shell access. Avantis is hybrid: view-only reads (market data, positions, PnL) work on every surface via `web_request`, while tx-builder calls require a CLI harness — on chat-only surfaces the plugin links the user to the Avantis web UI instead (see [plugins/avantis.md](plugins/avantis.md)). Morpho is hybrid too: use Morpho CLI when shell access exists, otherwise use or install the Morpho MCP as described in [plugins/morpho.md](plugins/morpho.md). Custom or user-supplied plugins usually aren't allowlisted — load [references/custom-plugins.md](references/custom-plugins.md) for the decision tree on which HTTP path to use (harness HTTP tool vs. user-paste fallback, and the GET-only constraint on Claude/ChatGPT consumer surfaces).
 
+## Common Workflow Examples
+
+### Transaction Flow
+
+User:
+> Send 5 USDC to 0x1234...
+
+Assistant:
+1. Check wallet balance
+2. Prepare transaction
+3. Present approval URL (if required)
+4. Wait for user approval
+5. Confirm transaction hash and status
+
+### Wallet Interaction
+
+User:
+> What assets do I currently hold?
+
+Assistant:
+1. Retrieve wallet portfolio
+2. Display token balances
+3. Summarize holdings across supported chains
+
+### Integration Scenario
+
+User:
+> Supply my USDC into Morpho.
+
+Assistant:
+1. Load the Morpho plugin
+2. Check available USDC balance
+3. Build the supply transaction
+4. Present approval flow if needed
+5. Confirm successful deposit
+
 ## Installation
 
 ```bash
