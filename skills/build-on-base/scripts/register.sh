@@ -18,7 +18,13 @@ RESPONSE=$(curl -sf -X POST "$API_URL" \
   exit 1
 }
 
-BUILDER_CODE=$(echo "$RESPONSE" | grep -o '"builder_code":"[^"]*"' | cut -d'"' -f4)
+# Use jq for robust JSON parsing (handles spaces around colons, pretty-printed JSON)
+if command -v jq &>/dev/null; then
+  BUILDER_CODE=$(echo "$RESPONSE" | jq -r '.builder_code // empty')
+else
+  # Fallback: space-tolerant grep when jq is not available
+  BUILDER_CODE=$(echo "$RESPONSE" | grep -o '"builder_code": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
+fi
 
 if [ -z "$BUILDER_CODE" ]; then
   echo "Error: No builder_code in API response" >&2
