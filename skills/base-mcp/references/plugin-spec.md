@@ -52,7 +52,11 @@ Derive every value from the protocol's actual behavior — don't copy another pl
   3. The plugin depends on a separate MCP server whose tools the agent calls directly → `external-mcp`.
   4. The plugin only composes Base MCP's own higher-level tools (`swap`, `send`) with no external service → `semantic-base-tool`.
   5. It needs two or more of the above depending on the surface (e.g. a CLI when a shell exists, an MCP/HTTP fallback otherwise) → `hybrid`. Document the per-surface paths in `## Surface Routing`.
-- **`chains`** — list the Base MCP chain strings (e.g. `base`, `optimism`) the plugin targets — these are the same strings the `chain` param takes in Base MCP tool calls like `send_calls`. **Limit to chains Base MCP supports**: intersect the protocol's supported networks with Base MCP's. If the plugin never routes an onchain transaction through Base MCP (e.g. an external MCP that only uses a Base MCP signature to log in), use `[]`.
+- **`chains`** — list the Base MCP chain strings (e.g. `base`, `optimism`) the plugin targets — these are the same strings the `chain` param takes in Base MCP tool calls like `send_calls`. **Limit to chains Base MCP supports**: intersect the protocol's supported networks with Base MCP's. The supported chain strings are:
+
+  `arbitrum`, `avalanche`, `base`, `base-sepolia`, `bsc`, `ethereum`, `optimism`, `polygon`
+
+  (`base-sepolia` is the only testnet; `swap` is mainnet-only.) Read the `chain` parameter on the Base MCP tools to confirm the current set — it may change over time. If the plugin never routes an onchain transaction through Base MCP (e.g. an external MCP that only uses a Base MCP signature to log in), use `[]`.
 - **`tags`** — 3–5 lowercase, hyphenated keywords describing *what the user can do* — capability and category, not the protocol name (the `name` already covers that). These drive routing: the agent reads the SKILL.md tags column to decide which plugin matches a request. Reuse existing tags where they fit so similar plugins cluster, but add new tags as you see fit. Current vocabulary: `lending`, `borrowing`, `yield`, `vaults`, `dex`, `swap`, `liquidity`, `perps`, `leverage`, `derivatives`, `trading`, `token-launches`, `memecoins`, `discovery`, `ai-agents`, `agent-commerce`, `payment-cards`, `email` — when you introduce a new tag, add it to this list so the vocabulary stays shared.
 - **`requires.shell`**:
   - `required` — the plugin cannot function without a shell/terminal (its only path is a CLI). On shell-less surfaces the agent must stop.
