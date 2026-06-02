@@ -1,6 +1,17 @@
 ---
 title: "Moonwell Plugin"
-description: "Skill plugin reference for lending on Moonwell through Base MCP."
+description: "Lending on Moonwell (Compound v2) via the Moonwell HTTP API → send_calls on Base and Optimism."
+name: moonwell
+version: 0.2.0
+integration: http-api
+chains: [base, optimism]
+requires:
+  shell: never
+  allowlist: [api.moonwell.fi]
+  externalMcp: null
+  cliPackage: null
+auth: none
+risk: [liquidation]
 ---
 
 # Moonwell Plugin
@@ -8,35 +19,26 @@ description: "Skill plugin reference for lending on Moonwell through Base MCP."
 > [!IMPORTANT]
 > Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any Moonwell endpoint. The user's wallet address — required for `prepare` and position queries — is fetched lazily when needed.
 
-Moonwell is a Compound v2 lending protocol on Base and Optimism. Use `web_request` to call the Moonwell HTTP API to read positions/rates and prepare unsigned calldata, then execute via `send_calls`.
+## Overview
 
-No additional MCP server required — everything goes through `web_request` + `send_calls`.
-
-**Prerequisite:** `api.moonwell.fi` must be in the MCP server's `web_request` allowlist. If requests to that hostname are rejected, inform the user that the Moonwell API is not yet whitelisted on this MCP instance.
+Moonwell is a Compound v2 lending protocol on Base and Optimism. The plugin reads positions/rates and prepares unsigned calldata over the Moonwell HTTP API, then executes via `send_calls`. No additional MCP server required — everything goes through an HTTP call + `send_calls`.
 
 **Supported chains:** Base (8453), Optimism (10).
 
----
+## Surface Routing
 
-## Orchestration Pattern
+Moonwell is HTTP-only; every capability follows the standard HTTP routing in [../references/custom-plugins.md](../references/custom-plugins.md).
 
-```
-web_request(https://api.moonwell.fi/v1/prepare/<verb>?...)
-  → { data: { transactions: [ { to, data, value, chainId }, ... ] } }
-      ↓
-send_calls(chain, calls mapped from transactions[])
-  → approvalUrl + requestId
-      ↓
-User approves at the returned approval URL (present as "Approve Transaction" — see ../references/approval-mode.md)
-      ↓
-get_request_status(requestId) → confirmed
-```
+| Capability | Path |
+|-----------|------|
+| Read markets/rates/positions/health | Harness HTTP tool if available, else `web_request` GET against `api.moonwell.fi`. |
+| Prepare a lend/borrow action | Harness HTTP tool or `web_request` (GET or POST) → calldata → `send_calls`. |
 
-Steps in `transactions[]` are ordered — `approve` and `enter-market` come before the protocol action. Execute them as a single `send_calls` batch.
+**Prerequisite:** `api.moonwell.fi` must be in the MCP server's `web_request` allowlist. If requests to that hostname are rejected and no harness HTTP tool is available, inform the user that the Moonwell API is not yet whitelisted on this MCP instance.
 
----
+## Endpoints
 
-## Read Endpoints (use web_request GET)
+### Read endpoints (use web_request GET)
 
 ```
 GET https://api.moonwell.fi/v1/markets?chain=base
@@ -53,9 +55,7 @@ Market reads are edge-cached 30 s. User-scoped reads (`positions`, `health`, `re
 
 `/positions` returns an array — one entry per market. Use `?active=true` to filter out markets where both `suppliedUsd` and `borrowedUsd` are zero.
 
----
-
-## Prepare Endpoints (use web_request → send_calls)
+### Prepare endpoints (use web_request → send_calls)
 
 Verbs: `supply`, `withdraw`, `borrow`, `repay`.
 
@@ -78,7 +78,7 @@ GET https://api.moonwell.fi/v1/prepare/supply?chain=base&asset=USDC&amountDecima
 
 Both return identical response shapes. Use GET when simpler; use POST when the body is complex.
 
-### Key parameters
+#### Key parameters
 
 | Field | Notes |
 |-------|-------|
@@ -87,7 +87,27 @@ Both return identical response shapes. Use GET when simpler; use POST when the b
 | `amountDecimal` | Human-readable string, e.g. `"100"`. Use this **or** `amount` (base units), never both. |
 | `from` | User's wallet address (from `get_wallets`) |
 
-### Response → send_calls mapping
+## Orchestration
+
+```
+web_request(https://api.moonwell.fi/v1/prepare/<verb>?...)
+  → { data: { transactions: [ { to, data, value, chainId }, ... ] } }
+      ↓
+send_calls(chain, calls mapped from transactions[])
+  → approvalUrl + requestId
+      ↓
+User approves at the returned approval URL (present as "Approve Transaction" — see ../references/approval-mode.md)
+      ↓
+get_request_status(requestId) → confirmed
+```
+
+Steps in `transactions[]` are ordered — `approve` and `enter-market` come before the protocol action. Execute them as a single `send_calls` batch.
+
+## Submission
+
+Target tool: **`send_calls`**.
+
+A `prepare/<verb>` response returns ordered transaction steps:
 
 ```json
 {
@@ -101,11 +121,9 @@ Both return identical response shapes. Use GET when simpler; use POST when the b
 }
 ```
 
-Pass all items as the `calls` array to `send_calls`, mapping `chainId` from any transaction item to the Base MCP chain string (`base` for Base mainnet, `optimism` for Optimism).
+Pass all items as the `calls` array to `send_calls`, mapping `chainId` from any transaction item to the Base MCP chain string (`base` for Base mainnet, `optimism` for Optimism). Then walk the approval flow (see [../references/approval-mode.md](../references/approval-mode.md)) and poll `get_request_status`.
 
----
-
-## Example Flows
+## Example Prompts
 
 ### Supply 100 USDC on Base
 
@@ -135,14 +153,9 @@ Pass all items as the `calls` array to `send_calls`, mapping `chainId` from any 
 3. web_request GET /health/<address>?chain=base                 → show health factor
 ```
 
----
+## Risks & Warnings
 
-## Protocol Notes
-
-- **mTokens** — ERC-20 receipt tokens (mUSDC, mWETH…); exchange rate accrues over time
-- **WETH special-case** — borrow/withdraw deliver native ETH; supply/repay require ERC-20 WETH. Both `asset=ETH` and `asset=WETH` resolve to the same mWETH market
-- **Compound v2 error codes** — `mint`, `borrow`, `repay` return non-zero codes for business-logic failures without reverting. Check the onchain receipt after broadcast
-- **Base has two mUSDC entries** — the current market and a deprecated bridged-USDC market. Disambiguate by `marketAddress` or `deprecated: true`
+- **Liquidation risk.** Borrowing against collateral can be liquidated if the position's health factor falls too low. Always read `/health/<address>` before and after a borrow or withdraw, and surface the value to the user.
 
 ### Health factor guide
 
@@ -153,9 +166,14 @@ Pass all items as the `calls` array to `send_calls`, mapping `chainId` from any 
 | `< 1.1` | Liquidation risk |
 | `null` | No borrows |
 
----
+## Notes
 
-## Chain IDs from Moonwell
+- **mTokens** — ERC-20 receipt tokens (mUSDC, mWETH…); exchange rate accrues over time
+- **WETH special-case** — borrow/withdraw deliver native ETH; supply/repay require ERC-20 WETH. Both `asset=ETH` and `asset=WETH` resolve to the same mWETH market
+- **Compound v2 error codes** — `mint`, `borrow`, `repay` return non-zero codes for business-logic failures without reverting. Check the onchain receipt after broadcast
+- **Base has two mUSDC entries** — the current market and a deprecated bridged-USDC market. Disambiguate by `marketAddress` or `deprecated: true`
+
+### Chain IDs from Moonwell
 
 | Chain | Moonwell chainId | Base MCP `chain` |
 |-------|------------------|------------------|
