@@ -1,50 +1,53 @@
 ---
 title: "o1.exchange Plugin"
-description: "Token trading on o1.exchange via HTTP API → send_calls on Base, Solana, and BSC."
+description: "Token trading on o1.exchange via HTTP API → send_calls on Base, and BSC."
 tags: [trading, swap, dex]
 name: o1-exchange
 version: 0.2.0
 integration: http-api
-chains: [base, solana, bsc]
+chains: [base, bsc]
 requires:
   shell: none
   allowlist: [api.o1.exchange]
   externalMcp: null
   cliPackage: null
-auth: api-key
-risk: [slippage, irreversible]
+auth: none
+risk: [slippage, irreversible, low-liquidity]
 ---
 
 # o1.exchange Plugin
 
 > [!IMPORTANT]
-> Run Base MCP onboarding first (see SKILL.md). Authenticate once per session — see `## Auth`.
+> Run Base MCP onboarding first (see SKILL.md). Authentication is pre-configured — no setup needed.
 
 ## Overview
 
-o1.exchange is a trading API for token swaps with built-in MEV protection and optional Permit2 gasless approvals. The plugin calls the o1.exchange HTTP API to build unsigned transaction calldata, then submits via `send_calls`. Authentication requires a Bearer token generated at the o1.exchange dashboard.
+o1.exchange is a trading API for token swaps on Base and BSC with optional Permit2 gasless approvals. The plugin calls the o1.exchange HTTP API to build unsigned transaction calldata. Standard swaps are submitted via `send_calls` (public mempool). Permit2 swaps are submitted via `/order/complete`, which re-encodes signatures server-side and broadcasts through a private mempool relay with MEV protection. A shared API token is pre-configured for all Base MCP Plugin users — no additional authentication setup is needed.
 
 ## Auth
 
-All requests require a Bearer token in the `Authorization` header:
+All requests require a Bearer token in the `Authorization` header. Use the pre-configured shared token on every request — do not ask the user for a token:
 
 ```json
 {
-  "Authorization": "Bearer <USER_API_TOKEN>",
+  "Authorization": "Bearer d1fa1477bd94e988185fca9d4bbae8d22ee5cafd45d6f9b6a43ba16a8b15f4d3",
   "Content-Type": "application/json"
 }
 ```
 
-Ask the user for their o1.exchange API token if not already provided. Tokens are generated at https://o1.exchange/api-trading. Include both headers on every request to `api.o1.exchange`.
+Include both headers on every request to `api.o1.exchange`.
+
+The shared token does not expire. If it is revoked or rotated, a new token will be published in a plugin update.
 
 ## Surface Routing
 
 | Capability | Surface | Execution Path |
 |---|---|---|
 | Build swap tx | Harness with HTTP (Claude Code, Cursor, Codex) | Harness HTTP tool → POST api.o1.exchange |
-| Build swap tx | Chat-only (Claude.ai, ChatGPT) | `web_request` → POST api.o1.exchange (host must be allowlisted) |
+| Build swap tx | Chat-only (Claude.ai, ChatGPT) | `web_request` → POST api.o1.exchange (host must be allowlisted). **CORS caveat:** `api.o1.exchange` does not serve CORS preflight (`OPTIONS` returns 404). If `web_request` is browser-routed and triggers a preflight, the request will fail. This path works only when `web_request` is server-side proxied. |
 | Build swap tx | Chat-only, not allowlisted | Inform user that `api.o1.exchange` must be added to the `web_request` allowlist; stop |
-| Submit tx | Any | `send_calls` with unsigned calldata from API response |
+| Submit tx (standard) | Any | `send_calls` with unsigned calldata from API response |
+| Submit tx (Permit2) | Any | POST `/order/complete` with Permit2 signature → server re-encodes and broadcasts via private relay |
 
 See [custom-plugins.md](../references/custom-plugins.md) for the full HTTP routing decision tree.
 
@@ -72,15 +75,15 @@ Builds unsigned transaction(s) for a token swap.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `networkId` | number | Yes | `8453` (Base), `1399811149` (Solana) | or `56` (BSC) |
+| `networkId` | number | Yes | `8453` (Base), `1399811149` (Solana) or `56` (BSC) |
 | `signerAddress` | string | Yes | User's wallet address (`0x…`) |
 | `tokenAddress` | string | Yes | Token contract address to trade |
 | `uiAmount` | string | Yes | Human-readable amount (e.g. `"100"`, `"0.5"`) |
 | `direction` | string | Yes | `"buy"` or `"sell"` |
 | `slippageBps` | number | Yes | Slippage tolerance in basis points (100 bps = 1%) |
-| `mevProtection` | boolean | Yes | Enable MEV protection via private mempool routing |
+| `mevProtection` | boolean | Yes | Request MEV protection from the API. **Note:** MEV protection only applies when the transaction is submitted through the `/order/complete` relay (used in the Permit2 flow). Transactions submitted via `send_calls` go through the public mempool regardless of this flag. |
 | `quoteTokenAddress` | string | No | Stablecoin to quote against (Base only) |
-| `poolAddress` | string | No | Specific liquidity pool address (Base, BSC) |
+| `poolAddress` | string | No | Specific liquidity pool address (Base, Solana, BSC) |
 
 **Response:**
 
@@ -114,7 +117,7 @@ Builds unsigned transaction(s) for a token swap.
 
 ### POST /order/complete
 
-Submits signed transactions to the o1.exchange relay for broadcasting. **Not used in the standard `send_calls` flow** — documented for reference.
+Submits transactions with Permit2 signatures to the o1.exchange relay for server-side re-encoding and broadcasting through the private mempool. **Required for Permit2 swaps** — the server accepts the raw Permit2 signature, re-encodes the calldata correctly (supporting variable-length ERC-1271/6492 smart-account signatures), and broadcasts with MEV protection. Not used in the standard (non-Permit2) `send_calls` flow.
 
 **Request:**
 
@@ -124,10 +127,9 @@ Submits signed transactions to the o1.exchange relay for broadcasting. **Not use
   "transactions": [
     {
       "id": "<tx-id>",
-      "signed": "0x<signed tx hex>",
       "permit2": {
         "eip712": {
-          "signature": "0x…"
+          "signature": "0x<permit2 signature>"
         }
       }
     }
@@ -155,29 +157,44 @@ Submits signed transactions to the o1.exchange relay for broadcasting. **Not use
 ### Standard swap (no Permit2)
 
 1. `get_wallets` → wallet address.
-2. Ask the user for their o1.exchange API token if not already provided.
-3. Confirm trade parameters with the user: token, amount, direction, slippage. See [Risks & Warnings](#risks--warnings) before proceeding with elevated slippage.
-4. `web_request` POST `https://api.o1.exchange/api/v2/order` with auth headers and swap parameters.
-5. Verify `success: true` in response.
-6. Map each `transactions[].unsigned` to `send_calls` calls — keep `to`, `data`, `value`; strip `gasLimit` and `chainId`. Map `networkId` to chain string (`8453` → `"base"`, `56` → `"bsc"`).
-7. `send_calls(chain, calls)` → `approvalUrl` + `requestId`.
-8. Present the approval URL: [Approve Transaction](approvalUrl). In CLI harnesses, also auto-open the link. Do not approve on the user's behalf.
-9. After the user confirms approval, call `get_request_status(requestId)` once.
+2. Confirm trade parameters with the user: token, amount, direction, slippage. See [Risks & Warnings](#risks--warnings) before proceeding with elevated slippage.
+3. `web_request` POST `https://api.o1.exchange/api/v2/order` with auth headers and swap parameters.
+4. Verify `success: true` in response.
+5. Map each `transactions[].unsigned` to `send_calls` calls — keep `to`, `data`, `value`; strip `gasLimit` and `chainId`. Map `networkId` to chain string (`8453` → `"base"`, `1399811149` -> `"solana"` `56` → `"bsc"`).
+6. `send_calls(chain, calls)` → `approvalUrl` + `requestId`.
+7. Present the approval URL: [Approve Transaction](approvalUrl). In CLI harnesses, also auto-open the link. Do not approve on the user's behalf.
+8. After the user confirms approval, call `get_request_status(requestId)` once.
 
 ### Permit2 swap (Base only)
 
-When `transactions[].permit2` is present in the `/order` response:
+When `transactions[].permit2` is present in the `/order` response, **do not** perform client-side signature replacement in `unsigned.data`. EOA signatures are 65 bytes, but smart-account signatures (ERC-1271/6492) are variable-length and ABI-encoded with a length prefix and offset — splicing into a fixed-size slot produces malformed calldata. Instead, submit the Permit2 signature to `/order/complete` and let the server re-encode the calldata correctly.
 
-1. Follow steps 1–5 of the standard swap.
+1. Follow steps 1–4 of the standard swap.
 2. For each transaction with `permit2.eip712`: use Base MCP `sign` (type `eth_signTypedData_v4`) to sign the EIP-712 typed data → user approves → retrieve the signature.
-3. In `unsigned.data`, replace the placeholder signature (`42f68902113a2a579bcc207c91254c8516d921250e748c18a082d91d74908f8e9a05f27b72a030c6a42d77d0e0aab6fb09219b01a01e7b5b24e4f322ee1762ff1b`) with the actual Permit2 signature returned from `sign`.
-4. Map the corrected `unsigned` to `send_calls` calls and continue from step 7 of the standard swap.
+3. `web_request` POST `https://api.o1.exchange/api/v2/order/complete` with auth headers and the batch payload:
+   ```json
+   {
+     "id": "<batch-id from /order>",
+     "transactions": [
+       {
+         "id": "<tx-id>",
+         "permit2": {
+           "eip712": {
+             "signature": "0x<signature from step 2>"
+           }
+         }
+       }
+     ]
+   }
+   ```
+4. Verify `success: true`. The server re-encodes the calldata with the actual Permit2 signature (supporting both EOA and smart-account signatures) and broadcasts through the private mempool relay with MEV protection.
+5. Present the returned `transactions[].hash` to the user for tracking.
 
-If `sign` does not support `eth_signTypedData_v4`, fall back to the standard swap path without Permit2.
+If `sign` does not support `eth_signTypedData_v4`, fall back to the standard swap path without Permit2 (no gasless approval).
 
 ## Submission
 
-**Target tool:** `send_calls`
+**Target tool:** `send_calls` (standard swaps only — Permit2 swaps use `/order/complete` instead; see [Permit2 swap](#permit2-swap-base-only)).
 
 Map each `transactions[].unsigned` from the `/order` response into `send_calls`:
 
@@ -194,9 +211,11 @@ Map each `transactions[].unsigned` from the `/order` response into `send_calls`:
 }
 ```
 
+- `value` is hex-encoded wei (e.g. `"0x2386f26fc10000"` = 0.01 ETH). Pass through as-is from the API response — do not convert.
 - Strip `gasLimit` and `chainId` from each unsigned object — `send_calls` does not accept these fields.
 - Chain string mapping: `networkId` `8453` → `"base"`, `56` → `"bsc"`.
 - Preserve transaction ordering when multiple transactions are returned in the batch.
+- **MEV note:** Transactions submitted via `send_calls` are broadcast through the public mempool. The `mevProtection` flag in the `/order` request does not provide MEV protection for this path. Only Permit2 swaps routed through `/order/complete` are broadcast via the private mempool relay.
 - Follow the approval/polling flow in [approval-mode.md](../references/approval-mode.md).
 
 ## Example Prompts
@@ -207,7 +226,7 @@ Map each `transactions[].unsigned` from the `/order` response into `send_calls`:
 3. Map `transactions[].unsigned` → `send_calls(chain="base", calls)`.
 4. User approves → `get_request_status(requestId)`.
 
-**Sell tokens on Base with MEV protection**
+**Sell tokens on Base**
 1. `get_wallets` → address.
 2. `web_request` POST `/order` with `networkId: 8453`, `signerAddress: <address>`, `tokenAddress: <token>`, `uiAmount: "<amount>"`, `direction: "sell"`, `slippageBps: 300`, `mevProtection: true`.
 3. Map `transactions[].unsigned` → `send_calls(chain="base", calls)`.
@@ -229,14 +248,15 @@ Map each `transactions[].unsigned` from the `/order` response into `send_calls`:
 
 - **Slippage** — trades can fill materially worse than expected. Default to `300` bps (3%). For volatile or low-liquidity tokens, the user may need `500`–`1000` bps. Warn before submitting slippage above `500` bps; require explicit confirmation above `1000` bps. Never silently increase slippage.
 - **Irreversible** — onchain swaps cannot be undone once confirmed. Always present the trade parameters (token, amount, direction, slippage) to the user and require explicit confirmation before calling `send_calls`.
+- **Low liquidity** — arbitrary tokens and pool-targeted trades (`poolAddress`) may have thin liquidity, leading to high price impact and poor fills. Warn the user when trading tokens without well-known liquidity or when targeting a specific pool. Consider suggesting smaller trade sizes or wider slippage tolerance.
+- **MEV exposure** — standard swaps submitted via `send_calls` go through the public mempool and are **not** MEV-protected, even if `mevProtection: true` was set in the `/order` request. Only Permit2 swaps routed through `/order/complete` receive private mempool relay protection.
 
 ## Notes
 
 - **Network IDs:** `8453` = Base, `56` = BSC. Solana (`1399811149`) is supported by the o1.exchange API but not by Base MCP.
 - **Slippage guidance:** Normal `300` bps (3%); volatile tokens `500`–`1000` bps (5–10%); increase for large trades.
-- **MEV protection:** `mevProtection: true` routes through a private mempool to reduce front-running. Recommended for all trades.
-- **Permit2 placeholder:** The fixed placeholder `42f68902113a2a579bcc207c91254c8516d921250e748c18a082d91d74908f8e9a05f27b72a030c6a42d77d0e0aab6fb09219b01a01e7b5b24e4f322ee1762ff1b` in `unsigned.data` must be replaced with the actual Permit2 signature when `permit2` is present.
+- **MEV protection:** `mevProtection: true` requests MEV protection from the API. This only takes effect when submitting through `/order/complete` (Permit2 flow). Standard swaps via `send_calls` go through the public mempool regardless. Still recommended to set `true` on all `/order` requests.
+- **Permit2 signatures:** Do not perform client-side replacement of the signature placeholder in `unsigned.data`. Submit the Permit2 signature to `/order/complete` for server-side re-encoding, which correctly handles both EOA (65-byte) and smart-account (variable-length ERC-1271/6492) signatures.
 - **Quote token:** `quoteTokenAddress` specifies which stablecoin to quote against (Base only). Omit to use the default.
 - **Pool selection:** `poolAddress` targets a specific liquidity pool. Omit to let the API choose the best route.
-- **API tokens:** Generated at https://o1.exchange/api-trading.
-- **`/order/complete` relay:** The API provides a `/order/complete` endpoint for submitting signed transactions through o1.exchange's relay (for enhanced MEV protection). In the Base MCP flow, `send_calls` handles signing and broadcasting directly.
+- **API token:** A shared token is pre-configured for Base MCP Plugin users — no generation or setup required.
