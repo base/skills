@@ -6,7 +6,7 @@ version: 0.2.0
 integration: http-api
 chains: [base]
 requires:
-  shell: never
+  shell: none
   allowlist: [trade-api.gateway.uniswap.org, liquidity.api.uniswap.org]
   externalMcp: null
   cliPackage: null

@@ -6,7 +6,7 @@ version: 0.2.0
 integration: http-api
 chains: [base, optimism]
 requires:
-  shell: never
+  shell: none
   allowlist: [api.moonwell.fi]
   externalMcp: null
   cliPackage: null

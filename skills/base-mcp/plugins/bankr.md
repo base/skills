@@ -6,7 +6,7 @@ version: 0.2.0
 integration: http-api
 chains: [base]
 requires:
-  shell: never
+  shell: none
   allowlist: [api.bankr.bot]
   externalMcp: null
   cliPackage: null

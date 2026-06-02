@@ -6,7 +6,7 @@ version: 0.2.0
 integration: external-mcp
 chains: []
 requires:
-  shell: never
+  shell: none
   allowlist: []
   externalMcp: { name: virtuals, url: https://mcp.acp.virtuals.io/ }
   cliPackage: null
