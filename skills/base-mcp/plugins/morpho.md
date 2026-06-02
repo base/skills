@@ -1,6 +1,7 @@
 ---
 title: "Morpho Plugin"
 description: "Lending on Morpho — Morpho CLI when a shell is available, else Morpho MCP — preparing unsigned calls submitted via Base MCP send_calls."
+tags: [lending, borrowing, vaults, yield]
 name: morpho
 version: 0.2.0
 integration: hybrid

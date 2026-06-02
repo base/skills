@@ -1,6 +1,7 @@
 ---
 title: "Bankr Plugin"
 description: "Discover the latest token launches on Base via the Bankr HTTP API, then buy the selected token through Base MCP's swap tool."
+tags: [token-launches, trading, memecoins, discovery]
 name: bankr
 version: 0.2.0
 integration: http-api

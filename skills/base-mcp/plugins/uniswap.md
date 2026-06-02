@@ -1,6 +1,7 @@
 ---
 title: "Uniswap Plugin"
 description: "Swapping (proxy-approval, no Permit2) and V2/V3/V4 LP on Uniswap via the Uniswap API → send_calls on Base."
+tags: [dex, swap, liquidity]
 name: uniswap
 version: 0.2.0
 integration: http-api

@@ -23,6 +23,7 @@ Every plugin file must open with YAML frontmatter. Fields marked **required** mu
 |---|---|---|
 | `title` | string | `"<Protocol> Plugin"` |
 | `description` | string | One line: what the plugin does + how it routes to Base MCP. |
+| `tags` | string[] | Lowercase capability/category keywords used for discovery. The agent matches a user's request to a plugin by these (surfaced in the SKILL.md plugins table). See [Choosing each field's value](#choosing-each-fields-value). |
 | `name` | string | Lowercase slug (e.g. `morpho`). Used for cross-links and the SKILL.md table. |
 | `version` | string | Plugin doc version, semver (e.g. `0.2.0`). Bump on meaningful changes (a spec-conformance restructure counts). |
 | `integration` | enum | See [Integration Types](#integration-types). |
@@ -52,6 +53,7 @@ Derive every value from the protocol's actual behavior — don't copy another pl
   4. The plugin only composes Base MCP's own higher-level tools (`swap`, `send`) with no external service → `semantic-base-tool`.
   5. It needs two or more of the above depending on the surface (e.g. a CLI when a shell exists, an MCP/HTTP fallback otherwise) → `hybrid`. Document the per-surface paths in `## Surface Routing`.
 - **`chains`** — list the Base MCP chain strings (e.g. `base`, `optimism`) the plugin actually targets: intersect the protocol's supported networks with Base MCP's supported chains. If the plugin never routes an onchain transaction through Base MCP (e.g. an external MCP that only uses a Base MCP signature to log in), use `[]`.
+- **`tags`** — 3–5 lowercase, hyphenated keywords describing *what the user can do* — capability and category, not the protocol name (the `name` already covers that). These drive routing: the agent reads the SKILL.md tags column to decide which plugin matches a request. Reuse existing tags where they fit so similar plugins cluster. Current vocabulary: `lending`, `borrowing`, `yield`, `vaults`, `dex`, `swap`, `liquidity`, `perps`, `leverage`, `derivatives`, `trading`, `token-launches`, `memecoins`, `discovery`, `ai-agents`, `agent-commerce`, `payment-cards`, `email`. Add a new tag only when none fit.
 - **`requires.shell`**:
   - `required` — the plugin cannot function without a shell/terminal (its only path is a CLI). On shell-less surfaces the agent must stop.
   - `optional` — a shell unlocks a richer path (a CLI, or a tx-builder), but the plugin still works without one via an HTTP/MCP/UI fallback.
@@ -79,6 +81,7 @@ Derive every value from the protocol's actual behavior — don't copy another pl
 ---
 title: "Moonwell Plugin"
 description: "Lending on Moonwell via HTTP API → send_calls on Base and Optimism."
+tags: [lending, borrowing, yield]
 name: moonwell
 version: 0.2.0
 integration: http-api
@@ -223,6 +226,7 @@ Copy this, fill the placeholders, and delete any **C**/**O** sections that don't
 ---
 title: "<Protocol> Plugin"
 description: "<one line: what it does + how it routes to Base MCP>"
+tags: [<3-5 capability keywords>]
 name: <slug>
 version: 0.2.0
 integration: cli-only | http-api | external-mcp | semantic-base-tool | hybrid
@@ -274,7 +278,7 @@ risk: []
 
 Before opening a PR, confirm:
 
-- [ ] Frontmatter present with all **required** fields; enum values are valid (`integration`, `shell`, `auth`, `risk` tags).
+- [ ] Frontmatter present with all **required** fields; enum values are valid (`integration`, `shell`, `auth`, `risk` tags); `tags` set for discovery (reusing existing vocabulary where it fits).
 - [ ] `integration` is the most specific value that fits; flags (`shell`, `allowlist`, `externalMcp`, `cliPackage`, `auth`, `risk`) are accurate and derived from real behavior.
 - [ ] `> [!IMPORTANT]` onboarding callout is first.
 - [ ] `## Overview`, `## Surface Routing`, `## Orchestration`, `## Submission`, `## Example Prompts` all present (the **R** sections).
@@ -290,14 +294,14 @@ Before opening a PR, confirm:
 
 Current integration classification for the 7 native plugins:
 
-| Plugin | `integration` | `chains` | `shell` | `allowlist` | `externalMcp` | `auth` | `risk` |
-|---|---|---|---|---|---|---|---|
-| Aerodrome | `cli-only` | `[base]` | `required` | `[]` | `null` | `none` | `[slippage]` |
-| Avantis | `hybrid` | `[base]` | `optional` | `[data.avantisfi.com, core.avantisfi.com, api.avantisfi.com]` | `null` | `none` | `[liquidation, slippage, irreversible]` |
-| Bankr | `http-api` | `[base]` | `none` | `[api.bankr.bot]` | `null` | `none` | `[low-liquidity, irreversible]` |
-| Moonwell | `http-api` | `[base, optimism]` | `none` | `[api.moonwell.fi]` | `null` | `none` | `[liquidation]` |
-| Morpho | `hybrid` | `[base]` | `optional` | `[]` | `{ name: morpho, url: https://mcp.morpho.org/ }` | `none` | `[liquidation]` |
-| Uniswap | `http-api` | `[base]` | `none` | `[trade-api.gateway.uniswap.org, liquidity.api.uniswap.org]` | `null` | `api-key` | `[slippage]` |
-| Virtuals | `external-mcp` | `[]` | `none` | `[]` | `{ name: virtuals, url: https://mcp.acp.virtuals.io/ }` | `siwe-jwt` | `[pii]` |
+| Plugin | `integration` | `chains` | `tags` | `shell` | `auth` | `risk` |
+|---|---|---|---|---|---|---|
+| Aerodrome | `cli-only` | `[base]` | `[dex, swap, liquidity, staking]` | `required` | `none` | `[slippage]` |
+| Avantis | `hybrid` | `[base]` | `[perps, leverage, trading, derivatives]` | `optional` | `none` | `[liquidation, slippage, irreversible]` |
+| Bankr | `http-api` | `[base]` | `[token-launches, trading, memecoins, discovery]` | `none` | `none` | `[low-liquidity, irreversible]` |
+| Moonwell | `http-api` | `[base, optimism]` | `[lending, borrowing, yield]` | `none` | `none` | `[liquidation]` |
+| Morpho | `hybrid` | `[base]` | `[lending, borrowing, vaults, yield]` | `optional` | `none` | `[liquidation]` |
+| Uniswap | `http-api` | `[base]` | `[dex, swap, liquidity]` | `none` | `api-key` | `[slippage]` |
+| Virtuals | `external-mcp` | `[]` | `[ai-agents, agent-commerce, payment-cards, email]` | `none` | `siwe-jwt` | `[pii]` |
 
 All seven are at `version: 0.2.0` as of the spec-conformance restructure.
