@@ -5,7 +5,7 @@ tags: [token-launches, trading, memecoins, discovery]
 name: bankr
 version: 0.2.0
 integration: http-api
-chains: [base]
+chains: [0x2105]
 requires:
   shell: none
   allowlist: [api.bankr.bot]

@@ -59,13 +59,13 @@ Plugins currently maintained alongside this skill (the **native plugins**). The 
 
 | Plugin | Tags | What it does | Integration | Chains | Risk | Reference |
 |--------|------|--------------|-------------|--------|------|-----------|
-| Morpho | lending, borrowing, vaults, yield | Lending — Morpho CLI when a shell is available, else Morpho MCP | hybrid | base | liquidation | [plugins/morpho.md](plugins/morpho.md) |
-| Moonwell | lending, borrowing, yield | Lending (Compound v2) | http-api | base, optimism | liquidation | [plugins/moonwell.md](plugins/moonwell.md) |
-| Uniswap | dex, swap, liquidity | Token swaps + V2/V3/V4 LP | http-api | base | slippage | [plugins/uniswap.md](plugins/uniswap.md) |
-| Avantis | perps, leverage, trading, derivatives | Perpetual-futures trading | hybrid | base | liquidation, slippage, irreversible | [plugins/avantis.md](plugins/avantis.md) |
+| Morpho | lending, borrowing, vaults, yield | Lending — Morpho CLI when a shell is available, else Morpho MCP | hybrid | 0x2105 | liquidation | [plugins/morpho.md](plugins/morpho.md) |
+| Moonwell | lending, borrowing, yield | Lending (Compound v2) | http-api | 0x2105, 0xa | liquidation | [plugins/moonwell.md](plugins/moonwell.md) |
+| Uniswap | dex, swap, liquidity | Token swaps + V2/V3/V4 LP | http-api | 0x2105 | slippage | [plugins/uniswap.md](plugins/uniswap.md) |
+| Avantis | perps, leverage, trading, derivatives | Perpetual-futures trading | hybrid | 0x2105 | liquidation, slippage, irreversible | [plugins/avantis.md](plugins/avantis.md) |
 | Virtuals | ai-agents, agent-commerce, payment-cards, email | Create/operate Virtuals (ACP) AI agents — cards, email | external-mcp | — | pii | [plugins/virtuals.md](plugins/virtuals.md) |
-| Aerodrome | dex, swap, liquidity, staking | DEX swaps / LP / stake / claim (Sugar SDK CLI) | cli-only | base | slippage | [plugins/aerodrome.md](plugins/aerodrome.md) |
-| Bankr | token-launches, trading, memecoins, discovery | Token-launch discovery + buy | http-api | base | low-liquidity, irreversible | [plugins/bankr.md](plugins/bankr.md) |
+| Aerodrome | dex, swap, liquidity, staking | DEX swaps / LP / stake / claim (Sugar SDK CLI) | cli-only | 0x2105 | slippage | [plugins/aerodrome.md](plugins/aerodrome.md) |
+| Bankr | token-launches, trading, memecoins, discovery | Token-launch discovery + buy | http-api | 0x2105 | low-liquidity, irreversible | [plugins/bankr.md](plugins/bankr.md) |
 
 Load a plugin reference only when the user's request matches it, following the same local-first, web-fallback rule as references (see [Loading referenced files](#loading-referenced-files) above). For a plugin's own external tools, defer to the plugin file first, then to any CLI help, API schema, or MCP tool descriptions it explicitly tells you to use.
 

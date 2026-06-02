@@ -5,7 +5,7 @@ tags: [lending, borrowing, yield]
 name: moonwell
 version: 0.2.0
 integration: http-api
-chains: [base, optimism]
+chains: [0x2105, 0xa]
 requires:
   shell: none
   allowlist: [api.moonwell.fi]

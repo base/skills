@@ -5,7 +5,7 @@ tags: [dex, swap, liquidity]
 name: uniswap
 version: 0.2.0
 integration: http-api
-chains: [base]
+chains: [0x2105]
 requires:
   shell: none
   allowlist: [trade-api.gateway.uniswap.org, liquidity.api.uniswap.org]

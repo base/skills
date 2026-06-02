@@ -27,7 +27,7 @@ Every plugin file must open with YAML frontmatter. Fields marked **required** mu
 | `name` | string | Lowercase slug (e.g. `morpho`). Used for cross-links and the SKILL.md table. |
 | `version` | string | Plugin doc version, semver (e.g. `0.2.0`). Bump on meaningful changes (a spec-conformance restructure counts). |
 | `integration` | enum | See [Integration Types](#integration-types). |
-| `chains` | string[] | Base MCP chain strings the plugin targets (e.g. `[base]`, `[base, optimism]`). |
+| `chains` | (hex chain ID)[] | Hex chain IDs the plugin targets, limited to chains Base MCP supports (e.g. `[0x2105]` for Base, `[0x2105, 0xa]` for Base + Optimism). |
 
 ### Capability flags
 
@@ -52,8 +52,8 @@ Derive every value from the protocol's actual behavior — don't copy another pl
   3. The plugin depends on a separate MCP server whose tools the agent calls directly → `external-mcp`.
   4. The plugin only composes Base MCP's own higher-level tools (`swap`, `send`) with no external service → `semantic-base-tool`.
   5. It needs two or more of the above depending on the surface (e.g. a CLI when a shell exists, an MCP/HTTP fallback otherwise) → `hybrid`. Document the per-surface paths in `## Surface Routing`.
-- **`chains`** — list the Base MCP chain strings (e.g. `base`, `optimism`) the plugin actually targets: intersect the protocol's supported networks with Base MCP's supported chains. If the plugin never routes an onchain transaction through Base MCP (e.g. an external MCP that only uses a Base MCP signature to log in), use `[]`.
-- **`tags`** — 3–5 lowercase, hyphenated keywords describing *what the user can do* — capability and category, not the protocol name (the `name` already covers that). These drive routing: the agent reads the SKILL.md tags column to decide which plugin matches a request. Reuse existing tags where they fit so similar plugins cluster. Current vocabulary: `lending`, `borrowing`, `yield`, `vaults`, `dex`, `swap`, `liquidity`, `perps`, `leverage`, `derivatives`, `trading`, `token-launches`, `memecoins`, `discovery`, `ai-agents`, `agent-commerce`, `payment-cards`, `email`. Add a new tag only when none fit.
+- **`chains`** — list the **hex chain IDs** the plugin targets (e.g. `0x2105` = Base, `0xa` = Optimism), **limited to chains Base MCP supports** — intersect the protocol's supported networks with Base MCP's. (Note: this is the declarative frontmatter signal; the body still passes Base MCP's string `chain` param, e.g. `chain: "base"`, to `send_calls`.) If the plugin never routes an onchain transaction through Base MCP (e.g. an external MCP that only uses a Base MCP signature to log in), use `[]`.
+- **`tags`** — 3–5 lowercase, hyphenated keywords describing *what the user can do* — capability and category, not the protocol name (the `name` already covers that). These drive routing: the agent reads the SKILL.md tags column to decide which plugin matches a request. Reuse existing tags where they fit so similar plugins cluster, but add new tags as you see fit. Current vocabulary: `lending`, `borrowing`, `yield`, `vaults`, `dex`, `swap`, `liquidity`, `perps`, `leverage`, `derivatives`, `trading`, `token-launches`, `memecoins`, `discovery`, `ai-agents`, `agent-commerce`, `payment-cards`, `email` — when you introduce a new tag, add it to this list so the vocabulary stays shared.
 - **`requires.shell`**:
   - `required` — the plugin cannot function without a shell/terminal (its only path is a CLI). On shell-less surfaces the agent must stop.
   - `optional` — a shell unlocks a richer path (a CLI, or a tx-builder), but the plugin still works without one via an HTTP/MCP/UI fallback.
@@ -85,7 +85,7 @@ tags: [lending, borrowing, yield]
 name: moonwell
 version: 0.2.0
 integration: http-api
-chains: [base, optimism]
+chains: [0x2105, 0xa]
 requires:
   shell: none
   allowlist: [api.moonwell.fi]
@@ -230,7 +230,7 @@ tags: [<3-5 capability keywords>]
 name: <slug>
 version: 0.2.0
 integration: cli-only | http-api | external-mcp | semantic-base-tool | hybrid
-chains: [base]
+chains: [0x2105]
 requires:
   shell: none
   allowlist: []
@@ -296,12 +296,12 @@ Current integration classification for the 7 native plugins:
 
 | Plugin | `integration` | `chains` | `tags` | `shell` | `auth` | `risk` |
 |---|---|---|---|---|---|---|
-| Aerodrome | `cli-only` | `[base]` | `[dex, swap, liquidity, staking]` | `required` | `none` | `[slippage]` |
-| Avantis | `hybrid` | `[base]` | `[perps, leverage, trading, derivatives]` | `optional` | `none` | `[liquidation, slippage, irreversible]` |
-| Bankr | `http-api` | `[base]` | `[token-launches, trading, memecoins, discovery]` | `none` | `none` | `[low-liquidity, irreversible]` |
-| Moonwell | `http-api` | `[base, optimism]` | `[lending, borrowing, yield]` | `none` | `none` | `[liquidation]` |
-| Morpho | `hybrid` | `[base]` | `[lending, borrowing, vaults, yield]` | `optional` | `none` | `[liquidation]` |
-| Uniswap | `http-api` | `[base]` | `[dex, swap, liquidity]` | `none` | `api-key` | `[slippage]` |
+| Aerodrome | `cli-only` | `[0x2105]` | `[dex, swap, liquidity, staking]` | `required` | `none` | `[slippage]` |
+| Avantis | `hybrid` | `[0x2105]` | `[perps, leverage, trading, derivatives]` | `optional` | `none` | `[liquidation, slippage, irreversible]` |
+| Bankr | `http-api` | `[0x2105]` | `[token-launches, trading, memecoins, discovery]` | `none` | `none` | `[low-liquidity, irreversible]` |
+| Moonwell | `http-api` | `[0x2105, 0xa]` | `[lending, borrowing, yield]` | `none` | `none` | `[liquidation]` |
+| Morpho | `hybrid` | `[0x2105]` | `[lending, borrowing, vaults, yield]` | `optional` | `none` | `[liquidation]` |
+| Uniswap | `http-api` | `[0x2105]` | `[dex, swap, liquidity]` | `none` | `api-key` | `[slippage]` |
 | Virtuals | `external-mcp` | `[]` | `[ai-agents, agent-commerce, payment-cards, email]` | `none` | `siwe-jwt` | `[pii]` |
 
 All seven are at `version: 0.2.0` as of the spec-conformance restructure.

@@ -5,7 +5,7 @@ tags: [lending, borrowing, vaults, yield]
 name: morpho
 version: 0.2.0
 integration: hybrid
-chains: [base]
+chains: [0x2105]
 requires:
   shell: optional
   allowlist: []

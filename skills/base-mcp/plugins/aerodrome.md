@@ -5,7 +5,7 @@ tags: [dex, swap, liquidity, staking]
 name: aerodrome
 version: 0.2.0
 integration: cli-only
-chains: [base]
+chains: [0x2105]
 requires:
   shell: required
   allowlist: []

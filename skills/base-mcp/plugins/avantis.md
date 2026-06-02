@@ -5,7 +5,7 @@ tags: [perps, leverage, trading, derivatives]
 name: avantis
 version: 0.2.0
 integration: hybrid
-chains: [base]
+chains: [0x2105]
 requires:
   shell: optional
   allowlist: [data.avantisfi.com, core.avantisfi.com, api.avantisfi.com]
