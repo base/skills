@@ -61,6 +61,7 @@ Plugins currently maintained alongside this skill (the **native plugins**):
 | Morpho | [plugins/morpho.md](plugins/morpho.md) |
 | Moonwell | [plugins/moonwell.md](plugins/moonwell.md) |
 | Uniswap | [plugins/uniswap.md](plugins/uniswap.md) |
+| Fibrous (Base swap aggregator) | [plugins/fibrous.md](plugins/fibrous.md) |
 | Avantis (hybrid) | [plugins/avantis.md](plugins/avantis.md) |
 | Virtuals | [plugins/virtuals.md](plugins/virtuals.md) |
 | Aerodrome (CLI-only) | [plugins/aerodrome.md](plugins/aerodrome.md) |
