@@ -57,7 +57,7 @@ Derive every value from the protocol's actual behavior — don't copy another pl
   `arbitrum`, `avalanche`, `base`, `base-sepolia`, `bsc`, `ethereum`, `optimism`, `polygon`
 
   (`base-sepolia` is the only testnet; `swap` is mainnet-only.) Read the `chain` parameter on the Base MCP tools to confirm the current set — it may change over time. If the plugin never routes an onchain transaction through Base MCP (e.g. an external MCP that only uses a Base MCP signature to log in), use `[]`.
-- **`tags`** — 3–5 lowercase, hyphenated keywords describing *what the user can do* — capability and category, not the protocol name (the `name` already covers that). These drive routing: the agent reads the SKILL.md tags column to decide which plugin matches a request. Reuse existing tags where they fit so similar plugins cluster, but add new tags as you see fit. Current vocabulary: `lending`, `borrowing`, `yield`, `vaults`, `dex`, `swap`, `liquidity`, `perps`, `leverage`, `derivatives`, `trading`, `token-launches`, `memecoins`, `discovery`, `ai-agents`, `agent-commerce`, `payment-cards`, `email` — when you introduce a new tag, add it to this list so the vocabulary stays shared.
+- **`tags`** — 3–5 lowercase, hyphenated keywords describing *what the user can do* — capability and category, not the protocol name (the `name` already covers that). These drive routing: the agent reads the SKILL.md tags column to decide which plugin matches a request. Reuse existing tags where they fit so similar plugins cluster, but add new tags as you see fit. Current vocabulary: `lending`, `borrowing`, `yield`, `vaults`, `dex`, `swap`, `liquidity`, `perps`, `leverage`, `derivatives`, `trading`, `token-launches`, `memecoins`, `discovery`, `ai-agents`, `agent-commerce`, `payment-cards`, `email`, `privacy`, `shielded-payments` — when you introduce a new tag, add it to this list so the vocabulary stays shared.
 - **`requires.shell`**:
   - `required` — the plugin cannot function without a shell/terminal (its only path is a CLI). On shell-less surfaces the agent must stop.
   - `optional` — a shell unlocks a richer path (a CLI, or a tx-builder), but the plugin still works without one via an HTTP/MCP/UI fallback.
@@ -296,7 +296,7 @@ Before opening a PR, confirm:
 
 ## Existing Plugin Conformance
 
-Current integration classification for the 7 native plugins:
+Current integration classification for the native plugins:
 
 | Plugin | `integration` | `chains` | `tags` | `shell` | `auth` | `risk` |
 |---|---|---|---|---|---|---|
@@ -306,6 +306,7 @@ Current integration classification for the 7 native plugins:
 | Moonwell | `http-api` | `[base, optimism]` | `[lending, borrowing, yield]` | `none` | `none` | `[liquidation]` |
 | Morpho | `hybrid` | `[base]` | `[lending, borrowing, vaults, yield]` | `optional` | `none` | `[liquidation]` |
 | Uniswap | `http-api` | `[base]` | `[dex, swap, liquidity]` | `none` | `api-key` | `[slippage]` |
+| Veil Cash | `external-mcp` | `[base]` | `[privacy, shielded-payments, agent-commerce]` | `none` | `none` | `[irreversible]` |
 | Virtuals | `external-mcp` | `[]` | `[ai-agents, agent-commerce, payment-cards, email]` | `none` | `siwe-jwt` | `[pii]` |
 
-All seven are at `version: 0.2.0` as of the spec-conformance restructure.
+Existing native plugins are at `version: 0.2.0` as of the spec-conformance restructure; Veil Cash ships at `0.2.1`.
