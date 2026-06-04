@@ -109,7 +109,7 @@ The `integration` field classifies how the plugin reaches Base MCP. Choose the m
 | Value | What it means | Required body sections it implies | Examples |
 |---|---|---|---|
 | `cli-only` | All calls go through a shell CLI. No HTTP API, no external MCP. | `## Commands`; `shell: required`; `cliPackage` set | Aerodrome |
-| `http-api` | Plugin calls an HTTP API (via `web_request` or harness HTTP tool) to read data or build calldata. | `## Endpoints`; list `allowlist` hosts | Moonwell, Uniswap, Bankr, Flaunch |
+| `http-api` | Plugin calls an HTTP API (via `web_request` or harness HTTP tool) to read data or build calldata. | `## Endpoints`; list `allowlist` hosts | Moonwell, Uniswap, Bankr |
 | `external-mcp` | Plugin relies on a separate MCP server. The agent reads that MCP's own tool catalog — this plugin file does **not** enumerate its tools. | `## Detection` + `## Installation`; `externalMcp` set; **omit** `## Endpoints`/`## Commands` | Virtuals |
 | `semantic-base-tool` | Plugin composes Base MCP's higher-level semantic tools (`swap`, `send`) rather than producing raw calldata. | `## Submission` names the semantic tool | *(future)* |
 | `hybrid` | Combines two or more paths with surface-dependent routing. | union of the above; document the routing matrix in `## Surface Routing` | Avantis, Morpho |
@@ -296,17 +296,16 @@ Before opening a PR, confirm:
 
 ## Existing Plugin Conformance
 
-Current integration classification for the 8 native plugins:
+Current integration classification for the 7 native plugins:
 
 | Plugin | `integration` | `chains` | `tags` | `shell` | `auth` | `risk` |
 |---|---|---|---|---|---|---|
 | Aerodrome | `cli-only` | `[base]` | `[dex, swap, liquidity, staking]` | `required` | `none` | `[slippage]` |
 | Avantis | `hybrid` | `[base]` | `[perps, leverage, trading, derivatives]` | `optional` | `none` | `[liquidation, slippage, irreversible]` |
 | Bankr | `http-api` | `[base]` | `[token-launches, trading, memecoins, discovery]` | `none` | `none` | `[low-liquidity, irreversible]` |
-| Flaunch | `http-api` | `[base]` | `[token-launches, memecoins, discovery, swap]` | `none` | `none` | `[low-liquidity, slippage, irreversible]` |
 | Moonwell | `http-api` | `[base, optimism]` | `[lending, borrowing, yield]` | `none` | `none` | `[liquidation]` |
 | Morpho | `hybrid` | `[base]` | `[lending, borrowing, vaults, yield]` | `optional` | `none` | `[liquidation]` |
 | Uniswap | `http-api` | `[base]` | `[dex, swap, liquidity]` | `none` | `api-key` | `[slippage]` |
 | Virtuals | `external-mcp` | `[]` | `[ai-agents, agent-commerce, payment-cards, email]` | `none` | `siwe-jwt` | `[pii]` |
 
-All eight are at `version: 0.2.0` as of the spec-conformance restructure.
+All seven are at `version: 0.2.0` as of the spec-conformance restructure.
