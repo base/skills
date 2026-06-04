@@ -37,7 +37,7 @@ All optional. Defaults: `shell: none`, `allowlist: []`, `externalMcp: null`, `cl
 |---|---|---|
 | `requires.shell` | `required \| optional \| none` | Whether shell/terminal access is needed. |
 | `requires.allowlist` | string[] | Hosts that must be in the Base MCP `web_request` allowlist. |
-| `requires.externalMcp` | `{ name, transport: http\|sse, url } \| { name, transport: stdio, command, args, env? } \| null` | Separate MCP server the plugin depends on. `transport: http \| sse` (remote, hosted) needs `url`; `transport: stdio` (local, launched on the user's machine) needs `command`, `args`, and optional `env`. See [MCP Provisioning](#mcp-provisioning). |
+| `requires.externalMcp` | `{ name, transport?: http\|sse, url } \| { name, transport: stdio, command, args, env? } \| null` | Separate MCP server the plugin depends on. `transport: http \| sse` (remote, hosted) needs `url`; `transport: stdio` (local, launched on the user's machine) needs `command`, `args`, and optional `env`. `transport` is **optional for remote MCPs** and defaults to `http` when `url` is present (so the legacy `{ name, url }` shape stays valid); it is **required for `stdio`**. See [MCP Provisioning](#mcp-provisioning). |
 | `requires.cliPackage` | string \| null | npx/uvx invocation for a CLI the agent **shells out to per call** (e.g. `npx @morpho-org/cli@latest`). This is **not** for an MCP server you register once — use `externalMcp` with `transport: stdio` for that. |
 | `auth` | `none \| api-key \| siwe-jwt \| oauth-on-install` | Auth model used by the plugin's external services. |
 | `risk` | string[] | Risk tags that trigger `## Risks & Warnings`. See the tag list below. |
@@ -64,7 +64,7 @@ Derive every value from the protocol's actual behavior — don't copy another pl
   - `none` — the plugin never needs a shell (pure HTTP API or external MCP).
 - **`requires.allowlist`** — every external host the plugin fetches over HTTP. These must be on the Base MCP `web_request` allowlist for chat-only surfaces to reach them. Leave `[]` for `cli-only` and `external-mcp` plugins that make no direct HTTP calls.
 - **`requires.externalMcp`** — set when the plugin depends on a separate MCP server; otherwise `null`. Pick the `transport` first, then fill the matching fields (full schema and guardrails in [MCP Provisioning](#mcp-provisioning)):
-  - **Remote MCP** (`transport: http` or `sse`) — a hosted server the agent connects to over the network. Provide `url` (e.g. `https://mcp.opensea.io/mcp`). This is the lower-trust case: the server runs on the partner's infra, not the user's machine.
+  - **Remote MCP** (`transport: http` or `sse`) — a hosted server the agent connects to over the network. Provide `url` (e.g. `https://mcp.opensea.io/mcp`). This is the lower-trust case: the server runs on the partner's infra, not the user's machine. `transport` is optional here and **defaults to `http` when `url` is present**, so the legacy `{ name, url }` shape remains valid; set `transport: sse` explicitly when needed.
   - **Local MCP** (`transport: stdio`) — a server **launched on the user's machine** (typically via `npx`/`uvx`). Provide `command`, `args` (with a **pinned** version, never `@latest`), and `env` (required env-var **names only**, never values). A local MCP is **arbitrary code execution on the user's machine**, so it also requires the `local-exec` risk tag and a `## Surface Routing` stop on shell-less surfaces.
 - **`requires.cliPackage`** — the exact invocation string for a CLI the agent **shells out to per call** (e.g. `npx @morpho-org/cli@latest`, or a full `uvx --from <spec> <cmd>` command); otherwise `null`. If the package is an **MCP server** (registered once and then queried as tools, not invoked per call), leave `cliPackage: null` and use `requires.externalMcp` with `transport: stdio` instead.
 - **`auth`**:
@@ -166,6 +166,10 @@ risk: [local-exec]                           # required for any stdio MCP
 ### `## Installation` content
 
 Provide a copy-pasteable MCP client config snippet for the common harnesses (Claude Code, Codex, Cursor / JSON-config) — and, for remote MCPs that support it, Claude.ai / ChatGPT connectors. For local (`stdio`) MCPs the snippet is the standard `command`/`args`/`env` client entry; show the pinned version and name each required env var (without values). CLIs invoked per call via `npx`/`uvx` need no install step — say so and show the invocation instead.
+
+### Backwards compatibility
+
+This schema is **additive**. The pre-`transport` shape `externalMcp: { name, url }` is still valid and is read as a remote `http` MCP (`transport` defaults to `http` when `url` is present). Existing `external-mcp` plugins need no change to keep working; add `transport` on the next meaningful edit (and bump `version`), the same way heading-name synonyms are migrated. New plugins should set `transport` explicitly, and `stdio` always requires it. A future validator should treat a missing `transport` as an inferred default (warn), not an error.
 
 ---
 
