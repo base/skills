@@ -37,7 +37,7 @@ All optional. Defaults: `shell: none`, `allowlist: []`, `externalMcp: null`, `cl
 |---|---|---|
 | `requires.shell` | `required \| optional \| none` | Whether shell/terminal access is needed. |
 | `requires.allowlist` | string[] | Hosts that must be in the Base MCP `web_request` allowlist. |
-| `requires.externalMcp` | `{ name, transport, … } \| null` | Separate MCP server the plugin depends on. `transport: http \| sse` (remote, hosted) needs `url`; `transport: stdio` (local, launched on the user's machine) needs `command`, `args`, and optional `env`. See [MCP Provisioning](#mcp-provisioning). |
+| `requires.externalMcp` | `{ name, transport: http\|sse, url } \| { name, transport: stdio, command, args, env? } \| null` | Separate MCP server the plugin depends on. `transport: http \| sse` (remote, hosted) needs `url`; `transport: stdio` (local, launched on the user's machine) needs `command`, `args`, and optional `env`. See [MCP Provisioning](#mcp-provisioning). |
 | `requires.cliPackage` | string \| null | npx/uvx invocation for a CLI the agent **shells out to per call** (e.g. `npx @morpho-org/cli@latest`). This is **not** for an MCP server you register once — use `externalMcp` with `transport: stdio` for that. |
 | `auth` | `none \| api-key \| siwe-jwt \| oauth-on-install` | Auth model used by the plugin's external services. |
 | `risk` | string[] | Risk tags that trigger `## Risks & Warnings`. See the tag list below. |
