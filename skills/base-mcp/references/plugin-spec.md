@@ -64,7 +64,7 @@ Derive every value from the protocol's actual behavior — don't copy another pl
   - `none` — the plugin never needs a shell (pure HTTP API or external MCP).
 - **`requires.allowlist`** — every external host the plugin fetches over HTTP. These must be on the Base MCP `web_request` allowlist for chat-only surfaces to reach them. Leave `[]` for `cli-only` and `external-mcp` plugins that make no direct HTTP calls.
 - **`requires.externalMcp`** — set when the plugin depends on a separate MCP server; otherwise `null`. Pick the `transport` first, then fill the matching fields (full schema and guardrails in [MCP Provisioning](#mcp-provisioning)):
-  - **Remote MCP** (`transport: http` or `sse`) — a hosted server the agent connects to over the network. Provide `url` (e.g. `https://mcp.opensea.io/mcp`). This is the lower-trust case: the server runs on the partner's infra, not the user's machine. `transport` is optional here and **defaults to `http` when `url` is present**, so the legacy `{ name, url }` shape remains valid; set `transport: sse` explicitly when needed.
+  - **Remote MCP** (`transport: http` or `sse`) — a hosted server the agent connects to over the network. Provide `url` (e.g. `https://mcp.<protocol>.example/mcp`). This is the lower-trust case: the server runs on the partner's infra, not the user's machine. `transport` is optional here and **defaults to `http` when `url` is present**, so the legacy `{ name, url }` shape remains valid; set `transport: sse` explicitly when needed.
   - **Local MCP** (`transport: stdio`) — a server **launched on the user's machine** (typically via `npx`/`uvx`). Provide `command`, `args` (with a **pinned** version, never `@latest`), and `env` (required env-var **names only**, never values). A local MCP is **arbitrary code execution on the user's machine**, so it also requires the `local-exec` risk tag and a `## Surface Routing` stop on shell-less surfaces.
 - **`requires.cliPackage`** — the exact invocation string for a CLI the agent **shells out to per call** (e.g. `npx @morpho-org/cli@latest`, or a full `uvx --from <spec> <cmd>` command); otherwise `null`. If the package is an **MCP server** (registered once and then queried as tools, not invoked per call), leave `cliPackage: null` and use `requires.externalMcp` with `transport: stdio` instead.
 - **`auth`**:
@@ -113,7 +113,7 @@ The `integration` field classifies how the plugin reaches Base MCP. Choose the m
 |---|---|---|---|
 | `cli-only` | All calls go through a shell CLI. No HTTP API, no external MCP. | `## Commands`; `shell: required`; `cliPackage` set | Aerodrome |
 | `http-api` | Plugin calls an HTTP API (via `web_request` or harness HTTP tool) to read data or build calldata. | `## Endpoints`; list `allowlist` hosts | Moonwell, Uniswap, Bankr |
-| `external-mcp` | Plugin relies on a separate MCP server — **remote** (hosted, `transport: http\|sse`) or **local** (launched on the user's machine, `transport: stdio`). The agent reads that MCP's own tool catalog — this plugin file does **not** enumerate its tools. | `## Detection` + `## Installation`; `externalMcp` set (+ `local-exec` risk for `stdio`); **omit** `## Endpoints`/`## Commands` | Virtuals (remote), Veil (local stdio) |
+| `external-mcp` | Plugin relies on a separate MCP server — **remote** (hosted, `transport: http\|sse`) or **local** (launched on the user's machine, `transport: stdio`). The agent reads that MCP's own tool catalog — this plugin file does **not** enumerate its tools. | `## Detection` + `## Installation`; `externalMcp` set (+ `local-exec` risk for `stdio`); **omit** `## Endpoints`/`## Commands` | remote (`http`/`sse`), local (`stdio`) |
 | `semantic-base-tool` | Plugin composes Base MCP's higher-level semantic tools (`swap`, `send`) rather than producing raw calldata. | `## Submission` names the semantic tool | *(future)* |
 | `hybrid` | Combines two or more paths with surface-dependent routing. | union of the above; document the routing matrix in `## Surface Routing` | Avantis, Morpho |
 
@@ -130,9 +130,9 @@ A hosted server the agent connects to over the network. The partner runs it on t
 ```yaml
 requires:
   externalMcp:
-    name: opensea
+    name: <protocol>
     transport: http          # or sse
-    url: https://mcp.opensea.io/mcp
+    url: https://mcp.<protocol>.example/mcp
   shell: none
 auth: oauth-on-install       # or api-key / none, as the server requires
 ```
@@ -148,11 +148,11 @@ A server **launched on the user's machine**, typically via `npx`/`uvx`, communic
 ```yaml
 requires:
   externalMcp:
-    name: veil-cash
+    name: <protocol>
     transport: stdio
     command: npx
-    args: ["-y", "@veil-cash/mcp@1.2.3"]   # PIN the version — never @latest
-    env: [VEIL_KEY]                          # required env-var NAMES only — never values
+    args: ["-y", "@<org>/mcp@1.2.3"]        # PIN the version — never @latest
+    env: [PROTOCOL_API_KEY]                  # required env-var NAMES only — never values
   shell: required
 risk: [local-exec]                           # required for any stdio MCP
 ```
