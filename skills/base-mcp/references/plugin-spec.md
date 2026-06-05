@@ -296,7 +296,7 @@ Before opening a PR, confirm:
 
 ## Existing Plugin Conformance
 
-Current integration classification for the native plugins:
+Current integration classification for the 7 native plugins:
 
 | Plugin | `integration` | `chains` | `tags` | `shell` | `auth` | `risk` |
 |---|---|---|---|---|---|---|
@@ -306,7 +306,6 @@ Current integration classification for the native plugins:
 | Moonwell | `http-api` | `[base, optimism]` | `[lending, borrowing, yield]` | `none` | `none` | `[liquidation]` |
 | Morpho | `hybrid` | `[base]` | `[lending, borrowing, vaults, yield]` | `optional` | `none` | `[liquidation]` |
 | Uniswap | `http-api` | `[base]` | `[dex, swap, liquidity]` | `none` | `api-key` | `[slippage]` |
-| Veil Cash | `external-mcp` | `[base]` | `[privacy, shielded-payments, agent-commerce]` | `none` | `none` | `[irreversible]` |
 | Virtuals | `external-mcp` | `[]` | `[ai-agents, agent-commerce, payment-cards, email]` | `none` | `siwe-jwt` | `[pii]` |
 
-Existing native plugins are at `version: 0.2.0` as of the spec-conformance restructure; Veil Cash ships at `0.2.1`.
+All seven are at `version: 0.2.0` as of the spec-conformance restructure.

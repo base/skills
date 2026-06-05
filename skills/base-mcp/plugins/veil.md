@@ -7,14 +7,17 @@ version: 0.2.1
 integration: external-mcp
 chains: [base]
 requires:
-  shell: none
+  shell: required
   allowlist: []
   externalMcp:
     name: veil
-    url: null
+    transport: stdio
+    command: npx
+    args: ["-y", "@veil-cash/mcp@0.2.1"]
+    env: [VEIL_KEY, RPC_URL]
   cliPackage: null
 auth: none
-risk: [irreversible]
+risk: [irreversible, local-exec]
 ---
 
 # Veil Cash Plugin
@@ -40,14 +43,14 @@ If no Veil tools (e.g. `veil_status`, `veil_prepare_deposit`, `veil_get_balances
 
 ## Installation
 
-Veil MCP is a **local stdio** server, not a hosted HTTP connector. Install it beside Base MCP in the harness MCP config (`command` + `args`, or global `veil-mcp` binary). `requires.externalMcp.url` is `null` by design — do not substitute a remote URL or SDK CLI in place of the local MCP.
+Veil MCP is a **local stdio** server, not a hosted HTTP connector. Install it beside Base MCP in the harness MCP config (`command` + `args`, or global `veil-mcp` binary). `requires.externalMcp.transport` is `stdio` with no `url` by design — do not substitute a remote URL or SDK CLI in place of the local MCP.
 
 Pin a version for reproducibility, e.g. `@veil-cash/mcp@0.2.1`.
 
 **Recommended (avoids per-launch npm resolution):**
 
 ```bash
-npm install -g @veil-cash/mcp
+npm install -g @veil-cash/mcp@0.2.1
 ```
 
 Detect the harness and apply the matching step:
@@ -133,9 +136,12 @@ If the owner is registered with a different deposit key, ask the user before ret
 
 ### Deposit
 
+> [!IMPORTANT]
+> **Registration is a hard prerequisite.** A deposit submitted before the owner's deposit key is registered on-chain will **revert**. Run the [Registration](#registration) flow to completion first and confirm via `veil_status` that the owner is registered (and that the registered deposit key matches the local key) before preparing or submitting a deposit.
+
 ```text
 1. Base MCP get_wallets → owner
-2. Veil MCP veil_status({ owner }) — ensure key exists and owner is registered
+2. Veil MCP veil_status({ owner }) — MUST confirm a local key exists AND owner is already registered; if not, complete Registration first (a deposit before register reverts)
 3. Veil MCP veil_prepare_deposit({ owner, asset, amount })
 4. Base MCP send_calls({ chain: "base", calls })
 5. User approves → get_request_status(requestId)
@@ -265,6 +271,10 @@ Use Veil on Claude.ai
 ### irreversible
 
 Onchain register/deposit transactions and relay-backed private actions cannot be undone once submitted. Confirm asset, amount, recipient, and whether the action uses Base MCP approval or the Veil relay before any write. Deposits enter a screening queue; rejected deposits may be refunded to the fallback receiver per queue rules. Do not resubmit private relay actions without explicit user confirmation after a failure.
+
+### local-exec
+
+Veil MCP runs as a **local process on the user's machine** (`npx @veil-cash/mcp` over stdio). Installing and launching it is running third-party partner code locally — a categorically larger trust surface than a hosted MCP or an HTTP API. Install only the **pinned** version from the official package (`@veil-cash/mcp@0.2.1`), never `@latest`, and only from the sources in [Installation](#installation). Never paste `VEIL_KEY` or other secrets into the plugin file or chat — the user provisions them in their own MCP server env (`.env.veil`/`.env` or the `env` block).
 
 Guardrails:
 
