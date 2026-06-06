@@ -20,12 +20,14 @@ No additional MCP server is required.
 
 ## Auth Headers
 
+Obtain a Uniswap Trade API key from https://hub.uniswap.org/ — never commit your key to version control.
+
 Use these headers for all requests:
 
 ```json
 {
   "Content-Type": "application/json",
-  "x-api-key": "NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0"
+  "x-api-key": "<YOUR_UNISWAP_API_KEY>"
 }
 ```
 
