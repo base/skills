@@ -65,6 +65,7 @@ Plugins currently maintained alongside this skill (the **native plugins**):
 | Virtuals | [plugins/virtuals.md](plugins/virtuals.md) |
 | Aerodrome (CLI-only) | [plugins/aerodrome.md](plugins/aerodrome.md) |
 | Bankr | [plugins/bankr.md](plugins/bankr.md) |
+| Brickken | [plugins/brickken.md](plugins/brickken.md) |
 
 Load a plugin reference only when the user's request matches it, following the same local-first, web-fallback rule as references (see [Loading referenced files](#loading-referenced-files) above). For a plugin's own external tools, defer to the plugin file first, then to any CLI help, API schema, or MCP tool descriptions it explicitly tells you to use.
 
