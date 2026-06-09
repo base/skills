@@ -18,7 +18,7 @@
 
 - [ ] Plugin spec/manifest is accurate and tested
 - [ ] (If Applicable) API endpoints and/or external MCP/CLI tested and functional
-- [ ] Follows [CONTRIBUTING.md](../CONTRIBUTING.md)
+- [ ] Follows [Contribution Scope](../skills/base-mcp/references/plugin-spec.md#contribution-scope)
 
 ## Base MCP Plugin Submission Agreement
 
