@@ -5,8 +5,8 @@
 ## Type of change
 
 - [ ] Base MCP plugin submission
+- [ ] Update to an existing skill/plugin
 - [ ] New skill
-- [ ] Update to an existing skill
 - [ ] Documentation
 - [ ] Other (please describe):
 
@@ -20,7 +20,7 @@
 - [ ] (If Applicable) API endpoints and/or external MCP/CLI tested and functional
 - [ ] Follows [Contribution Scope](../skills/base-mcp/references/plugin-spec.md#contribution-scope)
 
-## Base MCP Plugin Submission Agreement
+## Base MCP Plugin Submission Agreement (when applicable)
 
 <!-- Required only if this PR submits a plugin to the Base MCP skill. -->
 
