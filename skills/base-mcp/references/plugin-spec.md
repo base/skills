@@ -112,7 +112,7 @@ The `integration` field classifies how the plugin reaches Base MCP. Choose the m
 | `http-api` | Plugin calls an HTTP API (via `web_request` or harness HTTP tool) to read data or build calldata. | `## Endpoints`; list `allowlist` hosts | Moonwell, Uniswap, Bankr |
 | `external-mcp` | Plugin relies on a separate MCP server. The agent reads that MCP's own tool catalog — this plugin file does **not** enumerate its tools. | `## Detection` + `## Installation`; `externalMcp` set; **omit** `## Endpoints`/`## Commands` | Virtuals |
 | `semantic-base-tool` | Plugin composes Base MCP's higher-level semantic tools (`swap`, `send`) rather than producing raw calldata. | `## Submission` names the semantic tool | *(future)* |
-| `hybrid` | Combines two or more paths with surface-dependent routing. | union of the above; document the routing matrix in `## Surface Routing` | Avantis, Morpho, Venice AI |
+| `hybrid` | Combines two or more paths with surface-dependent routing. | union of the above; document the routing matrix in `## Surface Routing` | Avantis, Morpho |
 
 ---
 
@@ -296,7 +296,7 @@ Before opening a PR, confirm:
 
 ## Existing Plugin Conformance
 
-Current integration classification for the 8 native plugins:
+Current integration classification for the 7 native plugins:
 
 | Plugin | `integration` | `chains` | `tags` | `shell` | `auth` | `risk` |
 |---|---|---|---|---|---|---|
@@ -307,6 +307,5 @@ Current integration classification for the 8 native plugins:
 | Morpho | `hybrid` | `[base]` | `[lending, borrowing, vaults, yield]` | `optional` | `none` | `[liquidation]` |
 | Uniswap | `http-api` | `[base]` | `[dex, swap, liquidity]` | `none` | `api-key` | `[slippage]` |
 | Virtuals | `external-mcp` | `[]` | `[ai-agents, agent-commerce, payment-cards, email]` | `none` | `siwe-jwt` | `[pii]` |
-| Venice AI | `hybrid` | `[base]` | `[ai-inference, media-generation, crypto-rpc, x402-payments]` | `none` | `api-key` | `[pii, irreversible]` |
 
-All eight are at `version: 0.2.0` as of the spec-conformance restructure.
+All seven are at `version: 0.2.0` as of the spec-conformance restructure.

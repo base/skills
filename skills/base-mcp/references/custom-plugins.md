@@ -13,8 +13,6 @@ Avantis is hybrid: its view-only hosts (`data.avantisfi.com`, `core.avantisfi.co
 
 Morpho is not CLI-only: use Morpho CLI when shell access exists, otherwise use or install Morpho MCP.
 
-Venice AI is hybrid: API-key calls go directly to `api.venice.ai`, while wallet-funded x402 calls use Base MCP for Sign-In-With-X signing and Base USDC top-ups. If no Base MCP x402 payment tool is exposed, do not improvise raw payment calldata; ask the user to top up through Venice or use an API key.
-
 Custom or user-supplied plugins are almost certainly **not** in the allowlist and will be rejected by `web_request`.
 
 ## Priority order for HTTP calls
@@ -57,6 +55,5 @@ So for non-native plugins on Claude / ChatGPT consumer surfaces:
 | Avantis view-only reads (pairs, positions, history), no shell | Use `web_request` — the `data`, `core`, and `history` hosts are allowlisted. |
 | Avantis tx-builder calls, no shell | Do not retry through `web_request`. Link the user to the Avantis web UI (`https://www.avantisfi.com/trade?asset=<SYMBOL>-USD`) for the relevant pair. |
 | Morpho, no shell/terminal tool | Use already exposed Morpho MCP tools, or help the user install `https://mcp.morpho.org/` for their current surface. |
-| Venice AI x402 top-up, no Base MCP x402 payment tool | Ask the user to top up through Venice or use a Venice API key; do not hand-roll raw payment calldata unless the MCP tool catalog explicitly supports that path. |
 | Native HTTP plugin, no harness HTTP tool | Use `web_request` if the host is allowlisted. |
 | Non-native plugin, no harness HTTP tool (Claude / ChatGPT consumer apps) | GET only. Construct the URL, ask the user to paste it into the chat so you're allowed to fetch it, then parse the response. If the API needs POST, tell the user this surface can't support it. |
