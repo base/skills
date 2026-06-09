@@ -8,7 +8,7 @@ integration: http-api
 chains: [base]
 requires:
   shell: none
-  allowlist: []
+  allowlist: [hydrex-agent.com]
   externalMcp: null
   cliPackage: null
 auth: none
@@ -22,21 +22,21 @@ risk: [slippage, irreversible]
 
 ## Overview
 
-Hydrex is an Omni-Liquidity MetaDEX on Base — concentrated-liquidity swaps aggregated across 0x, OpenOcean, OKX, and KyberSwap, plus liquidity positions that earn fees and rewards automatically. Adding liquidity creates an active earning position immediately; there is no separate staking step. The plugin calls a local prepare server (`http://2.25.190.100:3000`) to fetch unsigned calldata, then submits via `send_calls` on Base mainnet (`chainId: 8453`).
+Hydrex is an Omni-Liquidity MetaDEX on Base — concentrated-liquidity swaps aggregated across 0x, OpenOcean, OKX, and KyberSwap, plus liquidity positions that earn fees and rewards automatically. Adding liquidity creates an active earning position immediately; there is no separate staking step. The plugin calls a local prepare server (`https://hydrex-agent.com`) to fetch unsigned calldata, then submits via `send_calls` on Base mainnet (`chainId: 8453`).
 
 ## Surface Routing
 
 | Capability | Harness surface (Cursor, Claude Code, Codex) | Chat-only surface (Claude.ai, ChatGPT) |
 |---|---|---|
-| Read state (quote, positions, portfolio) | Harness HTTP tool → `GET http://2.25.190.100:3000/state/*` | User-paste fallback: construct full URL, ask user to open in browser and paste JSON response |
-| Prepare calldata (swap, add/remove liquidity) | Harness HTTP tool → `GET http://2.25.190.100:3000/prepare/*` | User-paste fallback: same as above |
+| Read state (quote, positions, portfolio) | Harness HTTP tool → `GET https://hydrex-agent.com/state/*` | User-paste fallback: construct full URL, ask user to open in browser and paste JSON response |
+| Prepare calldata (swap, add/remove liquidity) | Harness HTTP tool → `GET https://hydrex-agent.com/prepare/*` | User-paste fallback: same as above |
 | Submit transaction | `send_calls` (Base MCP) | `send_calls` (Base MCP) |
 
-The prepare server (`http://2.25.190.100:3000`) is not on the Base MCP `web_request` allowlist. On chat-only surfaces, construct the full GET URL with all query parameters and ask the user to open it in a browser, paste the JSON response into chat, then continue with `send_calls`.
+The prepare server (`https://hydrex-agent.com`) is not on the Base MCP `web_request` allowlist. On chat-only surfaces, construct the full GET URL with all query parameters and ask the user to open it in a browser, paste the JSON response into chat, then continue with `send_calls`.
 
 ## Endpoints
 
-**Base URL:** `http://2.25.190.100:3000`
+**Base URL:** `https://hydrex-agent.com`
 
 ### GET /health
 
@@ -296,7 +296,7 @@ Pass all transactions in a single `calls` array — Base MCP executes them atomi
 
 **"Remove 50% of liquidity from Hydrex position #12345"** *(chat-only surface fallback)*
 1. `get_wallets` → wallet address
-2. `web_request` cannot reach `http://2.25.190.100:3000` → construct the full URL and ask the user to open it in a browser and paste the JSON response into chat
+2. `web_request` cannot reach `https://hydrex-agent.com` → construct the full URL and ask the user to open it in a browser and paste the JSON response into chat
 3. On receiving JSON, `send_calls(chain="base", calls from transactions[])`
 4. Poll `get_request_status` → report outcome
 
