@@ -109,6 +109,8 @@ risk: [liquidation]
 
 The `integration` field classifies how the plugin reaches Base MCP. Choose the most specific type that applies (use the ordered questions in [Choosing each field's value](#choosing-each-fields-value)); use `hybrid` only when a single type can't describe the routing.
 
+The **Examples** column is illustrative and maintainer-managed — don't add your plugin to it in a contribution PR (see [Contribution Scope](#contribution-scope)).
+
 | Value | What it means | Required body sections it implies | Examples |
 |---|---|---|---|
 | `cli-only` | All calls go through a shell CLI. No HTTP API, no external MCP. | `## Commands`; `shell: required`; `cliPackage` set | Aerodrome |
@@ -261,7 +263,22 @@ Follow these steps to write a new plugin file (`skills/base-mcp/plugins/<slug>.m
 3. **Write the body sections in canonical order** (see [Required Body Sections](#required-body-sections) and [What goes in each section](#what-goes-in-each-section)). Include every **R** section, every **C** section your frontmatter flags imply, and use the exact canonical heading names.
 4. **Name the submission tool.** `## Submission` must say which Base MCP tool the flow lands on — `send_calls`, `swap`, `sign`, or `none` — and the exact mapping/normalization needed to get there.
 5. **Show the happy path.** `## Orchestration` walks user intent → Base MCP call as ordered steps. `## Example Prompts` gives 2–4 concrete prompts, each mapped to numbered steps.
-6. **Self-review against the [Authoring Checklist](#authoring-checklist)**, then open a PR to `skills/base-mcp/plugins/<slug>.md`.
+6. **Self-review against the [Authoring Checklist](#authoring-checklist)** and confirm your diff stays within [Contribution Scope](#contribution-scope), then open a PR that adds `skills/base-mcp/plugins/<slug>.md`.
+
+## Contribution Scope
+
+Keep a plugin PR's diff minimal. A contribution should change only:
+
+- **Your plugin file** — `skills/base-mcp/plugins/<slug>.md` (the file you are adding). This is the only file most plugin PRs touch.
+- **The tag vocabulary — only if you introduce a genuinely new `tag`** — by appending it to the list in [Choosing each field's value](#choosing-each-fields-value). Don't otherwise edit that list.
+
+Do **not** edit the following in a plugin PR — they are maintainer-managed and updated when a plugin is reviewed and accepted into the registry:
+
+- The plugins table in `skills/base-mcp/SKILL.md` (the registry of available plugins).
+- The **Examples** column of the [Integration Types](#integration-types) table.
+- The [Existing Plugin Conformance](#existing-plugin-conformance) table and its plugin count.
+
+Maintainers add the SKILL.md registry row and the conformance entry after review. Including these edits in a contribution is unnecessary and causes merge conflicts between in-flight submissions.
 
 ## How to Adapt an Existing Plugin
 
@@ -349,10 +366,13 @@ Before opening a PR, confirm:
 - [ ] Heading names are canonical — no synonyms (see [Canonical heading names](#canonical-heading-names)).
 - [ ] `## Submission` names a concrete Base MCP tool and shows the mapping into it.
 - [ ] Sections appear in canonical order; no internal `#anchor` links were broken by a rename.
+- [ ] Diff stays within [Contribution Scope](#contribution-scope): only `plugins/<slug>.md` is added (plus a net-new tag in the vocabulary list if applicable). The `SKILL.md` registry, the Integration Types **Examples** column, and the Existing Plugin Conformance table are left for maintainers.
 
 ---
 
 ## Existing Plugin Conformance
+
+> Maintainer-managed. Do not edit this table or its count in a plugin contribution PR — maintainers update it when a plugin is accepted (see [Contribution Scope](#contribution-scope)).
 
 Current integration classification for the 7 native plugins:
 
