@@ -4,9 +4,9 @@
 
 ## Type of change
 
+- [ ] Base MCP plugin submission
 - [ ] New skill
 - [ ] Update to an existing skill
-- [ ] Base MCP plugin submission
 - [ ] Documentation
 - [ ] Other (please describe):
 
@@ -14,13 +14,11 @@
 
 <!-- e.g. build-on-base, base-mcp -->
 
-## Checklist
+## Plugin checklist
 
-- [ ] `SKILL.md` frontmatter (name, description) is accurate and up to date
-- [ ] Instructions and examples were tested with an agent
-- [ ] No secrets, API keys, or credentials are committed
-- [ ] README / install commands updated if a skill was added or renamed
-- [ ] Changes follow [CONTRIBUTING.md](../CONTRIBUTING.md)
+- [ ] Plugin spec/manifest is accurate and tested
+- [ ] (If Applicable) API endpoints and/or external MCP/CLI tested and functional
+- [ ] Follows [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## Base MCP Plugin Submission Agreement
 
