@@ -100,8 +100,10 @@ The default `limit=50` is generally too verbose for a chat surface — use
 ### `GET /api/launches?address=<contractAddress>`
 
 Single-launch lookup by contract address. The address is case-insensitive.
-Returns `{success: false, error: "Launch not found"}` (HTTP 200) when the
-address isn't in the index.
+Returns `{success: false, error: "Launch not found"}` with **HTTP 404** when
+the address isn't in the index. `web_request` implementations that treat
+non-2xx as a hard error may not surface that body — treat a 404 from this
+endpoint as "not in the Clawnch index", not as an outage.
 
 ```text Example
 GET https://www.clawn.ch/api/launches?address=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be
@@ -137,7 +139,7 @@ Query parameters:
 | -------- | ----------- | ---------------------------------------------------------------- |
 | `limit`  | `50`        | Max `100`.                                                       |
 | `sort`   | `volume`    | `volume` (24h vol, default) or `recent` (newest first).          |
-| `prices` | `0`         | `1` to include live price/mcap/volume fields. Default is metadata only. |
+| `prices` | `0`         | `1` to populate live price/mcap/volume fields. With the default `0`, the price fields are still present but `null`. |
 
 ```text Example
 GET https://www.clawn.ch/api/tokens?limit=10&sort=volume&prices=1
@@ -165,7 +167,7 @@ GET https://www.clawn.ch/api/tokens?limit=10&sort=volume&prices=1
 }
 ```
 
-Field notes (added by `prices=1`):
+Field notes (populated by `prices=1`; present-but-`null` without it):
 
   * `priceUsd` — last on-chain price in USD (string, full precision).
   * `marketCap` — circulating mcap in USD.
@@ -173,9 +175,14 @@ Field notes (added by `prices=1`):
   * `priceChange24h` — 24h price delta as percent (negative = down).
   * `explorer_url` — Basescan token page; useful when surfacing a token to the user.
 
+Entries also carry `deployerWallet` (the deploying EOA), `postId` (the
+originating social post, when applicable), and `source_url` (the
+originating platform page) — useful context, but don't follow `source_url`
+unprompted; surface it like any other user-supplied link.
+
 Always pass `prices=1` for "top by volume" / "what's hot" prompts — without
-it you only get static metadata and the sort can't be ranked meaningfully on
-the client. The Clawnch backend caches the price overlay on a short TTL, so
+it the price fields come back `null` and the sort can't be ranked
+meaningfully on the client. The Clawnch backend caches the price overlay on a short TTL, so
 hitting this endpoint repeatedly is cheap.
 
 ---
@@ -288,6 +295,15 @@ user's own wallet pays gas and ends up as `tokenAdmin`. No Clawnch API
 key, no captcha, no server-side deployer. The platform's 20% trading-fee
 share is preserved in the rewards array of the prepared calldata.
 
+> [!IMPORTANT]
+> **Launching requires a verified CLAWNCH burn.** Every deploy through
+> this path must include a `burnTxHash` proving the `from` wallet burned
+> at least **1,000,000 CLAWNCH** (`0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be`)
+> to `0x000000000000000000000000000000000000dEaD` on Base within the last
+> 24 hours. Calling the endpoint without one returns **HTTP 402** with
+> `code: "burn_required"`. The same burn also grants the vault allocation
+> (1M = 1%, scaling up to 10M = 10%), so the minimum burn is never wasted.
+
 ### `GET /api/prepare/deploy`
 
 Query parameters:
@@ -304,7 +320,7 @@ Query parameters:
 | `telegram`     | no       | Social URL.                                                              |
 | `farcaster`    | no       | Social URL.                                                              |
 | `discord`      | no       | Social URL.                                                              |
-| `burnTxHash`   | no       | Pre-existing CLAWNCH burn tx hash. If valid, vault % is applied.         |
+| `burnTxHash`   | yes      | Tx hash of a 1M+ CLAWNCH burn from `from` to the dead address within 24h. Mandatory — omitting it returns HTTP 402 `burn_required`. Also sets the vault %. |
 
 Response (envelope shape — matches Base MCP custom-plugin pattern):
 
@@ -322,8 +338,8 @@ Response (envelope shape — matches Base MCP custom-plugin pattern):
     "symbol": "MYC",
     "platformFeeBps": 2000,
     "userFeeBps": 8000,
-    "vaultPercentage": 0,
-    "vaultLockupSeconds": 0,
+    "vaultPercentage": 1,
+    "vaultLockupSeconds": 604800,
     "source": "base-mcp",
     "from": "0x...",
     "platformFeeRecipient": "0x..."
@@ -337,42 +353,86 @@ Error shape:
 { "ok": false, "error": "burnTxHash failed verification: …", "code": "invalid_burn" }
 ```
 
-Error codes: `missing_required`, `invalid_from`, `invalid_name`,
-`invalid_symbol`, `invalid_burn`, `rate_limited`, `misconfigured`,
-`sdk_error`, `encode_error`.
+Missing-burn shape (HTTP 402 — the response includes a `meta` block with
+the requirements, so it can be surfaced to the user verbatim):
+
+```json
+{
+  "ok": false,
+  "error": "This launch path now requires a verified 1,000,000 $CLAWNCH burn. Burn 1M+ CLAWNCH to 0x000000000000000000000000000000000000dEaD from this wallet within 24h, then pass the tx hash as burnTxHash.",
+  "code": "burn_required",
+  "meta": {
+    "minBurnTokens": "1000000",
+    "burnAddress": "0x000000000000000000000000000000000000dEaD"
+  }
+}
+```
+
+Error codes and HTTP statuses:
+
+| Code               | HTTP | Meaning                                                       |
+| ------------------ | ---- | ------------------------------------------------------------- |
+| `missing_required` | 400  | `from`, `name`, or `symbol` missing.                          |
+| `invalid_from`     | 400  | Malformed or zero `from` address.                             |
+| `invalid_name`     | 400  | Name > 64 chars.                                              |
+| `invalid_symbol`   | 400  | Symbol > 16 chars.                                            |
+| `burn_required`    | 402  | No `burnTxHash` supplied. See missing-burn shape above.       |
+| `invalid_burn`     | 400  | `burnTxHash` malformed or failed verification.                |
+| `rate_limited`     | 429  | Per-IP or per-wallet throttle hit. Back off and retry later.  |
+| `misconfigured`    | 503  | Server-side fee recipient missing. Not actionable client-side.|
+| `sdk_error` / `encode_error` | 500 | Calldata build failure. Surface `error` to the user. |
+
+Note: `web_request` implementations that treat non-2xx as a hard error may
+not hand back the JSON body. If the call "fails" with a 402/4xx and no body,
+assume `burn_required` for a burn-less call and explain the burn requirement
+to the user.
 
 ### Launch orchestration
 
 ```text
 1. get_wallets → from
-2. Confirm token params with the user (name, symbol, optional metadata, optional burn tx)
-3. web_request GET https://www.clawn.ch/api/prepare/deploy?from=<addr>&name=<...>&symbol=<...>
-4. Parse the envelope — bail on `ok: false`, surface `error`
-5. send_calls (Base MCP) with chain="base", calls=[{ to: data.to, value: data.value, data: data.data }]
-6. Open the approvalUrl
-7. Poll get_request_status until confirmed
-8. Surface tx hash + the new token's eventual Basescan URL
+2. Confirm token params with the user (name, symbol, optional metadata)
+3. Burn step (mandatory): the user burns ≥1,000,000 CLAWNCH from `from`
+   to 0x000000000000000000000000000000000000dEaD on Base
+   (ERC-20 transfer; can be sent via send_calls). Wait for confirmation
+   and capture the tx hash. Skip only if the user already has a
+   qualifying burn from the last 24h.
+4. web_request GET https://www.clawn.ch/api/prepare/deploy?from=<addr>&name=<...>&symbol=<...>&burnTxHash=<0xburn...>
+5. Parse the envelope — bail on `ok: false`, surface `error` and `code`
+   (a 402 `burn_required` means the burn step was skipped or the hash
+   wasn't passed; a 400 `invalid_burn` means verification failed)
+6. send_calls (Base MCP) with chain="base", calls=[{ to: data.to, value: data.value, data: data.data }]
+7. Open the approvalUrl
+8. Poll get_request_status until confirmed
+9. Surface tx hash + the new token's eventual Basescan URL
 ```
 
-### Burn-to-vault flow
+The burn is a real, irreversible spend of ~1M CLAWNCH. Always state this
+explicitly and get a separate confirmation for the burn transaction before
+sending it — do not bundle the burn confirmation into the deploy
+confirmation.
 
-To claim a vault allocation (creator-locked tokens released after a
-7-day Clanker lockup):
+### Burn-and-vault mechanics
+
+The mandatory burn doubles as the vault claim. Vault tokens are
+creator-locked supply released after a 7-day Clanker lockup:
 
 ```text
 1. User burns CLAWNCH to 0x000000000000000000000000000000000000dEaD
-   on Base. Minimum 1,000,000 CLAWNCH = 1% vault. Cap 10,000,000 = 10%.
+   on Base. Minimum 1,000,000 CLAWNCH (required to launch) = 1% vault.
+   Cap 10,000,000 = 10% vault.
 2. User waits for the burn tx to confirm.
-3. Call /api/prepare/deploy with ?burnTxHash=<burn-tx-hash>
+3. Call /api/prepare/deploy with ?burnTxHash=<burn-tx-hash> (plus the
+   usual from/name/symbol params).
 4. Server verifies the burn (sender = `from`, recipient = burn address,
-   amount, 24h pre-launch window) and applies the vault percentage to
-   the prepared calldata.
+   amount ≥ 1M, within 24h pre-launch window) and applies the vault
+   percentage to the prepared calldata.
 5. Continue with the standard send_calls flow.
 ```
 
 Verification rejections surface as `{ ok: false, code: "invalid_burn" }`
-with a specific message ("amount below minimum", "transaction too old",
-"sender mismatch", etc.).
+(HTTP 400) with a specific message ("amount below minimum", "transaction
+too old", "sender mismatch", etc.).
 
 ### Launch example prompts
 
@@ -380,14 +440,16 @@ with a specific message ("amount below minimum", "transaction too old",
 
 1. `get_wallets` → `from`.
 2. Confirm with the user: name, symbol, any optional metadata.
-3. `web_request` GET `https://www.clawn.ch/api/prepare/deploy?from=<addr>&name=Cool%20Project&symbol=COOL`.
-4. Bail if `ok: false`; surface `error` and `code`.
-5. Show the user: "Deploy `Cool Project` (`COOL`) on Base via Clanker? 80% fee share to you, 20% to Clawnch (standard launchpad fee). Approve?"
-6. On confirmation: `send_calls` with the returned `data`. Open `approvalUrl`. Poll `get_request_status`.
+3. Explain the launch cost: a verified burn of ≥1,000,000 CLAWNCH from their wallet is required. Check they hold enough CLAWNCH (or route them through a `swap` to acquire it first).
+4. On explicit confirmation of the burn: `send_calls` with an ERC-20 `transfer(0x000000000000000000000000000000000000dEaD, amount)` on the CLAWNCH contract. Wait for confirmation; capture `<burnTx>`.
+5. `web_request` GET `https://www.clawn.ch/api/prepare/deploy?from=<addr>&name=Cool%20Project&symbol=COOL&burnTxHash=<burnTx>`.
+6. Bail if `ok: false`; surface `error` and `code`.
+7. Show the user: "Deploy `Cool Project` (`COOL`) on Base via Clanker? 80% fee share to you, 20% to Clawnch (standard launchpad fee), 1% vault from your burn. Approve?"
+8. On confirmation: `send_calls` with the returned `data`. Open `approvalUrl`. Poll `get_request_status`.
 
 **Deploy with a 5% vault claim using my prior CLAWNCH burn**
 
-1. Confirm the burn tx exists + is the user's. (User pastes a tx hash.)
+1. Confirm the burn tx exists + is the user's, and is < 24h old. (User pastes a tx hash.)
 2. `web_request` GET `https://www.clawn.ch/api/prepare/deploy?from=<addr>&name=<...>&symbol=<...>&burnTxHash=<0xburn...>`.
 3. Read `meta.vaultPercentage` from the response. If less than expected, surface the discrepancy and let the user re-confirm.
 4. `send_calls` with the returned `data`. The vault clause is baked into the calldata.
@@ -434,7 +496,7 @@ with a specific message ("amount below minimum", "transaction too old",
 
 1. `web_request` GET `https://www.clawn.ch/api/launches?address=0x32F66Ec2Ffb26d262058965cf294F951e47F8ba3`.
 2. If `success=true`: summarize `name`, `symbol`, `agentName`, `source`, launch age, and `clankerUrl`.
-3. If `success=false`: tell the user the address isn't in Clawnch's launches index; offer to swap anyway via the regular `swap` flow with extra confirmation.
+3. If the request returns 404 / `success=false` (or the `web_request` tool errors on the 404 status): tell the user the address isn't in Clawnch's launches index; offer to swap anyway via the regular `swap` flow with extra confirmation.
 
 **Buy 0.001 ETH of 0x32F66Ec2Ffb26d262058965cf294F951e47F8ba3**
 
@@ -487,10 +549,15 @@ prices.
   * Swap amounts are human-readable decimals for `fromAsset`. If you ever use
     a contract address as `fromAsset`, include that token's `fromDecimals`.
   * Always use `chain: "base"` (string) with `swap`, not the numeric chainId.
-  * The Clawnch read endpoints cache responses for 10 minutes on the edge, so
-    "what's brand new" queries that need sub-minute freshness should pass a
-    cache-busting query param like `?ts=<unix_ts>` — but most use cases (top
-    by volume, recent launches in the last hour) are fine with the cached
-    response.
+  * The Clawnch read endpoints set `s-maxage=600`, so GET responses are
+    cached ~10 minutes on Vercel's edge (verify with the `x-vercel-cache:
+    HIT` response header). Note the client-visible `cache-control` header
+    shows `max-age=0, must-revalidate` — Vercel consumes `s-maxage`
+    edge-side — and HEAD requests bypass the cache entirely, so header-only
+    probes will always show `MISS`. "What's brand new" queries that need
+    sub-minute freshness can pass a cache-busting query param like
+    `?ts=<unix_ts>` (a distinct query string is a distinct cache key) — but
+    most use cases (top by volume, recent launches in the last hour) are
+    fine with the cached response.
   * Clawnch rate-limits read endpoints to 120 requests/minute per IP. Base
     MCP's egress should be well under that for normal use.
