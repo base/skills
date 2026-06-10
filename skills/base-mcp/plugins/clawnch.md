@@ -29,7 +29,9 @@ risk: [low-liquidity, slippage, irreversible]
 on Base mainnet (chain `base`, chainId `8453`). The public API exposes two
 complementary read feeds — **recent launches** (every token deployed through
 the Clawnch launchpad and its tracked sources: moltbook, 4claw, clawtomaton,
-clawmes; ~140k tokens indexed) and **top by volume** (the same set ranked by
+clawncher, base-mcp, and Clawnch's two first-party agent forks — **clawmes**
+(Hermes Agent) and **openclawnch** (OpenClaw); ~140k tokens indexed) and
+**top by volume** (the same set ranked by
 24h trading volume with live price / market cap / volume / 24h change) — plus
 a non-custodial **launch** endpoint that returns **unsigned Clanker factory
 calldata**. Discovery reads land on Base MCP's `swap` tool for buys; launches
@@ -71,7 +73,7 @@ Query parameters (all optional):
 | `limit`   | `50`    | Max `100`. Number of launches to return.                             |
 | `offset`  | `0`     | For pagination through the full 140k+ index.                         |
 | `agent`   | —       | Filter by `agentName` (string match).                                |
-| `source`  | —       | Filter by deploy source: `moltbook`, `4claw`, `clawtomaton`, `clawmes`, `moltx`. |
+| `source`  | —       | Filter by deploy source: `moltbook`, `4claw`, `moltx`, `clawncher`, `clawtomaton`, `clawmes`, `openclawnch`, `base-mcp`. |
 | `address` | —       | Return a single launch by contract address. See dedicated endpoint below. |
 
 ```json
@@ -347,7 +349,13 @@ symbol.
 To narrow to a specific platform (e.g. "show me clawmes launches"), pass
 `source=clawmes` to `/api/launches`. Valid values:
 
-  * `clawmes` — deploys originated through the clawmes Hermes Agent plugin.
+  * `clawmes` — Clawnch's Hermes Agent fork/plugin (chat surface: Telegram /
+    Discord / Slack). Repo: github.com/clawnchdev/clawmes.
+  * `openclawnch` — Clawnch's OpenClaw agent fork (crypto-native agent, 48
+    tools, multi-channel). Site: openclawn.ch.
+  * `clawncher` — direct deploys via the clawncher SDK / CLI.
+  * `base-mcp` — non-custodial deploys built via `/api/prepare/deploy`
+    (Base MCP / desktop AI clients).
   * `moltbook` — deploys from the Moltbook social posting flow.
   * `4claw` — deploys from the 4claw automation bot.
   * `clawtomaton` — deploys from the Clawtomaton automation surface.
