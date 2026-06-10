@@ -36,7 +36,7 @@ The prepare server (`https://hydrex-agent.com`) is not on the Base MCP `web_requ
 
 ## Endpoints
 
-**Base URL:** `https://hydrex-agent.com`
+**Server URL:** `https://hydrex-agent.com`
 
 ### GET /health
 
