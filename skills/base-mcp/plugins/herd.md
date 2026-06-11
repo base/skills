@@ -14,7 +14,7 @@ requires:
     transport: http
     url: https://mcp.herd.eco/v1
   cliPackage: null
-auth: oauth-on-install
+auth: oauth-on-install   # api-key also supported (beta)
 risk: [irreversible]
 ---
 
@@ -59,6 +59,8 @@ Add Herd MCP to your AI client alongside Base MCP:
 ```
 
 On first use the harness will prompt for OAuth authorization against the user's Herd account. Subsequent calls in the same session reuse the session token.
+
+**API key (beta).** Herd MCP also supports API key authentication as a beta option. Pass the key as a bearer token in the MCP client config if your harness supports static auth headers. OAuth is the default and recommended path for most users.
 
 ## Surface Routing
 
