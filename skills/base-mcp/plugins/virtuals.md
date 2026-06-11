@@ -1,6 +1,6 @@
 ---
 title: "Virtuals Plugin"
-description: "Create and operate Virtuals (ACP) AI agents — management, payment cards, email identities — through the Virtuals MCP, signed in via a Base MCP SIWE signature."
+description: "Virtuals AI-agent operations via remote MCP."
 tags: [ai-agents, agent-commerce, payment-cards, email]
 name: virtuals
 version: 0.2.0

@@ -1,6 +1,6 @@
 ---
 title: "Morpho Plugin"
-description: "Lending and borrowing on Morpho (vaults + markets) → send_calls on Base."
+description: "Morpho lending and borrowing on Base."
 tags: [lending, borrowing, vaults, yield]
 name: morpho
 version: 0.2.0

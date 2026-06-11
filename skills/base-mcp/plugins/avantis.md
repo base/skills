@@ -1,6 +1,6 @@
 ---
 title: "Avantis Plugin"
-description: "Read Avantis perp market data and positions on any surface, and build perpetual-futures transactions from CLI/HTTP harnesses (Avantis UI fallback on chat-only surfaces) → Base MCP send_calls."
+description: "Perpetual-futures trading on Avantis via HTTP APIs on Base."
 tags: [perps, leverage, trading, derivatives]
 name: avantis
 version: 0.2.0

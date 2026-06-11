@@ -1,6 +1,6 @@
 ---
 title: "Uniswap Plugin"
-description: "Token swaps and V2/V3/V4 liquidity provision on Uniswap via the Uniswap API → send_calls on Base."
+description: "Uniswap swaps and V2/V3/V4 LP on Base."
 tags: [dex, swap, liquidity]
 name: uniswap
 version: 0.2.0

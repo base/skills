@@ -1,6 +1,6 @@
 ---
 title: "Moonwell Plugin"
-description: "Lending on Moonwell (Compound v2) via the Moonwell HTTP API → send_calls on Base and Optimism."
+description: "Moonwell lending via HTTP API on Base and Optimism."
 tags: [lending, borrowing, yield]
 name: moonwell
 version: 0.2.0

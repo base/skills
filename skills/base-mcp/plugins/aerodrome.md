@@ -1,6 +1,6 @@
 ---
 title: "Aerodrome Plugin"
-description: "Build unsigned Aerodrome (Velodrome-style DEX) swap/LP/stake/claim calldata with the Sugar SDK CLI, then submit via Base MCP send_calls. Requires a shell harness."
+description: "Aerodrome swaps, LP, staking, and claims via Sugar CLI on Base."
 tags: [dex, swap, liquidity, staking]
 name: aerodrome
 version: 0.2.0
