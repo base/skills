@@ -41,7 +41,6 @@ Two patterns deserve their own references because they span multiple tools:
 | Approval flow (for any write tool that returns an approval URL) | [references/approval-mode.md](references/approval-mode.md) |
 | Batched contract calls (EIP-5792) | [references/batch-calls.md](references/batch-calls.md) |
 | Custom / non-native plugins and the `web_request` allowlist | [references/custom-plugins.md](references/custom-plugins.md) |
-| Authoring a plugin (frontmatter schema + required sections) | [references/plugin-spec.md](references/plugin-spec.md) |
 | Platform install steps | [references/install.md](references/install.md) |
 | Tone and language rules | [references/tone.md](references/tone.md) |
 
@@ -55,7 +54,7 @@ Two patterns deserve their own references because they span multiple tools:
 
 Plugins extend Base MCP with partner-specific functionality (lending, swaps, perps, etc.). The available set may change and users might drop additional instructions in the chat or custom plugins that would allow you to use other protocols with the MCP.
 
-Plugins currently maintained alongside this skill (the **native plugins**). The table mirrors each plugin's frontmatter so you can route to the right one before opening it — **match the user's request against the `Tags`** (capability keywords), then confirm with `What it does`. `integration` says how it reaches Base MCP; `chains` and `risk` flag scope and caution. All conform to [references/plugin-spec.md](references/plugin-spec.md).
+Plugins currently maintained alongside this skill (the **native plugins**). The table mirrors each plugin's frontmatter so you can route to the right one before opening it — **match the user's request against the `Tags`** (capability keywords), then confirm with `What it does`. `integration` says how it reaches Base MCP; `chains` and `risk` flag scope and caution.
 
 | Plugin | Tags | What it does | Integration | Chains | Risk | Reference |
 |--------|------|--------------|-------------|--------|------|-----------|
