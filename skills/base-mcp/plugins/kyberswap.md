@@ -33,7 +33,7 @@ KyberSwap is a DEX aggregator that routes trades across 50+ liquidity sources (U
 | Token resolution | Harness HTTP tool — no allowlist needed | `web_request` — requires `token-api.kyberswap.com` allowlisted |
 | Submit swap | `send_calls` — all surfaces | `send_calls` — all surfaces |
 
-On chat-only surfaces where the allowlist is not configured: inform the user that the swap cannot proceed and direct them to the KyberSwap web UI at `kyberswap.com`. Do **not** improvise a workaround. For the full decision tree, see [references/custom-plugins.md](references/custom-plugins.md).
+On chat-only surfaces where the allowlist is not configured: inform the user that the swap cannot proceed and direct them to the KyberSwap web UI at `kyberswap.com`. Do **not** improvise a workaround. For the full decision tree, see [../references/custom-plugins.md](../references/custom-plugins.md).
 
 ## Endpoints
 
@@ -69,14 +69,16 @@ Response shape:
 ```json
 {
   "data": {
-    "routeSummary": { "...": "pass verbatim to build step" },
-    "routerAddress": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5",
-    "amountIn": "100000000",
-    "amountInUsd": "100.00",
-    "amountOut": "38650000000000000",
-    "amountOutUsd": "99.71",
-    "gas": "300000",
-    "gasUsd": "0.29"
+    "routeSummary": {
+      "amountIn": "100000000",
+      "amountInUsd": "100.00",
+      "amountOut": "38650000000000000",
+      "amountOutUsd": "99.71",
+      "gas": "300000",
+      "gasUsd": "0.29",
+      "...": "other fields — pass verbatim to build step"
+    },
+    "routerAddress": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5"
   }
 }
 ```
@@ -113,14 +115,14 @@ Response shape:
     "amountIn": "100000000",
     "amountOut": "38650000000000000",
     "gas": "300000",
-    "transactionValue": "0x0",
+    "transactionValue": "0",
     "routerAddress": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5",
-    "encodedSwapData": "0x..."
+    "data": "0x..."
   }
 }
 ```
 
-`transactionValue` is a hex wei string — pass directly as `value` in the swap call. Non-zero only for native token input (e.g. `"0xde0b6b3a7640000"` for 1 ETH).
+`transactionValue` is a **decimal** wei string (e.g. `"0"` for ERC-20 input, `"10000000000000000"` for 0.01 ETH). Hex-encode it before passing as `value` in `send_calls`: `"0x" + BigInt(transactionValue).toString(16)`. Non-zero only for native token input.
 
 ### GET /api/v1/public/tokens (token resolution)
 
@@ -146,7 +148,7 @@ Chain IDs: base=8453, ethereum=1, arbitrum=42161, optimism=10, polygon=137, bsc=
 3. Compute `amountIn` in base units: multiply human amount by `10^decimals` (ETH=18, USDC=6, WBTC=8).
 4. Determine slippage: default `50` bps for common pairs, `100` bps for long-tail tokens. Apply thresholds in `## Risks & Warnings` before proceeding.
 5. `GET /api/v1/routes` → `routeSummary`, `amountOut`, `amountOutUsd`, `gasUsd`. Show the quoted output and gas cost to the user; confirm before proceeding.
-6. `POST /api/v1/route/build` → `encodedSwapData`, `transactionValue`, `routerAddress`.
+6. `POST /api/v1/route/build` → `data` (swap calldata), `transactionValue`, `routerAddress`. Verify `routerAddress` equals `0x6131B5fae19EA4f9D964eAc0408E4408b66337b5` — abort and warn the user if it differs.
 7. Build calls array:
    - **Native tokenIn** → `[swap_call]`
    - **ERC-20 tokenIn** → `[approval_call, swap_call]` — always include approval, no allowance check needed.
@@ -173,8 +175,8 @@ Map POST /route/build output into `send_calls` as follows:
     },
     {
       "to": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5",
-      "value": "<transactionValue>",
-      "data": "<encodedSwapData>"
+      "value": "<hex(transactionValue)>",
+      "data": "<data from /route/build response>"
     }
   ]
 }
@@ -188,12 +190,14 @@ Map POST /route/build output into `send_calls` as follows:
   "calls": [
     {
       "to": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5",
-      "value": "<transactionValue>",
-      "data": "<encodedSwapData>"
+      "value": "<hex(transactionValue)>",
+      "data": "<data from /route/build response>"
     }
   ]
 }
 ```
+
+`hex(transactionValue)`: `"0x" + BigInt(transactionValue).toString(16)` — `transactionValue` is a decimal wei string from the API.
 
 **ERC-20 approval calldata encoding:**
 
@@ -209,7 +213,7 @@ Example — approve 100 USDC (amountIn = 100000000 = 0x5F5E100):
   0000000000000000000000000000000000000000000000000000000005f5e100
 ```
 
-Use chain name strings (`base`, `ethereum`, `arbitrum`, `optimism`, `polygon`, `bsc`, `avalanche`) — not numeric chain IDs. After `send_calls` returns an approval URL, follow the flow in [references/approval-mode.md](references/approval-mode.md).
+Use chain name strings (`base`, `ethereum`, `arbitrum`, `optimism`, `polygon`, `bsc`, `avalanche`) — not numeric chain IDs. After `send_calls` returns an approval URL, follow the flow in [../references/approval-mode.md](../references/approval-mode.md).
 
 ## Example Prompts
 
@@ -218,7 +222,7 @@ Use chain name strings (`base`, `ethereum`, `arbitrum`, `optimism`, `polygon`, `
 1. `get_wallets` → address.
 2. `GET /api/v1/routes` on `base` — tokenIn=`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (USDC, 6 dec), tokenOut=`0xEeee...eEEE`, amountIn=`100000000`.
 3. Show quoted output and gas to user; confirm.
-4. `POST /api/v1/route/build` → encodedSwapData, transactionValue=`0x0`.
+4. `POST /api/v1/route/build` → `data` (swap calldata), `transactionValue`=`"0"` → hex-encode to `"0x0"`.
 5. Encode approve calldata: router spends `100000000` USDC.
 6. `send_calls("base", [approval_call, swap_call])`.
 
@@ -227,7 +231,7 @@ Use chain name strings (`base`, `ethereum`, `arbitrum`, `optimism`, `polygon`, `
 1. `get_wallets` → address.
 2. `GET /api/v1/routes` on `arbitrum` — tokenIn=`0xEeee...eEEE`, tokenOut=`0xaf88d065e77c8cC2239327C5EDb3A432268e5831` (USDC), amountIn=`100000000000000000`.
 3. Show quoted output and gas to user; confirm.
-4. `POST /api/v1/route/build` → encodedSwapData, transactionValue=`0xde0b6b3a7640000` (non-zero, native input).
+4. `POST /api/v1/route/build` → `data` (swap calldata), `transactionValue`=`"10000000000000000"` → hex-encode to `"0xde0b6b3a7640000"` (non-zero, native input).
 5. No approval needed — native ETH.
 6. `send_calls("arbitrum", [swap_call])` with value=transactionValue.
 
