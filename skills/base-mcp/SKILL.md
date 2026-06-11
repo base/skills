@@ -41,6 +41,7 @@ Two patterns deserve their own references because they span multiple tools:
 | Approval flow (for any write tool that returns an approval URL) | [references/approval-mode.md](references/approval-mode.md) |
 | Batched contract calls (EIP-5792) | [references/batch-calls.md](references/batch-calls.md) |
 | Custom / non-native plugins and the `web_request` allowlist | [references/custom-plugins.md](references/custom-plugins.md) |
+| Authoring a plugin (frontmatter schema + required sections) | [references/plugin-spec.md](references/plugin-spec.md) |
 | Platform install steps | [references/install.md](references/install.md) |
 | Tone and language rules | [references/tone.md](references/tone.md) |
 
@@ -54,17 +55,17 @@ Two patterns deserve their own references because they span multiple tools:
 
 Plugins extend Base MCP with partner-specific functionality (lending, swaps, perps, etc.). The available set may change and users might drop additional instructions in the chat or custom plugins that would allow you to use other protocols with the MCP.
 
-Plugins currently maintained alongside this skill (the **native plugins**):
+Plugins currently maintained alongside this skill (the **native plugins**). The table mirrors each plugin's frontmatter so you can route to the right one before opening it — **match the user's request against the `Tags`** (capability keywords), then confirm with `What it does`. `integration` says how it reaches Base MCP; `chains` and `risk` flag scope and caution. All conform to [references/plugin-spec.md](references/plugin-spec.md).
 
-| Plugin | Reference |
-|--------|-----------|
-| Morpho | [plugins/morpho.md](plugins/morpho.md) |
-| Moonwell | [plugins/moonwell.md](plugins/moonwell.md) |
-| Uniswap | [plugins/uniswap.md](plugins/uniswap.md) |
-| Avantis (hybrid) | [plugins/avantis.md](plugins/avantis.md) |
-| Virtuals | [plugins/virtuals.md](plugins/virtuals.md) |
-| Aerodrome (CLI-only) | [plugins/aerodrome.md](plugins/aerodrome.md) |
-| Bankr | [plugins/bankr.md](plugins/bankr.md) |
+| Plugin | Tags | What it does | Integration | Chains | Risk | Reference |
+|--------|------|--------------|-------------|--------|------|-----------|
+| Morpho | lending, borrowing, vaults, yield | Lending & borrowing (vaults + markets) | hybrid | base | liquidation | [plugins/morpho.md](plugins/morpho.md) |
+| Moonwell | lending, borrowing, yield | Lending (Compound v2) | http-api | base, optimism | liquidation | [plugins/moonwell.md](plugins/moonwell.md) |
+| Uniswap | dex, swap, liquidity | Token swaps + V2/V3/V4 LP | http-api | base | slippage | [plugins/uniswap.md](plugins/uniswap.md) |
+| Avantis | perps, leverage, trading, derivatives | Perpetual-futures trading | hybrid | base | liquidation, slippage, irreversible | [plugins/avantis.md](plugins/avantis.md) |
+| Virtuals | ai-agents, agent-commerce, payment-cards, email | Create/operate Virtuals (ACP) AI agents — cards, email | external-mcp | — | pii | [plugins/virtuals.md](plugins/virtuals.md) |
+| Aerodrome | dex, swap, liquidity, staking | DEX swaps / LP / stake / claim (Sugar SDK CLI) | cli-only | base | slippage | [plugins/aerodrome.md](plugins/aerodrome.md) |
+| Bankr | token-launches, trading, memecoins, discovery | Token-launch discovery + buy | http-api | base | low-liquidity, irreversible | [plugins/bankr.md](plugins/bankr.md) |
 
 Load a plugin reference only when the user's request matches it, following the same local-first, web-fallback rule as references (see [Loading referenced files](#loading-referenced-files) above). For a plugin's own external tools, defer to the plugin file first, then to any CLI help, API schema, or MCP tool descriptions it explicitly tells you to use.
 
