@@ -1,6 +1,6 @@
 ---
 title: "Bankr Plugin"
-description: "Token-launch discovery and buying through Bankr on Base."
+description: "Discover and buy newly launched tokens on Bankr."
 tags: [token-launches, trading, memecoins, discovery]
 name: bankr
 version: 0.2.0

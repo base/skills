@@ -1,6 +1,6 @@
 ---
 title: "Aerodrome Plugin"
-description: "Aerodrome swaps, LP, staking, and claims via Sugar CLI on Base."
+description: "Swap, provide liquidity, stake, and claim rewards on Aerodrome."
 tags: [dex, swap, liquidity, staking]
 name: aerodrome
 version: 0.2.0

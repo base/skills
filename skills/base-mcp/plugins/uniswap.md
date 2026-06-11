@@ -1,6 +1,6 @@
 ---
 title: "Uniswap Plugin"
-description: "Uniswap swaps and V2/V3/V4 LP on Base."
+description: "Swap tokens and manage liquidity positions on Uniswap."
 tags: [dex, swap, liquidity]
 name: uniswap
 version: 0.2.0

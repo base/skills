@@ -1,6 +1,6 @@
 ---
 title: "Virtuals Plugin"
-description: "Virtuals AI-agent operations via remote MCP."
+description: "Create and manage Virtuals AI agents, cards, and email."
 tags: [ai-agents, agent-commerce, payment-cards, email]
 name: virtuals
 version: 0.2.0

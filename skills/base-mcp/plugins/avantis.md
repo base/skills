@@ -1,6 +1,6 @@
 ---
 title: "Avantis Plugin"
-description: "Perpetual-futures trading on Avantis via HTTP APIs on Base."
+description: "Open and manage leveraged perpetual-futures positions on Avantis."
 tags: [perps, leverage, trading, derivatives]
 name: avantis
 version: 0.2.0
