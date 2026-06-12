@@ -54,17 +54,17 @@ Two patterns deserve their own references because they span multiple tools:
 
 Plugins extend Base MCP with partner-specific functionality (lending, swaps, perps, etc.). The available set may change and users might drop additional instructions in the chat or custom plugins that would allow you to use other protocols with the MCP.
 
-Plugins currently maintained alongside this skill (the **native plugins**):
+Plugins currently maintained alongside this skill (the **native plugins**). Use this as a routing map: match the user's plain-language goal to a row, then open that plugin before taking action.
 
-| Plugin | Reference |
-|--------|-----------|
-| Morpho | [plugins/morpho.md](plugins/morpho.md) |
-| Moonwell | [plugins/moonwell.md](plugins/moonwell.md) |
-| Uniswap | [plugins/uniswap.md](plugins/uniswap.md) |
-| Avantis (hybrid) | [plugins/avantis.md](plugins/avantis.md) |
-| Virtuals | [plugins/virtuals.md](plugins/virtuals.md) |
-| Aerodrome (CLI-only) | [plugins/aerodrome.md](plugins/aerodrome.md) |
-| Bankr | [plugins/bankr.md](plugins/bankr.md) |
+| Plugin | Open it when the user wants to... | Common actions it covers | Notice before acting |
+|--------|----------------------------------|--------------------------|----------------------|
+| [Morpho](plugins/morpho.md) | Earn yield, use Morpho vaults, or borrow/lend in Morpho markets. | Compare vaults, deposit or withdraw, supply collateral, borrow, repay, check positions. | Base only. Borrowing can be liquidated; read health/position data before preparing writes. |
+| [Moonwell](plugins/moonwell.md) | Lend, borrow, repay, withdraw, or check Moonwell positions/rewards. | Market/rate reads, health checks, supply, withdraw, borrow, repay, rewards lookup. | Works on Base and Optimism. Borrowing can be liquidated; surface health factor before risky actions. |
+| [Uniswap](plugins/uniswap.md) | Swap tokens or manage Uniswap liquidity positions. | Token swaps, approval checks, V2/V3/V4 LP create/increase/decrease/collect flows. | Base only. Quotes can move; confirm slippage and token/position details before writes. |
+| [Avantis](plugins/avantis.md) | Trade leveraged perpetual futures or inspect Avantis trading activity. | Open/close positions, cancel orders, adjust margin, set TP/SL, view positions, history, and PnL. | Base only. Leverage can liquidate the position; chat-only surfaces can read data but use the Avantis UI for trade actions. |
+| [Virtuals](plugins/virtuals.md) | Create or operate Virtuals AI agents, payment cards, or agent email. | Agent management, card setup and limits, email inbox/thread actions, SIWE login. | Requires the Virtuals MCP and a signed login. Handles personal data; avoid exposing tokens, OTPs, card details, or email contents unnecessarily. |
+| [Aerodrome](plugins/aerodrome.md) | Swap, provide liquidity, stake, or claim rewards on Aerodrome. | Pool discovery, swaps, LP add/remove, staking, unstaking, reward claims. | Base only. Requires a shell-capable harness for the Sugar CLI; stop on chat-only surfaces. |
+| [Bankr](plugins/bankr.md) | Discover fresh token launches or buy a newly launched token. | Read launch feeds, inspect token metadata, buy a selected token. | Base only. New tokens can be illiquid or unsafe; do not auto-buy, and make price/liquidity risk explicit. |
 
 Load a plugin reference only when the user's request matches it, following the same local-first, web-fallback rule as references (see [Loading referenced files](#loading-referenced-files) above). For a plugin's own external tools, defer to the plugin file first, then to any CLI help, API schema, or MCP tool descriptions it explicitly tells you to use.
 

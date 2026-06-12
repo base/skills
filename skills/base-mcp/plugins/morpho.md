@@ -1,6 +1,18 @@
 ---
 title: "Morpho Plugin"
-description: "Skill plugin reference for lending on Morpho with Morpho CLI when available, or Morpho MCP on chat-only surfaces."
+description: "Lend, borrow, and manage vault or market positions on Morpho."
+tags: [lending, borrowing, vaults, yield]
+name: morpho
+version: 0.2.0
+integration: hybrid
+chains: [base]
+requires:
+  shell: optional
+  allowlist: []
+  externalMcp: { name: morpho, transport: http, url: "https://mcp.morpho.org/" }
+  cliPackage: "npx @morpho-org/cli@latest"
+auth: none
+risk: [liquidation]
 ---
 
 # Morpho Plugin
@@ -8,25 +20,31 @@ description: "Skill plugin reference for lending on Morpho with Morpho CLI when 
 > [!IMPORTANT]
 > Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any Morpho command or tool. Fetch the user's wallet address only when a flow actually needs it, such as position reads or write preparation.
 
+## Overview
+
 Morpho is a lending protocol. This plugin has two supported execution paths:
 
 1. **CLI-capable harnesses:** use Morpho CLI (`npx @morpho-org/cli@latest`) to query protocol state and prepare simulated unsigned transactions.
 2. **Chat-only or no-shell harnesses:** use Morpho MCP (`https://mcp.morpho.org/`) for vault discovery, position queries, and prepare-style tools.
 
-Prefer Morpho CLI whenever the harness has shell/terminal access. If no shell is available, do not stop; detect whether Morpho MCP tools are already exposed, and if not, help the user install the Morpho MCP for their current surface.
+Prefer Morpho CLI whenever the harness has shell/terminal access. If no shell is available, do not stop; detect whether Morpho MCP tools are already exposed, and if not, help the user install the Morpho MCP for their current surface. Both paths prepare unsigned calls that are submitted through Base MCP's `send_calls`.
 
----
-
-## Environment Detection
+## Detection
 
 Use this routing order:
 
-1. **Shell/terminal available** (Codex, Claude Code, Cursor terminal, or similar): use [Morpho CLI](#morpho-cli-path).
-2. **No shell, but Morpho MCP tools are exposed**: use [Morpho MCP Path](#morpho-mcp-path).
-3. **No shell and no Morpho MCP tools**: help the user install Morpho MCP, then ask them to reconnect or restart the session so the tools register.
+1. **Shell/terminal available** (Codex, Claude Code, Cursor terminal, or similar): use the [Morpho CLI](#commands).
+2. **No shell, but Morpho MCP tools are exposed**: use the [MCP path](#orchestration).
+3. **No shell and no Morpho MCP tools**: help the user install Morpho MCP (see [Installation](#installation)), then ask them to reconnect or restart the session so the tools register.
 
-Install Morpho MCP when needed:
+## Installation
 
+The Morpho CLI needs no install step — it runs via `npx @morpho-org/cli@latest` on any shell-capable harness.
+
+Install Morpho MCP when the MCP path is needed and its tools are not already exposed:
+
+- **Claude Code:** `claude mcp add morpho --transport http https://mcp.morpho.org/`
+- **Codex:** `codex mcp add morpho --url https://mcp.morpho.org/` (or add `[mcp_servers.morpho] url = "https://mcp.morpho.org/"` to `codex.toml`)
 - **Claude.ai web / Claude Desktop / iOS / Android:** Customize → Connectors → Add custom connector, name `morpho`, URL `https://mcp.morpho.org/`.
 - **ChatGPT:** Settings → Connectors → Create, name `morpho`, MCP Server URL `https://mcp.morpho.org/`, Authentication `OAuth` (enable Developer Mode if prompted).
 - **Cursor / JSON-config harnesses without shell:** add the JSON snippet below to the harness's MCP config and restart.
@@ -36,14 +54,22 @@ Install Morpho MCP when needed:
 {
   "mcpServers": {
     "base-mcp": { "url": "https://mcp.base.org" },
-    "morpho": { "url": "https://mcp.morpho.org/" }
+    "morpho": { "transport": "http", "url": "https://mcp.morpho.org/" }
   }
 }
 ```
 
----
+## Surface Routing
 
-## Morpho CLI Path
+| Surface | Path |
+|---------|------|
+| Shell/terminal available | Morpho CLI (`npx @morpho-org/cli@latest`) → `send_calls`. |
+| No shell, Morpho MCP tools exposed | Morpho MCP prepare/read tools → `send_calls`. |
+| No shell, no Morpho MCP tools | Install Morpho MCP (see [Installation](#installation)), then use the MCP path. |
+
+Both paths submit through Base MCP `send_calls`; only the preparation differs. For `--chain base`, submit with `chain: "base"`.
+
+## Commands
 
 The CLI outputs JSON to stdout, never signs, and never broadcasts. Every command requires `--chain`.
 
@@ -80,7 +106,9 @@ Use the CLI's built-in flags (`--fields`, `--sort-by`, `--limit`, etc.) to shape
 
 For Base Account flows, use `--chain base` and submit prepared transactions through Base MCP with `chain: "base"`. The upstream CLI also supports other chain names; only submit through Base MCP when the chain is supported by Base MCP's `send_calls`.
 
-### CLI Orchestration
+## Orchestration
+
+### CLI path
 
 ```
 get_wallets -> user address
@@ -94,7 +122,27 @@ get_request_status(request ID) -> confirmed
 
 `prepare-*` commands simulate by default. Check `simulationOk` before presenting an approval link. If `simulationOk` is `false`, inspect and report the revert reason instead of submitting the batch.
 
-Prepared operations include a root `transactions` array. For each transaction, pass only the unsigned call fields Base MCP needs:
+### MCP path
+
+Use this path only when no shell/terminal is available, or when the user explicitly asks to use the already connected Morpho MCP. Morpho MCP URL: `https://mcp.morpho.org/`.
+
+The exact list of Morpho tools, their parameters, and supported chains are exposed by the Morpho MCP itself. Read its tool descriptions rather than relying on a fixed catalog in this file. Tools may be added, renamed, or removed over time.
+
+```
+Morpho MCP read tool -> choose vault or market
+Morpho MCP prepare tool -> { calls: [...], chainId }
+send_calls(chain, calls) -> approval URL + request ID
+user approves
+get_request_status(request ID) -> confirmed
+```
+
+For MCP-generated calls, review any simulation output or warnings returned by the Morpho tool before submitting the batch. If the MCP exposes a simulation tool, use it for novel, large, borrow, or collateral-withdrawal operations.
+
+## Submission
+
+Target tool: **`send_calls`** (both paths).
+
+A prepared operation includes a root `transactions` array (CLI) or a `{ calls, chainId }` object (MCP). For each transaction, pass only the unsigned call fields Base MCP needs:
 
 ```json
 {
@@ -109,31 +157,7 @@ Prepared operations include a root `transactions` array. For each transaction, p
 }
 ```
 
----
-
-## Morpho MCP Path
-
-Use this path only when no shell/terminal is available, or when the user explicitly asks to use the already connected Morpho MCP.
-
-Morpho MCP URL: `https://mcp.morpho.org/`
-
-The exact list of Morpho tools, their parameters, and supported chains are exposed by the Morpho MCP itself. Read its tool descriptions rather than relying on a fixed catalog in this file. Tools may be added, renamed, or removed over time.
-
-Morpho's prepare-style tools return unsigned calls plus a chain identifier. Map the returned chain to Base MCP's `chain` string and pass the calls to Base MCP's batched-calls tool.
-
-```
-Morpho MCP read tool -> choose vault or market
-Morpho MCP prepare tool -> { calls: [...], chainId }
-send_calls(chain, calls) -> approval URL + request ID
-user approves
-get_request_status(request ID) -> confirmed
-```
-
-For MCP-generated calls, review any simulation output or warnings returned by the Morpho tool before submitting the batch. If the MCP exposes a simulation tool, use it for novel, large, borrow, or collateral-withdrawal operations.
-
-See [../references/batch-calls.md](../references/batch-calls.md) and [../references/approval-mode.md](../references/approval-mode.md).
-
----
+Map the MCP-returned `chainId` to Base MCP's `chain` string. Then walk the approval flow and poll `get_request_status` — see [../references/batch-calls.md](../references/batch-calls.md) and [../references/approval-mode.md](../references/approval-mode.md).
 
 ## Example Prompts
 
@@ -159,10 +183,9 @@ Check if my Morpho borrow position is healthy
 2. Use the CLI positions command or Morpho MCP positions/health tool.
 3. Report the health factor and liquidation-relevant fields returned by the selected path.
 
----
+## Risks & Warnings
 
-## Safety Rules
-
+- **Liquidation risk.** Borrow and collateral-withdrawal operations can put a position at risk of liquidation. Verify the health factor before and after, and report liquidation-relevant fields to the user.
 - Never ask for or use a private key.
 - Never use a local signer, `cast send`, or browser wallet signing helper.
 - Do not sign or broadcast outside Base MCP.
