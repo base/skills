@@ -1,18 +1,16 @@
 ---
 title: "OpenSea Plugin"
-description: "NFT marketplace trading, token swaps, and drops/minting via OpenSea CLI + OpenSea MCP → send_calls on Ethereum, Base, Polygon, Arbitrum, Optimism, and Avalanche."
+description: "NFT marketplace trading, token swaps, and drops/minting via OpenSea REST API + CLI → send_calls on Ethereum, Base, Polygon, Arbitrum, Optimism, and Avalanche."
 tags: [nft, marketplace, swap, drops, trading]
 name: opensea
-version: 0.2.0
+version: 0.3.0
 integration: hybrid
 chains: [ethereum, base, polygon, arbitrum, optimism, avalanche]
 requires:
   shell: optional
-  allowlist: []
-  externalMcp:
-    name: opensea
-    url: https://mcp.opensea.io/mcp
-  cliPackage: "@opensea/cli"
+  allowlist: [api.opensea.io]
+  externalMcp: null
+  cliPackage: "npx @opensea/cli@latest"
 auth: api-key
 risk: [slippage, irreversible]
 ---
@@ -20,51 +18,50 @@ risk: [slippage, irreversible]
 # OpenSea Plugin
 
 > [!IMPORTANT]
-> Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any OpenSea endpoint. Authenticate once per session — see `## Auth`.
+> **Before using any OpenSea tool, create an API key.** All OpenSea API endpoints require authentication. See `## Auth` below — one POST request gives your agent instant access.
 
 ## Overview
 
-OpenSea is an NFT marketplace and token trading platform. This plugin covers three capabilities: **token swaps** (cross-chain DEX aggregator), **NFT drops and minting**, and **NFT marketplace trading** (buy, sell, cross-chain fulfill via Seaport). The plugin fetches unsigned calldata from the OpenSea API or CLI and submits it through Base MCP's `send_calls`. Two execution paths: CLI (`@opensea/cli`) when a shell is available, or the OpenSea MCP server (`https://mcp.opensea.io/mcp`) for read operations and swap quotes on chat-only surfaces. Write operations (fulfillment, minting) require a shell.
-
-## Detection
-
-If `opensea`-prefixed MCP tools (e.g. `get_collections`, `search_items`, `get_token_swap_quote`) are exposed, the OpenSea MCP is installed — use it for reads and swap quotes. If no OpenSea tools are exposed and no shell is available, help the user install the OpenSea MCP (see `## Installation`). If a shell is available, prefer the CLI path regardless of MCP availability.
-
-## Installation
-
-The CLI runs via `npx` with no install step required, or can be installed globally:
-
-```bash
-npm install -g @opensea/cli
-# Or use without installing:
-npx @opensea/cli collections get boredapeyachtclub
-```
-
-If the harness has no shell but OpenSea MCP tools are not exposed, help the user install it:
-
-- **Claude.ai / Claude Desktop:** Customize → Connectors → Add custom connector, name `opensea`, URL `https://mcp.opensea.io/mcp`. Set header `X-API-KEY` to the API key.
-- **ChatGPT:** Settings → Connectors → Create, name `opensea`, MCP Server URL `https://mcp.opensea.io/mcp`.
-- **Cursor / JSON-config harnesses:** add to MCP config:
-
-```json
-{
-  "mcpServers": {
-    "base-mcp": { "url": "https://mcp.base.org" },
-    "opensea": {
-      "url": "https://mcp.opensea.io/mcp",
-      "headers": { "X-API-KEY": "<OPENSEA_API_KEY>" }
-    }
-  }
-}
-```
+OpenSea is an NFT marketplace and token trading platform. This plugin covers three capabilities: **token swaps** (cross-chain DEX aggregator), **NFT drops and minting**, and **NFT marketplace trading** (buy, sell, cross-chain fulfill via Seaport). The plugin fetches unsigned calldata from the OpenSea REST API or CLI and submits it through Base MCP's `send_calls`. Two execution paths: CLI (`npx @opensea/cli@latest`) when a shell is available, or direct HTTP calls to `api.opensea.io` via `web_request` on chat-only surfaces.
 
 ## Auth
 
-All OpenSea endpoints require an `x-api-key` header (or `X-API-KEY` for MCP config). Request a free-tier key (no signup required):
+All OpenSea API endpoints require an `x-api-key` header. **This is the first step before using any tool.**
+
+### Instant API key for agents
+
+Create a free-tier API key instantly with a single call — no signup, no wallet, no human needed:
 
 ```bash
 export OPENSEA_API_KEY=$(curl -s -X POST https://api.opensea.io/api/v2/auth/keys | jq -r '.api_key')
 ```
+
+On chat-only surfaces (no shell), use `web_request` to POST to `https://api.opensea.io/api/v2/auth/keys` and extract the `api_key` field from the response.
+
+Response shape:
+
+```json
+{
+  "api_key": "a1b2c3d4e5f6...",
+  "name": "agent_free_e753a54c",
+  "expires_at": "2026-05-14T00:00:00Z",
+  "rate_limits": { "read": "60/m", "write": "5/m", "fulfillment": "5/m" }
+}
+```
+
+Use the returned key in the `X-API-KEY` header on all subsequent requests.
+
+**Limits:**
+
+- 3 key creations per hour per IP
+- 60 requests/min for read endpoints
+- 5 requests/min for write endpoints
+- 5 requests/min for fulfillment endpoints
+- Keys expire after 30 days
+
+To upgrade to higher rate limits, visit <https://opensea.io/settings/developer>.
+
+Full documentation: <https://docs.opensea.io/reference/api-keys#instant-api-key-for-agents>
 
 Or set an existing key:
 
@@ -72,24 +69,63 @@ Or set an existing key:
 export OPENSEA_API_KEY="your-api-key"
 ```
 
-The CLI reads `OPENSEA_API_KEY` from the environment automatically. Free-tier limits: 120 read/min, 60 write/min, 60 fulfillment/min.
+The CLI reads `OPENSEA_API_KEY` from the environment automatically.
+
+## Detection
+
+If a shell is available, prefer the CLI path. If no shell is available, use `web_request` to call the OpenSea REST API at `api.opensea.io` directly (the host is on the `allowlist`). No external MCP installation is required.
+
+## Endpoints
+
+All endpoints use base URL `https://api.opensea.io/api/v2`. All require the `x-api-key` header.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/auth/keys` | Create instant API key (no auth needed for this one endpoint) |
+| GET | `/collections/{slug}` | Collection details |
+| GET | `/collections/{slug}/stats` | Collection stats (floor, volume) |
+| GET | `/listings/collection/{slug}/best` | Best listings for collection |
+| GET | `/listings/collection/{slug}/all` | All active listings |
+| GET | `/offers/collection/{slug}/best` | Best offers for collection |
+| GET | `/chain/{chain}/contract/{address}/nfts/{id}` | NFT details |
+| POST | `/listings/fulfillment_data` | Get fulfillment calldata for a listing |
+| POST | `/offers/fulfillment_data` | Get fulfillment calldata for an offer |
+| POST | `/listings/cross_chain_fulfillment_data` | Cross-chain buy calldata |
+| GET | `/swap/quote?from_chain=&from_address=&to_chain=&to_address=&quantity=&address=` | Swap quote with calldata |
+| GET | `/drops/upcoming?chains=` | Upcoming drops |
+| GET | `/drops/{slug}` | Drop details and eligibility |
+| POST | `/drops/{slug}/mint` | Build mint transaction |
 
 ## Surface Routing
 
 | Capability | Shell harness (Claude Code, Codex, Cursor, Devin) | Chat-only (Claude.ai, ChatGPT) |
 |---|---|---|
-| **Read queries** — collections, NFTs, tokens, listings, offers, drops | CLI (`opensea` commands) or `curl` | OpenSea MCP tools (`search_collections`, `get_items`, `get_trending_tokens`, etc.) |
-| **Swap quotes** | CLI: `opensea swaps quote` | OpenSea MCP: `get_token_swap_quote` |
-| **Swap execution** (submit calldata) | CLI quote → `send_calls` | MCP quote → `send_calls` |
-| **NFT buy/sell** (fulfillment) | `curl` POST to fulfillment endpoints → `send_calls` | Stop — fulfillment POST endpoints require auth headers that `web_request` cannot pass. Tell the user this operation requires CLI access. |
-| **Minting** | CLI: `opensea drops mint` or `curl` POST → `send_calls` | OpenSea MCP: `get_mint_action` → `send_calls` |
-| **Cross-chain buy** | CLI: `opensea listings cross-chain-fulfill` → ordered `send_calls` batches | Stop — requires CLI access. |
+| **Create API key** | `curl -X POST https://api.opensea.io/api/v2/auth/keys` | `web_request` POST to `/api/v2/auth/keys` |
+| **Read queries** — collections, NFTs, tokens, listings, offers, drops | CLI (`opensea` commands) or `curl` | `web_request` GET to appropriate endpoint (see Endpoints table) |
+| **Swap quotes** | CLI: `opensea swaps quote` or `curl` GET | `web_request` GET to `/api/v2/swap/quote?...` |
+| **Swap execution** (submit calldata) | CLI quote → `send_calls` | `web_request` quote → `send_calls` |
+| **NFT buy/sell** (fulfillment) | `curl` POST to fulfillment endpoints → `send_calls` | `web_request` POST to fulfillment endpoints → `send_calls` |
+| **Minting** | CLI: `opensea drops mint` or `curl` POST → `send_calls` | `web_request` POST to `/api/v2/drops/{slug}/mint` → `send_calls` |
+| **Cross-chain buy** | CLI: `opensea listings cross-chain-fulfill` → ordered `send_calls` batches | `web_request` POST to `/api/v2/listings/cross_chain_fulfillment_data` → ordered `send_calls` batches |
 
-Routing order for any OpenSea call:
+Routing order:
 
 1. **Shell / CLI** — works for every endpoint, any method. Preferred path.
-2. **OpenSea MCP tools** — chat-only or no-shell surfaces, reads + swap quotes + mint actions.
-3. **Stop** — if no shell and no OpenSea MCP, and the operation is a write, tell the user CLI access is required.
+2. **`web_request`** — chat-only or no-shell surfaces, all operations via REST API.
+
+## Installation
+
+The CLI runs via `npx` with no install step required:
+
+```bash
+# Use without installing:
+npx @opensea/cli@latest collections get boredapeyachtclub
+
+# Or install globally:
+npm install -g @opensea/cli
+```
+
+No MCP installation is required. This plugin uses direct HTTP calls to `api.opensea.io`.
 
 ## Commands
 
@@ -105,7 +141,11 @@ opensea swaps quote \
 
 Use `0x0000000000000000000000000000000000000000` for native ETH. The CLI auto-converts human-readable amounts (e.g. `0.02`) to smallest units.
 
-OpenSea MCP alternative: `get_token_swap_quote` (params: `fromContractAddress`, `toContractAddress`, `fromChain`, `toChain`, `fromQuantity`, `address`).
+**REST alternative** (for chat-only via `web_request`):
+
+```
+GET /api/v2/swap/quote?from_chain=base&from_address=0x0000000000000000000000000000000000000000&to_chain=base&to_address=<token>&quantity=<amount>&address=<wallet>
+```
 
 **Quote response shape:**
 
@@ -146,9 +186,13 @@ opensea drops get <collection_slug>
 opensea drops mint <slug> --minter <wallet_address> --quantity <n>
 ```
 
-OpenSea MCP alternatives: `get_upcoming_drops`, `get_drop_details` (params: `collectionSlug`, `minter`), `get_mint_action` (params: `collectionSlug`, `chain`, `contractAddress`, `quantity`, `minterAddress`).
+**REST alternatives** (for chat-only via `web_request`):
 
-**Mint response shape (CLI and MCP):**
+- `GET /api/v2/drops/upcoming?chains=base,ethereum`
+- `GET /api/v2/drops/{slug}` (params: `collectionSlug`)
+- `POST /api/v2/drops/{slug}/mint` (body: `{ "quantity": <n>, "minterAddress": "<address>" }`)
+
+**Mint response shape (CLI and REST):**
 
 ```json
 {
@@ -180,9 +224,10 @@ opensea offers best-for-nft <collection_slug> <token_id>
 opensea listings all <collection_slug> --limit 20
 ```
 
-OpenSea MCP alternatives: `search_collections`, `search_items`, `get_collections`, `get_collection_stats`, `get_items`, `get_activity`.
+### NFT Marketplace (fulfillment)
 
-### NFT Marketplace (fulfillment — shell only)
+> [!NOTE]
+> The fulfillment endpoint returns `fulfillment_data.transaction` with ready-to-use hex calldata (`to`, `data`, `value`). Map directly to `send_calls`. Available on both shell and chat-only surfaces via `web_request`.
 
 **Buy an NFT (fulfill listing):**
 
@@ -236,7 +281,7 @@ curl -s -X POST "https://api.opensea.io/api/v2/offers/fulfillment_data" \
 }
 ```
 
-**Cross-chain buy (shell only):**
+**Cross-chain buy (shell preferred, also available via `web_request`):**
 
 Buy NFTs using tokens from a different chain. Returns ordered transactions (approval + bridge + fulfill).
 
@@ -252,79 +297,113 @@ opensea listings cross-chain-fulfill \
 
 Supports sweeping up to 50 listings by passing multiple comma-separated hashes.
 
+## Value Conversion
+
+> [!IMPORTANT]
+> The OpenSea API returns `value` as a **decimal string** (e.g. `"20000000000000000"`). The `send_calls` tool expects `value` as a **hex string** (e.g. `"0x470de4df820000"`). You must convert before submitting.
+
+Conversion:
+
+```
+decimal "20000000000000000" → hex "0x470de4df820000"
+decimal "1000000000000000000" → hex "0xde0b6b3a7640000"
+decimal "0" → hex "0x0"
+```
+
+In shell: `printf "0x%x" 20000000000000000`
+
+In JavaScript: `"0x" + BigInt(value).toString(16)`
+
 ## Orchestration
 
 ### Swap
 
 ```
 1. get_wallets → address
-2. Ensure API key is set (see ## Auth)
+2. Create API key if not already set (POST /api/v2/auth/keys)
 3. opensea swaps quote --from-chain <chain> --from-address <from> \
      --to-chain <chain> --to-address <to> \
      --quantity <amount> --address <address>
-   (or MCP: get_token_swap_quote)
+   (or web_request GET /api/v2/swap/quote?...)
 4. Review quote with user: check swapImpact, costs, totalPrice
-5. send_calls(chain=<identifier>, calls from transactionSubmissionData)
-6. User approves → get_request_status(requestId)
+5. Convert value decimal→hex
+6. send_calls(chain=<identifier>, calls from transactionSubmissionData)
+7. User approves → get_request_status(requestId)
 ```
 
 ### Mint
 
 ```
 1. get_wallets → address
-2. opensea drops list --chains <chains> --type upcoming
-3. opensea drops get <slug> → check eligibility, pricing, supply
-4. Confirm mint with user (price, quantity)
-5. opensea drops mint <slug> --minter <address> --quantity <n>
-   (or MCP: get_mint_action)
-6. send_calls(chain=<chain>, calls from mint response)
-7. User approves → get_request_status(requestId)
+2. Create API key if not already set (POST /api/v2/auth/keys)
+3. opensea drops list --chains <chains> --type upcoming
+   (or web_request GET /api/v2/drops/upcoming?chains=<chains>)
+4. opensea drops get <slug> → check eligibility, pricing, supply
+   (or web_request GET /api/v2/drops/{slug})
+5. Confirm mint with user (price, quantity)
+6. opensea drops mint <slug> --minter <address> --quantity <n>
+   (or web_request POST /api/v2/drops/{slug}/mint)
+7. Convert value decimal→hex
+8. send_calls(chain=<chain>, calls from mint response)
+9. User approves → get_request_status(requestId)
 ```
 
 ### Buy NFT (fulfill listing)
 
 ```
 1. get_wallets → address
-2. opensea search "<query>" --types collection → find collection
-3. opensea listings best-for-nft <slug> <token_id> → get order_hash, price
-4. Confirm price with user
-5. curl POST /api/v2/listings/fulfillment_data with order_hash + address
-6. send_calls(chain=<chain>, calls from fulfillment_data.transaction)
-7. User approves → get_request_status(requestId)
+2. Create API key if not already set (POST /api/v2/auth/keys)
+3. opensea search "<query>" --types collection → find collection
+   (or web_request GET /api/v2/collections?search=<query>)
+4. opensea listings best-for-nft <slug> <token_id> → get order_hash, price
+   (or web_request GET /api/v2/listings/collection/{slug}/best)
+5. Confirm price with user
+6. curl POST /api/v2/listings/fulfillment_data with order_hash + address
+   (or web_request POST to same endpoint)
+7. Convert fulfillment_data.transaction.value decimal→hex
+8. send_calls(chain=<chain>, calls from fulfillment_data.transaction)
+9. User approves → get_request_status(requestId)
 ```
 
 ### Sell NFT (accept offer)
 
 ```
 1. get_wallets → address
-2. opensea offers best-for-nft <slug> <token_id> → get offer_hash, price
-3. Confirm acceptance with user
-4. curl POST /api/v2/offers/fulfillment_data with offer_hash + address
-5. send_calls(chain=<chain>, calls from fulfillment_data.transaction)
-6. User approves → get_request_status(requestId)
+2. Create API key if not already set (POST /api/v2/auth/keys)
+3. opensea offers best-for-nft <slug> <token_id> → get offer_hash, price
+   (or web_request GET /api/v2/offers/collection/{slug}/best)
+4. Confirm acceptance with user
+5. curl POST /api/v2/offers/fulfillment_data with offer_hash + address
+   (or web_request POST to same endpoint)
+6. Convert fulfillment_data.transaction.value decimal→hex
+7. send_calls(chain=<chain>, calls from fulfillment_data.transaction)
+8. User approves → get_request_status(requestId)
 ```
 
 ### Cross-chain buy
 
 ```
 1. get_wallets → address
-2. opensea listings best-for-nft <slug> <token_id> → get order_hash
-3. Confirm price and payment chain/token with user
-4. opensea listings cross-chain-fulfill --hashes <hash> \
+2. Create API key if not already set (POST /api/v2/auth/keys)
+3. opensea listings best-for-nft <slug> <token_id> → get order_hash
+4. Confirm price and payment chain/token with user
+5. opensea listings cross-chain-fulfill --hashes <hash> \
      --listing-chain <chain> --protocol-address 0x0000000000000068f116a894984e2db1123eb395 \
      --fulfiller <address> --payment-chain <chain> --payment-token <token>
-5. Group transactions by chain
-6. send_calls(chain=<payment_chain>, calls=[approve, bridge])
-7. User approves → get_request_status(requestId) → wait for bridge confirmation
-8. send_calls(chain=<listing_chain>, calls=[fulfill])
-9. User approves → get_request_status(requestId)
+   (or web_request POST /api/v2/listings/cross_chain_fulfillment_data)
+6. Group transactions by chain
+7. Convert all value fields decimal→hex
+8. send_calls(chain=<payment_chain>, calls=[approve, bridge])
+9. User approves → get_request_status(requestId) → wait for bridge confirmation
+10. send_calls(chain=<listing_chain>, calls=[fulfill])
+11. User approves → get_request_status(requestId)
 ```
 
 ## Submission
 
 Target tool: **`send_calls`**
 
-All OpenSea write operations produce unsigned `{ to, value, data }` calldata. Map each response to `send_calls`:
+All OpenSea write operations produce unsigned `{ to, value, data }` calldata. The API returns `value` as a decimal string — **convert to hex** before passing to `send_calls` (see `## Value Conversion`).
 
 **Swap** — map `swap.actions[0].transactionSubmissionData`:
 
@@ -333,7 +412,7 @@ All OpenSea write operations produce unsigned `{ to, value, data }` calldata. Ma
   "chain": "<transactionSubmissionData.chain.identifier>",
   "calls": [{
     "to": "<transactionSubmissionData.to>",
-    "value": "<transactionSubmissionData.value>",
+    "value": "0x<hex(transactionSubmissionData.value)>",
     "data": "<transactionSubmissionData.data>"
   }]
 }
@@ -346,7 +425,7 @@ All OpenSea write operations produce unsigned `{ to, value, data }` calldata. Ma
   "chain": "<chain>",
   "calls": [{
     "to": "<response.to>",
-    "value": "<response.value>",
+    "value": "0x<hex(response.value)>",
     "data": "<response.data>"
   }]
 }
@@ -359,7 +438,7 @@ All OpenSea write operations produce unsigned `{ to, value, data }` calldata. Ma
   "chain": "<chain>",
   "calls": [{
     "to": "<fulfillment_data.transaction.to>",
-    "value": "<fulfillment_data.transaction.value>",
+    "value": "0x<hex(fulfillment_data.transaction.value)>",
     "data": "<fulfillment_data.transaction.data>"
   }]
 }
@@ -372,7 +451,7 @@ All OpenSea write operations produce unsigned `{ to, value, data }` calldata. Ma
   "chain": "base",
   "calls": [
     { "to": "<approve.to>", "data": "<approve.data>", "value": "0x0" },
-    { "to": "<bridge.to>",  "data": "<bridge.data>",  "value": "<bridge.value>" }
+    { "to": "<bridge.to>",  "data": "<bridge.data>",  "value": "0x<hex(bridge.value)>" }
   ]
 }
 ```
@@ -383,7 +462,7 @@ After bridge confirms:
 {
   "chain": "ethereum",
   "calls": [
-    { "to": "<fulfill.to>", "data": "<fulfill.data>", "value": "<fulfill.value>" }
+    { "to": "<fulfill.to>", "data": "<fulfill.data>", "value": "0x<hex(fulfill.value)>" }
   ]
 }
 ```
@@ -395,35 +474,39 @@ See [../references/batch-calls.md](../references/batch-calls.md) and [../referen
 ```
 Swap 0.02 ETH for USDC on Base
 ```
-1. Get wallet address via `get_wallets`.
-2. Run `opensea swaps quote --from-chain base --from-address 0x0000000000000000000000000000000000000000 --to-chain base --to-address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 --quantity 0.02 --address <address>` (or MCP: `get_token_swap_quote`).
-3. Review quote with user (price impact, fees).
-4. Map `transactionSubmissionData` to `send_calls`.
+1. Create API key via `POST /api/v2/auth/keys` (if not already set).
+2. Get wallet address via `get_wallets`.
+3. Run `opensea swaps quote --from-chain base --from-address 0x0000000000000000000000000000000000000000 --to-chain base --to-address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 --quantity 0.02 --address <address>` (or `web_request` GET to swap/quote endpoint).
+4. Review quote with user (price impact, fees).
+5. Convert `value` decimal→hex; map `transactionSubmissionData` to `send_calls`.
 
 ```
 Buy a Bored Ape on Ethereum
 ```
-1. Get wallet address via `get_wallets`.
-2. Run `opensea listings best boredapeyachtclub --limit 5` to show cheapest listings.
-3. User picks one; extract `order_hash`.
-4. `curl` POST to `/api/v2/listings/fulfillment_data` with order hash and wallet address.
-5. Map `fulfillment_data.transaction` to `send_calls`.
+1. Create API key via `POST /api/v2/auth/keys` (if not already set).
+2. Get wallet address via `get_wallets`.
+3. Run `opensea listings best boredapeyachtclub --limit 5` to show cheapest listings.
+4. User picks one; extract `order_hash`.
+5. `curl` POST to `/api/v2/listings/fulfillment_data` with order hash and wallet address.
+6. Convert `value` decimal→hex; map `fulfillment_data.transaction` to `send_calls`.
 
 ```
 What drops are coming up on Base?
 ```
-1. Run `opensea drops list --chains base --type upcoming` (or MCP: `get_upcoming_drops`).
-2. Present results. If user wants to mint, run `opensea drops mint <slug> --minter <address>` (or MCP: `get_mint_action`).
-3. Map response to `send_calls`.
+1. Create API key via `POST /api/v2/auth/keys` (if not already set).
+2. Run `opensea drops list --chains base --type upcoming` (or `web_request` GET `/api/v2/drops/upcoming?chains=base`).
+3. Present results. If user wants to mint, run `opensea drops mint <slug> --minter <address>` (or `web_request` POST to mint endpoint).
+4. Convert `value` decimal→hex; map response to `send_calls`.
 
 ```
 Buy an NFT on Ethereum using USDC from Base
 ```
-1. Get wallet address via `get_wallets`.
-2. Find the listing: `opensea listings best-for-nft <slug> <token_id>`.
-3. Confirm price and payment token with user.
-4. Run `opensea listings cross-chain-fulfill` with payment-chain `base`, payment-token USDC.
-5. Submit ordered `send_calls` batches: approval + bridge on Base, then fulfill on Ethereum.
+1. Create API key via `POST /api/v2/auth/keys` (if not already set).
+2. Get wallet address via `get_wallets`.
+3. Find the listing: `opensea listings best-for-nft <slug> <token_id>`.
+4. Confirm price and payment token with user.
+5. Run `opensea listings cross-chain-fulfill` with payment-chain `base`, payment-token USDC.
+6. Convert all `value` fields decimal→hex; submit ordered `send_calls` batches: approval + bridge on Base, then fulfill on Ethereum.
 
 ## Risks & Warnings
 
