@@ -25,7 +25,7 @@ risk: [slippage, irreversible]
 
 ## Overview
 
-OpenSea is an NFT marketplace and token trading platform. This plugin covers three capabilities: **token swaps** (cross-chain DEX aggregator), **NFT drops and minting**, and **NFT marketplace trading** (buy, sell, cross-chain fulfill via Seaport). The plugin fetches unsigned calldata from the OpenSea REST API or CLI and submits it through Base MCP's `send_calls`. Two execution paths: CLI (`npx @opensea/cli@latest`) when a shell is available, or direct HTTP calls to `api.opensea.io` via `web_request` on chat-only surfaces.
+OpenSea is an NFT marketplace and token trading platform. This plugin covers three capabilities: **token swaps** (cross-chain DEX aggregator), **NFT drops and minting**, and **NFT marketplace trading** (buy, sell, cross-chain fulfill via Seaport). The plugin fetches unsigned calldata from the OpenSea REST API or CLI and submits it through Base MCP's `send_calls`.
 
 ## Auth
 
@@ -38,8 +38,6 @@ Create a free-tier API key instantly with a single call — no signup, no wallet
 ```bash
 export OPENSEA_API_KEY=$(curl -s -X POST https://api.opensea.io/api/v2/auth/keys | jq -r '.api_key')
 ```
-
-On chat-only surfaces (no shell), use `web_request` to POST to `https://api.opensea.io/api/v2/auth/keys` and extract the `api_key` field from the response.
 
 Response shape:
 
@@ -76,7 +74,7 @@ The CLI reads `OPENSEA_API_KEY` from the environment automatically.
 
 ## Detection
 
-If a shell is available, prefer the CLI path. If no shell is available, use `web_request` to call the OpenSea REST API at `api.opensea.io` directly (the host is on the `allowlist`). No external MCP installation is required.
+If a shell is available, prefer the CLI path. Otherwise, call the OpenSea REST API at `api.opensea.io` directly. No external MCP installation is required.
 
 ## Endpoints
 
@@ -114,23 +112,6 @@ curl "https://api.opensea.io/api/v2/collections/doodles-official" \
 
 Recommended for agents operating within limited context windows.
 
-## Surface Routing
-
-| Capability | Shell harness (Claude Code, Codex, Cursor, Devin) | Chat-only (Claude.ai, ChatGPT) |
-|---|---|---|
-| **Create API key** | `curl -X POST https://api.opensea.io/api/v2/auth/keys` | `web_request` POST to `/api/v2/auth/keys` |
-| **Read queries** — collections, NFTs, tokens, listings, offers, drops | CLI (`opensea` commands) or `curl` | `web_request` GET to appropriate endpoint |
-| **Swap quotes** | CLI: `opensea swaps quote` or `curl` GET | `web_request` GET to `/api/v2/swap/quote?...` |
-| **Swap execution** | CLI quote → `send_calls` | `web_request` quote → `send_calls` |
-| **Buy NFT (any token)** | `curl` POST to `/listings/cross_chain_fulfillment_data` → `send_calls` | `web_request` POST to same → `send_calls` |
-| **Buy NFT (same token, same chain)** | CLI: fulfillment via CLI (preferred) | `web_request` POST `/listings/cross_chain_fulfillment_data` (use cross-chain endpoint even for same-chain — it returns ready-to-use calldata) |
-| **Minting** | CLI: `opensea drops mint` or `curl` POST → `send_calls` | `web_request` POST to `/api/v2/drops/{slug}/mint` → `send_calls` |
-
-Routing order:
-
-1. **Shell / CLI** — works for every endpoint, any method. Preferred path.
-2. **`web_request`** — chat-only or no-shell surfaces, all operations via REST API.
-
 > [!NOTE]
 > For NFT purchases, prefer the **cross-chain fulfillment endpoint** (`/listings/cross_chain_fulfillment_data`) even for same-chain buys. It returns ready-to-use `{chain, to, data, value}` transactions. The same-chain endpoint (`/listings/fulfillment_data`) returns a decoded Seaport struct that requires ABI encoding — only use it from the CLI which handles encoding internally.
 
@@ -162,7 +143,7 @@ opensea swaps quote \
 
 Use `0x0000000000000000000000000000000000000000` for native ETH. The CLI auto-converts human-readable amounts (e.g. `0.02`) to smallest units.
 
-**REST alternative** (for chat-only via `web_request`):
+**REST alternative:**
 
 ```
 GET /api/v2/swap/quote?from_chain=base&from_address=0x0000000000000000000000000000000000000000&to_chain=base&to_address=<token>&quantity=<amount_in_wei>&address=<wallet>
@@ -206,7 +187,7 @@ opensea drops get <collection_slug>
 opensea drops mint <slug> --minter <wallet_address> --quantity <n>
 ```
 
-**REST alternatives** (for chat-only via `web_request`):
+**REST alternatives:**
 
 - `GET /api/v2/drops?type=upcoming&chains=base,ethereum`
 - `GET /api/v2/drops/{slug}`
@@ -336,7 +317,7 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
 3. opensea swaps quote --from-chain <chain> --from-address <from> \
      --to-chain <chain> --to-address <to> \
      --quantity <amount> --address <address>
-   (or web_request GET /api/v2/swap/quote?from_chain=...&quantity=<amount_in_wei>&...)
+   (or GET /api/v2/swap/quote?from_chain=...&quantity=<amount_in_wei>&...)
 4. Review quote with user: check price_impact, costs, total_price_usd
 5. For each transaction in response.transactions:
      Convert value decimal→hex
@@ -350,12 +331,12 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
 1. get_wallets → address
 2. Create API key if not already set (POST /api/v2/auth/keys)
 3. opensea drops list --chains <chains> --type upcoming
-   (or web_request GET /api/v2/drops?type=upcoming&chains=<chains>)
+   (or GET /api/v2/drops?type=upcoming&chains=<chains>)
 4. opensea drops get <slug> → check eligibility, pricing, supply
-   (or web_request GET /api/v2/drops/{slug})
+   (or GET /api/v2/drops/{slug})
 5. Confirm mint with user (price, quantity)
 6. opensea drops mint <slug> --minter <address> --quantity <n>
-   (or web_request POST /api/v2/drops/{slug}/mint with body {"minter":"<addr>","quantity":<n>})
+   (or POST /api/v2/drops/{slug}/mint with body {"minter":"<addr>","quantity":<n>})
 7. send_calls(chain=<response.chain>, calls=[{to: response.to, value: response.value, data: response.data}])
    (mint value is already hex — no conversion needed)
 8. User approves → get_request_status(requestId)
@@ -367,9 +348,9 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
 1. get_wallets → address
 2. Create API key if not already set (POST /api/v2/auth/keys)
 3. opensea search "<query>" --types collection → find collection
-   (or web_request GET /api/v2/search?query=<query>&type=collections)
+   (or GET /api/v2/search?query=<query>&type=collections)
 4. opensea listings best-for-nft <slug> <token_id> → get order_hash, price
-   (or web_request GET /api/v2/listings/collection/{slug}/best)
+   (or GET /api/v2/listings/collection/{slug}/best)
 5. Confirm price with user
 6. POST /api/v2/listings/cross_chain_fulfillment_data with:
    listings=[{hash, chain, protocol_address}], fulfiller={address}, payment={chain, address}
@@ -450,7 +431,7 @@ Swap 0.02 ETH for USDC on Base
 ```
 1. Create API key via `POST /api/v2/auth/keys` (if not already set).
 2. Get wallet address via `get_wallets`.
-3. Run `opensea swaps quote --from-chain base --from-address 0x0000000000000000000000000000000000000000 --to-chain base --to-address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 --quantity 0.02 --address <address>` (or `web_request` GET to swap/quote with `quantity=20000000000000000`).
+3. Run `opensea swaps quote --from-chain base --from-address 0x0000000000000000000000000000000000000000 --to-chain base --to-address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 --quantity 0.02 --address <address>` (or GET `/api/v2/swap/quote` with `quantity=20000000000000000`).
 4. Review quote with user (price impact, fees).
 5. Convert `value` decimal→hex; map each transaction to `send_calls`.
 
@@ -468,8 +449,8 @@ Buy a Bored Ape on Ethereum
 What drops are coming up on Base?
 ```
 1. Create API key via `POST /api/v2/auth/keys` (if not already set).
-2. Run `opensea drops list --chains base --type upcoming` (or `web_request` GET `/api/v2/drops?type=upcoming&chains=base`).
-3. Present results. If user wants to mint, run `opensea drops mint <slug> --minter <address>` (or `web_request` POST to mint endpoint).
+2. Run `opensea drops list --chains base --type upcoming` (or GET `/api/v2/drops?type=upcoming&chains=base`).
+3. Present results. If user wants to mint, run `opensea drops mint <slug> --minter <address>` (or POST to `/api/v2/drops/{slug}/mint`).
 4. Map response directly to `send_calls` (mint value is already hex).
 
 ```
