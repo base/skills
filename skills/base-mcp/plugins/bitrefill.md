@@ -39,7 +39,7 @@ Walk these checks **in order**. First match wins.
 
 ### Bitrefill MCP (preferred)
 
-URL: `https://api.bitrefill.com/mcp` (OAuth) or `https://api.bitrefill.com/mcp/YOUR_API_KEY` (key-in-path).
+URL: `https://api.bitrefill.com/mcp` (OAuth).
 
 Detect the harness and walk through the matching step:
 
@@ -98,7 +98,7 @@ Bitrefill auth depends on the active transport:
 | Transport | Auth model | Setup |
 |---|---|---|
 | MCP (interactive) | `oauth-on-install` | OAuth when the connector is installed; recommended for interactive use |
-| MCP (headless) / REST (Personal) | `api-key` | Bearer token from [bitrefill.com/account/developers](https://www.bitrefill.com/account/developers); key-in-path MCP: `https://api.bitrefill.com/mcp/YOUR_API_KEY` |
+| MCP (headless) / REST (Personal) | `api-key` | Bearer token from [bitrefill.com/account/developers](https://www.bitrefill.com/account/developers); headless MCP via `bearer_token_env_var` (see `## Installation`) |
 | CLI guest checkout | `none` | No sign-in — `buy-products --email` + crypto payment |
 | CLI signed-in | OAuth + magic link | `bitrefill login --email` → `bitrefill verify --code` (see Bitrefill CLI docs for 2FA) |
 
