@@ -44,7 +44,7 @@ Order. First match wins.
 
 ```bash
 npx @bitrefill/cli@latest --help
-# or: npm install -g @bitrefill/cli
+npm install -g @bitrefill/cli    # global install alternative
 ```
 
 ### Shell-less vs headless auth
@@ -60,12 +60,15 @@ No API keys, env vars, direct HTTP. Shell available → never MCP even if MCP to
 
 - **Claude Code:** `claude mcp add bitrefill --url https://api.bitrefill.com/mcp`
 - **Codex:** `~/.codex/config.toml`:
+
   ```toml
   [mcp_servers.bitrefill]
   url = "https://api.bitrefill.com/mcp"
   ```
+
   Then `codex mcp login bitrefill` once (terminal, outside chat).
 - **Cursor / JSON:** `.cursor/mcp.json` or `~/.cursor/mcp.json`:
+
   ```json
   {
     "mcpServers": {
@@ -80,6 +83,7 @@ No API keys, env vars, direct HTTP. Shell available → never MCP even if MCP to
     }
   }
   ```
+
   `buy-products` **out** of `autoApprove`.
 - **Claude.ai / Desktop:** Connectors → custom connector `bitrefill` → URL above.
 - **ChatGPT:** Apps & Connectors → URL above, Auth **OAuth**, Developer Mode for writes.
@@ -90,7 +94,7 @@ Reconnect/restart after install. Seven tools — read MCP catalog at runtime. Do
 ## Surface Routing
 
 | Capability | Shell (CLI harness) | No shell (MCP) |
-|---|---|---|
+| --- | --- | --- |
 | Search / browse | **CLI** (`npx @bitrefill/cli@latest`) | MCP |
 | Invoice (`buy-products`) | **CLI** | MCP |
 | Pay `usdc_base` | Base MCP x402 → `send` fallback | Same |
@@ -214,23 +218,28 @@ Match Base MCP `send` schema. Amount = quote.
 
 ## Example Prompts
 
-**$25 Amazon US gift card, USDC Base (authless)**
+### $25 Amazon US gift card, USDC Base (authless)
+
 1. CLI search → details → confirm.
 2. `buy-products` + `--email`.
 3. Base MCP x402 → poll invoice → order redemption.
 
-**1GB Europe eSIM**
+### 1GB Europe eSIM
+
 1. CLI search IT esim → `"1GB, 7 Days"` exact.
 2. Buy + x402 + poll → deliver eSIM URL secure.
 
-**Invoice status**
+### Invoice status
+
 1. `get-invoice-by-id`. Complete → `get-order-by-id` if user asked redemption.
 
-**Steam US browse (shell-less)**
+### Steam US browse (shell-less)
+
 1. Install MCP + OAuth if missing.
 2. MCP search. No auto-buy.
 
-**Order history (T3)**
+### Order history (T3)
+
 1. CLI: `whoami` → `login`/`verify` if needed → `list-orders`.
 2. MCP shell-less: auth connector → `list-orders`.
 
