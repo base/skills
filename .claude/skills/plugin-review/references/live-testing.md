@@ -27,5 +27,23 @@ Append findings as `## Live API / SDK Verification` in the report. Update the ve
 - Optimism: `https://mainnet.optimism.io`
 - Polygon: `https://polygon-rpc.com`
 
+## Geoblock verification (perps, prediction markets, gambling)
+
+For plugins in regulated categories where the protocol's frontend geoblocks certain jurisdictions (typically US), verify that the API enforces equivalent restrictions. If the API serves requests that the frontend would block, Base MCP risks being deemed a circumvention tool.
+
+Test from a US IP (or the relevant restricted jurisdiction):
+```bash
+# Compare frontend vs API behavior:
+# 1. Check if the protocol's website blocks US IPs (look for 403, redirects, or "not available in your region" pages)
+curl -s -o /dev/null -w "%{http_code}" https://<protocol-frontend>/
+
+# 2. Hit the same protocol's API endpoints the plugin documents
+curl -s -o /dev/null -w "%{http_code}" https://<protocol-api>/v1/quote?...
+
+# If the frontend returns 403/redirect but the API returns 200, flag as a blocker.
+```
+
+If you're behind a VPN, test from both a US and non-US exit to confirm the difference. Note: some APIs geoblock at the account/auth level rather than the IP level — probe both authenticated and unauthenticated paths.
+
 ### Safety recap
 Read-only/build only. Don't approve, don't broadcast, don't spend. Throwaway eval API keys end up in plaintext in the session — let them lapse after the review.

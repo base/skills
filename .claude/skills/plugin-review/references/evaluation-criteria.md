@@ -12,6 +12,10 @@ Assess each plugin against these dimensions. The spec (`skills/base-mcp/referenc
 - Allowlist
 - Security
 - Content quality
+- Compliance & language
+- Geoblocking (high-risk categories)
+- Disclaimers
+- High-risk category gate
 - Cross-cutting gotchas (read these)
 - Severity rubric
 
@@ -55,6 +59,24 @@ A capability × surface table (read vs write × harness vs chat-only) mapping to
 ## Content quality
 Orchestration is realistic and actionable; example prompts are concrete (a read, a primary write, an edge/fallback); no copy-paste leftovers from another plugin; response shapes match reality.
 
+## Compliance & language
+Plugin copy must use **neutral, non-promotional language**. Flag as a **blocker** if the plugin text contains any of:
+- Yield, rate, or performance claims ("earn 12% APY", "best returns")
+- Directional recommendations ("you should buy X", "always deposit here", "recommended strategy")
+- Default trade parameters that steer toward specific tokens or positions
+- Actions that route outside of Base without clear user intent (e.g. a plugin silently bridging to another chain or defaulting to a non-Base chain)
+
+The plugin must describe what the protocol *does*, not advocate for using it. Orchestration should present options neutrally, not prescribe a preferred action.
+
+## Geoblocking (high-risk categories)
+Applies to plugins in **perps, prediction markets, and gambling** categories. If the protocol's frontend geoblocks US IPs (or other jurisdictions), the underlying API must enforce equivalent restrictions. Check this during live testing (see `references/live-testing.md`). If the API serves US IPs while the frontend blocks them, Base MCP risks being deemed a circumvention tool — flag as a **blocker**.
+
+## Disclaimers
+The plugin's `> [!IMPORTANT]` onboarding callout (first element in the body) should include appropriate disclaimers about the plugin's third-party nature and any relevant risk context. For high-risk categories (perps, prediction markets, privacy), disclaimers should be more prominent. The plugin's `## Installation` section (if present) should also reference these disclaimers.
+
+## High-risk category gate
+Plugins in the following categories require **explicit legal review** before inclusion as a native plugin: **perps/perpetual futures, prediction markets, and privacy-focused protocols**. Flag this in the report if the plugin falls into one of these categories — it is not a defect in the plugin itself, but a pre-merge process gate.
+
 ## Cross-cutting gotchas (the high-value, easy-to-miss ones)
 
 1. **Smart-account signatures (ERC-1271/6492) are variable-length (>200 bytes), not 65-byte EOA sigs.** The default Base MCP account is a smart contract wallet. Any plugin that:
@@ -74,8 +96,12 @@ Orchestration is realistic and actionable; example prompts are concrete (a read,
 
 7. **REST "build" endpoints may return decoded structs, not hex calldata.** If so, the curl→`send_calls` path needs an ABI-encode step the plugin must document (or restrict to a CLI path that encodes internally).
 
+8. **Delist readiness.** Native plugins can be disabled quickly if the underlying API goes rogue, turns malicious, or starts returning harmful calldata. Although users review every transaction via approval mode, inclusion as a native plugin creates an expectation that things work as intended. The plugin itself doesn't need to implement a kill-switch, but reviewers should note if the plugin's architecture makes fast delisting difficult (e.g. hardcoded into core routing with no clean boundary).
+
+9. **Review scope is bounded.** Base review is limited to spec conformance, basic QA, and live testing as documented in this skill. The review does not constitute co-authorship or curation of the plugin's underlying protocol. This boundary is intentional — it allows the plugin program to scale without accumulating unbounded liability.
+
 ## Severity rubric
-- **blocker** — breaks the documented flow, security hole, or makes the plugin unroutable (missing required frontmatter, broken submission for the default wallet, dead/locked API, false auth claim).
-- **major** — wrong integration type, missing required section, inaccurate allowlist, mis-declared auth.
+- **blocker** — breaks the documented flow, security hole, makes the plugin unroutable (missing required frontmatter, broken submission for the default wallet, dead/locked API, false auth claim), promotional/steering language, or API circumvents frontend geoblocking in a regulated category.
+- **major** — wrong integration type, missing required section, inaccurate allowlist, mis-declared auth, missing disclaimers for high-risk category.
 - **minor** — doc/response-shape drift, non-canonical headings, missing optional risk nuance.
 - **nit** — wording, formatting, version cosmetics.

@@ -29,6 +29,9 @@ Open with one neutral framing sentence (what's needed before merge, no praise). 
 ## Always include when applicable
 
 - **Contribution scope (Required) — if the PR edits shared/registry files.** Tell them to revert the `SKILL.md` plugins-table row and any `references/plugin-spec.md` edits to the Integration Types "Examples" cell, the "Existing Plugin Conformance" table, or the plugin count — maintainers register plugins when the program is ready. Preserve only a genuinely net-new tag-vocabulary addition. Limit the diff to `plugins/<slug>.md` (+ that tag line). Tailor: list exactly which files/edits to revert for this PR.
+- **Promotional / steering language (Required).** If the plugin copy contains yield/rate/performance claims, directional recommendations ("you should buy X", "always deposit here"), default parameters steering toward specific tokens, or actions routing outside Base without clear user intent — request removal. State the specific text that needs to change.
+- **API geoblock gap (Required) — for perps/prediction-market/gambling plugins.** If the protocol's frontend geoblocks US IPs but the API serves them, flag this as a blocker and ask the submitter to confirm whether API-level restrictions are planned or already enforced.
+- **High-risk category note — for perps, prediction markets, privacy plugins.** Note that plugins in these categories require additional review before inclusion as a native plugin. This is informational to the submitter, not a change request on the plugin itself.
 
 ## Calibration (don't over-ask)
 - Don't recommend `irreversible` on swap plugins (see evaluation-criteria gotcha #2).

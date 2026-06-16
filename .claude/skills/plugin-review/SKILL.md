@@ -26,9 +26,9 @@ Works for both **authors** (self-check before submitting a PR) and **reviewers**
    gh api "repos/base/skills/pulls/<n>/files" --jq '.[] | select(.filename|endswith(".md")) | .raw_url'
    ```
 
-3. **Static conformance evaluation** — assess against every dimension in `references/evaluation-criteria.md`. Write the report using `references/report-template.md`.
+3. **Static conformance evaluation** — assess against every dimension in `references/evaluation-criteria.md` (includes compliance/language checks and high-risk category gates). Write the report using `references/report-template.md`.
 
-4. **(Optional) Live API / SDK verification** — exercise the documented endpoints/SDK/contracts with read-only calls. See `references/live-testing.md`. Append a `## Live API / SDK Verification` section to the report. This routinely overturns doc claims (fabricated/locked endpoints, broken hosts, wrong response shapes).
+4. **(Optional) Live API / SDK verification** — exercise the documented endpoints/SDK/contracts with read-only calls. See `references/live-testing.md`. For perps/prediction-market/gambling plugins, also run the **geoblock verification** (compare frontend vs API access restrictions). Append a `## Live API / SDK Verification` section to the report. This routinely overturns doc claims (fabricated/locked endpoints, broken hosts, wrong response shapes).
 
 5. **Save the report.** If reviewing a PR and asked to comment, draft a PR comment from the report using `references/comment-guidelines.md` and post with: `gh pr comment <n> --repo base/skills --body-file <comment-file>`.
 
@@ -46,3 +46,6 @@ These recur and are easy to get wrong — full detail in `references/evaluation-
 - **`version` is the plugin-doc version** — not the npm/package version and not a global spec version. The spec mandates no specific starting number.
 - **Verify claims, don't trust them.** Auth models, allowlist completeness, response shapes, and contract addresses are frequently wrong in the doc. Probe them (live testing).
 - **Reference links** from a plugin file must use `../references/...` (plugin files live in `plugins/`, refs in `references/`).
+- **Neutral language is mandatory.** No yield/rate/performance claims, no "you should buy X", no "always deposit here", no defaulting to specific tokens. Steering language is a blocker.
+- **Perps, prediction markets, and privacy plugins need legal review** before inclusion as native plugins. Flag this as a pre-merge process gate in the report.
+- **API geoblock parity.** If the protocol's frontend geoblocks US IPs (or others), the API must enforce equivalent restrictions. If it doesn't, Base MCP risks being a circumvention tool — flag as a blocker.

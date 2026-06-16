@@ -29,6 +29,10 @@ Write to a file like `PR-<n>-<slug>.md` (for PR reviews) or `<slug>-review.md` (
 | Canonical headings | | |
 | Canonical order / anchors intact | | |
 | allowlist accuracy | | |
+| Neutral language (no yield claims, no steering) | | |
+| Geoblock parity (if perps/prediction/gambling) | | frontend vs API |
+| Disclaimers in onboarding callout | | |
+| High-risk category gate (perps/prediction/privacy) | | legal review needed? |
 | Contribution scope (no self-registration) | | SKILL.md / Examples / Conformance table |
 
 ## Detailed Findings
