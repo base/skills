@@ -28,13 +28,13 @@ BETRMINT is a Base-native mint–spin–win protocol backed by the **$BETR** tok
 
 ## Surface Routing
 
-| Capability | Harness (Cursor, Claude Code, Codex) | Chat-only (Claude.ai, ChatGPT) |
-| --- | --- | --- |
-| Read (token, round) | Harness HTTP tool → GET `https://betrmint.fun/api/plugin/betrmint/read/...` | Base MCP `web_request` GET (host must be on allowlist: `betrmint.fun`) |
-| Write (stake, claim, mint, win) | Harness HTTP tool → GET prepare URL → `send_calls` | `web_request` GET prepare URL → `send_calls`; if host rejected, ask user to paste the JSON response |
-| Explain / summarize | Same read paths as above | Same; no on-chain submission |
+| Capability | Harness (Cursor, Claude Code, Codex) |
+| --- | --- |
+| Read (token, round) | HTTP tool → GET `https://betrmint.fun/api/plugin/betrmint/read/...` |
+| Write (stake, claim, mint, win) | HTTP tool → GET prepare URL → `send_calls` |
+| Explain / summarize | Same read paths as above |
 
-All prepare endpoints are GET with query parameters. See [custom-plugins.md](https://docs.base.org/ai-agents/plugins/custom-plugins) for the full harness HTTP → `web_request` → user-paste decision tree.
+All prepare endpoints are GET with query parameters. See [custom-plugins.md](https://docs.base.org/ai-agents/plugins/custom-plugins) for full plugin integration details.
 
 ## Endpoints
 
@@ -128,7 +128,7 @@ All prepare endpoints return an ordered batch for atomic execution:
 
 ## Orchestration
 
-Wallet address comes from `get_wallets` during Base MCP onboarding. Validate read state before every prepare call. Use the full URLs below (or equivalent `web_request` GET on chat-only surfaces).
+Wallet address comes from `get_wallets` during Base MCP onboarding. Validate read state before every prepare call. Use the full URLs below.
 
 ### Stake BETR
 
@@ -187,7 +187,7 @@ Target tool: **`send_calls`**. Map every `transactions[*]` item from a prepare r
 - `value` defaults to `0x0` if omitted.
 - Execute the full batch in one approval — steps are ordered (`approve` before the protocol action).
 - Map `chainId: 8453` to `chain: "base"`.
-- After `send_calls`, present the approval URL and poll `get_request_status(requestId)` until confirmed. See [approval-mode.md](https://docs.base.org/ai-agents/plugins/approval-mode).
+- After `send_calls`, present the approval URL and poll `get_request_status(requestId)` until confirmed. See approval-mode.md.
 
 ## Example Prompts
 
@@ -220,15 +220,6 @@ Target tool: **`send_calls`**. Map every `transactions[*]` item from a prepare r
 1. `get_wallets` → address
 2. `GET https://betrmint.fun/api/plugin/betrmint/read/token?wallet=<address>` and `GET https://betrmint.fun/api/plugin/betrmint/read/round?wallet=<address>`
 3. Summarize balances, staking APY context, and round status (no `send_calls`)
-
-### "Stake BETR" on chat-only when `betrmint.fun` is blocked (fallback)
-
-1. `get_wallets` → address
-2. `web_request` GET `https://betrmint.fun/api/plugin/betrmint/read/token?wallet=<address>` — if rejected, give the user that URL and ask them to paste the JSON response
-3. Confirm balance ≥ requested amount from the pasted `data`
-4. `web_request` GET `https://betrmint.fun/api/plugin/betrmint/prepare/stake?from=<address>&amount=<decimal>` — if rejected, give the user that URL and ask them to paste the JSON response
-5. Map pasted `transactions[]` into `send_calls(chain="base", calls=[...])`
-6. User approves → `get_request_status(requestId)`
 
 ## Risks & Warnings
 
