@@ -11,13 +11,13 @@ Aerodrome is CLI-only and requires a harness with shell or terminal access — d
 
 Avantis is hybrid: its view-only hosts (`data.avantisfi.com`, `core.avantisfi.com`, `api.avantisfi.com`) are allowlisted for `web_request` and work on every surface. Its tx-builder host (`tx-builder.avantisfi.com`) requires a CLI harness — on chat-only surfaces, do not retry through `web_request` and do not fall back to user-paste; link the user to the Avantis web UI for the relevant pair instead (see [../plugins/avantis.md](../plugins/avantis.md)).
 
-Morpho is not CLI-only: use Morpho CLI when shell access exists, otherwise use or install Morpho MCP.
+Morpho is hybrid: use the Morpho CLI when shell access exists; otherwise call the Morpho HTTP API at `mcp.morpho.org` (POST/JSON-RPC) — its host is allowlisted for `web_request`. See [../plugins/morpho.md](../plugins/morpho.md).
 
 Custom or user-supplied plugins are almost certainly **not** in the allowlist and will be rejected by `web_request`.
 
 ## Priority order for HTTP calls
 
-Use this order **for every HTTP-based plugin call — native or not**. CLI-only plugins follow their plugin file and require shell access. Morpho follows its hybrid CLI/MCP routing in [../plugins/morpho.md](../plugins/morpho.md).
+Use this order **for every HTTP-based plugin call — native or not**. CLI-only plugins follow their plugin file and require shell access. Morpho follows its hybrid CLI/HTTP routing in [../plugins/morpho.md](../plugins/morpho.md).
 
 ### 1. Harness HTTP tool (preferred whenever available)
 
@@ -54,6 +54,6 @@ So for non-native plugins on Claude / ChatGPT consumer surfaces:
 | Aerodrome, no shell/terminal tool | Tell the user the plugin requires CLI access and stop. |
 | Avantis view-only reads (pairs, positions, history), no shell | Use `web_request` — the `data`, `core`, and `history` hosts are allowlisted. |
 | Avantis tx-builder calls, no shell | Do not retry through `web_request`. Link the user to the Avantis web UI (`https://www.avantisfi.com/trade?asset=<SYMBOL>-USD`) for the relevant pair. |
-| Morpho, no shell/terminal tool | Use already exposed Morpho MCP tools, or help the user install `https://mcp.morpho.org/` for their current surface. |
+| Morpho, no shell/terminal tool | Call the Morpho HTTP API at `mcp.morpho.org` (POST/JSON-RPC) via `web_request` — its host is allowlisted. See [../plugins/morpho.md](../plugins/morpho.md). |
 | Native HTTP plugin, no harness HTTP tool | Use `web_request` if the host is allowlisted. |
 | Non-native plugin, no harness HTTP tool (Claude / ChatGPT consumer apps) | GET only. Construct the URL, ask the user to paste it into the chat so you're allowed to fetch it, then parse the response. If the API needs POST, tell the user this surface can't support it. |
