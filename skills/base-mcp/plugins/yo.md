@@ -28,7 +28,7 @@ This plugin builds **unsigned calldata** from a baked-in vault registry and subm
 
 ## Surface Routing
 
-Everything routes through Base MCP's own onchain tools, so the plugin behaves identically on every surface (Claude Code, Cursor, Codex, Claude.ai, ChatGPT). No shell, no `web_request`, no allowlist.
+Everything routes through Base MCP's own onchain tools, so the plugin behaves identically on every surface (Claude Code, Cursor, Codex, Claude.ai, ChatGPT). No shell, no allowlist.
 
 | Capability | Path | Surface notes |
 | ---------- | ---- | ------------- |
