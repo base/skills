@@ -68,6 +68,8 @@ query SwapPaths($chain: GqlChain!, $tokenIn: String!, $tokenOut: String!, $swapT
 
 `swapType`: `EXACT_IN` (amount is the input) or `EXACT_OUT` (amount is the desired output). `swapAmount` is human-readable (e.g. `"100"`). The returned `paths[].protocolVersion` drives the submission batch (see [`## Submission`](#submission)).
 
+`priceImpact.priceImpact` is **nullable**: for some valid multi-hop routes the API can't compute it and returns `{ priceImpact: null, error: "Price impact could not be calculated for this path. The swap path is still valid and can be executed." }` (USDC→WETH does this right now). Treat a null with that message as *unknown*, **not** as a failure or a high-impact warning — say "price impact unavailable", fall back to comparing the SOR `returnAmount` against the input (and the pool's TVL), and don't block the swap on it. Only a non-null, genuinely high `priceImpact` is a warning sign (see [`## Risks & Warnings`](#risks--warnings)).
+
 **Discover pools** — `poolGetPools` (filter, sort by TVL/APR):
 
 ```graphql
@@ -84,20 +86,24 @@ Example variables: `{ "first": 10, "orderBy": "totalLiquidity", "orderDirection"
 
 ### Build a swap (`build-swap.mjs`)
 
-Fetch SOR paths, simulate, encode the action call. Outputs the `{ protocolVersion, to, callData, value, minAmountOut }` you map into `send_calls`:
+Fetch SOR paths, simulate, then encode the action call **together with its version-correct approval(s)** and emit a ready-to-submit payload — `{ chain, calls }` (plus `protocolVersion`/`minAmountOut` for display) that maps straight onto `send_calls`. Building the whole batch in the script (not just the action call) is deliberate: each approval's target is derived from the **same `call.to` the SDK returns**, so a v3 Permit2 approval can never be hand-paired with a v2 Vault target. That mismatch passes per-call encoding (each approval is individually valid) and only reverts at the action call — usually as an uninformative `unable to estimate gas`. ERC20 input only; for native-ETH input set `wethIsEth: true` and drop the approval call(s) (see [`## Submission`](#submission)).
 
 ```js
 import { BalancerApi, Swap, SwapKind, Slippage, ChainId, Token, TokenAmount } from "@balancer/sdk";
+import { encodeFunctionData } from "viem";
 
 const chainId = ChainId.BASE;
 const RPC_URL = process.env.RPC_URL;
 // args: sender (wallet from get_wallets), tokenIn, tokenInDecimals, tokenOut, humanAmount, slippagePct
 const [sender, tokenIn, decIn, tokenOut, amount, slippagePct = "0.5"] = process.argv.slice(2);
 
+const PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3";   // canonical Permit2, same on every chain
+const CHAIN_STRINGS = { 8453: "base", 1: "ethereum", 42161: "arbitrum", 10: "optimism", 43114: "avalanche" };
+
 const api = new BalancerApi("https://api-v3.balancer.fi/", chainId);
-const swapAmount = TokenAmount.fromHumanAmount(new Token(chainId, tokenIn, Number(decIn)), amount);
+const inAmount = TokenAmount.fromHumanAmount(new Token(chainId, tokenIn, Number(decIn)), amount);
 const paths = await api.sorSwapPaths.fetchSorSwapPaths({
-  chainId, tokenIn, tokenOut, swapKind: SwapKind.GivenIn, swapAmount,
+  chainId, tokenIn, tokenOut, swapKind: SwapKind.GivenIn, swapAmount: inAmount,
 });
 
 // The SOR routes per pair through Balancer v2 or v3. v3 makes msg.sender the sender/recipient;
@@ -115,12 +121,35 @@ const call = swap.buildCall({
   wethIsEth: false,                                      // true → use native ETH as tokenIn/out
 });
 
+// Assemble the FULL send_calls array here, deriving every approval target from the SAME call.to
+// the SDK returned — so a v3 Permit2 approval can't be paired with a v2 Vault target.
+const amountIn = inAmount.amount;                        // raw base units (bigint)
+const ERC20_APPROVE = [{ name: "approve", type: "function", stateMutability: "nonpayable",
+  inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] }];
+const PERMIT2_APPROVE = [{ name: "approve", type: "function", stateMutability: "nonpayable",
+  inputs: [{ name: "token", type: "address" }, { name: "spender", type: "address" },
+           { name: "amount", type: "uint160" }, { name: "expiration", type: "uint48" }], outputs: [] }];
+const approve = (spender) => encodeFunctionData({ abi: ERC20_APPROVE, functionName: "approve", args: [spender, amountIn] });
+const hex = (v) => "0x" + (v ?? 0n).toString(16);
+
+const calls = [];
+if (usesV2) {
+  // v2: plain ERC20 allowance to the V2 Vault (call.to), then the Vault call. No Permit2.
+  calls.push({ to: tokenIn, value: "0x0", data: approve(call.to) });
+} else {
+  // v3: ERC20 approve Permit2, then Permit2 approves the Router (call.to), then the Router call.
+  calls.push({ to: tokenIn, value: "0x0", data: approve(PERMIT2) });
+  calls.push({ to: PERMIT2, value: "0x0", data: encodeFunctionData({
+    abi: PERMIT2_APPROVE, functionName: "approve",
+    args: [tokenIn, call.to, amountIn, 9999999999n] }) });   // far-future uint48 expiration
+}
+calls.push({ to: call.to, value: hex(call.value), data: call.callData });   // action call (v3 Router or V2 Vault)
+
 console.log(JSON.stringify({
-  protocolVersion: usesV2 ? 2 : 3,                       // drives the approval batch (see ## Submission)
-  to: call.to,                                           // v3 Router, or the V2 Vault when usesV2
-  value: "0x" + (call.value ?? 0n).toString(16),
-  callData: call.callData,
+  chain: CHAIN_STRINGS[chainId],                         // pass { chain, calls } straight to send_calls
+  protocolVersion: usesV2 ? 2 : 3,
   minAmountOut: call.minAmountOut?.amount?.toString(),
+  calls,
 }, null, 2));
 ```
 
@@ -153,9 +182,9 @@ Every step runs in the shell — no shell, no flow (see [`## Surface Routing`](#
 ### Swap
 
 1. `get_wallets` → user address; pass it to the build script as `sender`. The SOR picks v2 or v3 per pair — v2 `buildCall` requires `sender`/`recipient`, v3 uses `msg.sender`.
-2. Read a quote: `curl` `sorGetSwapPaths` (`## Commands`). Show the user `returnAmount` and `priceImpact`; confirm before building.
-3. Run `build-swap.mjs` → `{ protocolVersion, to, callData, value, minAmountOut }`.
-4. Assemble the `send_calls` batch by the emitted `protocolVersion` (ERC20 input only) — v3: Permit2 approvals + Router call; v2: a single Vault approval + Vault call ([`## Submission`](#submission)).
+2. Read a quote: `curl` `sorGetSwapPaths` (`## Commands`). Show the user `returnAmount` and `priceImpact` (which may be null for valid multi-hop routes — see [`## Commands`](#commands)); confirm before building.
+3. Run `build-swap.mjs` → `{ chain, protocolVersion, minAmountOut, calls }` — the full batch (version-correct approval(s) + action call), not just the action call.
+4. Verify the emitted `calls` (targets, amounts, `minAmountOut`), then submit them directly with `send_calls` — the script has already assembled the version-correct approvals ([`## Submission`](#submission)).
 5. Submit → approval URL + request ID → user approves → `get_request_status` ([../references/approval-mode.md](../references/approval-mode.md)).
 
 ### Add / remove liquidity
@@ -166,7 +195,7 @@ Every step runs in the shell — no shell, no flow (see [`## Surface Routing`](#
 
 ## Submission
 
-Target tool: **`send_calls`** (EIP-5792 batch — see [../references/batch-calls.md](../references/batch-calls.md)). The SDK output is one action call, but the approval that must precede it **depends on the path's `protocolVersion`** (the value the script emits; the SOR chooses v2 or v3 per pair). `send_calls` submits *unsigned* calls, so grant any allowance onchain in the batch — never `buildCallWithPermit2` (it bakes in an EIP-712 signature). For an ERC20 input/deposit:
+Target tool: **`send_calls`** (EIP-5792 batch — see [../references/batch-calls.md](../references/batch-calls.md)). For a swap, `build-swap.mjs` already emits the complete batch in its `calls` array — submit that directly; the breakdown below is what it contains (verify before approving) and the template the add/remove-liquidity scripts follow. The approval that must precede the action call **depends on the path's `protocolVersion`** (the value the script emits; the SOR chooses v2 or v3 per pair). `send_calls` submits *unsigned* calls, so grant any allowance onchain in the batch — never `buildCallWithPermit2` (it bakes in an EIP-712 signature). For an ERC20 input/deposit:
 
 **v3 (`protocolVersion: 3`)** — settles through a v3 Router (`call.to`) that pulls tokens via **Permit2**. Batch in order:
 
@@ -205,8 +234,8 @@ Swap 100 USDC for WETH on Base through Balancer
 ```
 1. `get_wallets` → address.
 2. `curl` `sorGetSwapPaths(chain: BASE, tokenIn: <USDC>, tokenOut: <WETH>, swapType: EXACT_IN, swapAmount: "100")`; show `returnAmount` + `priceImpact`.
-3. `node build-swap.mjs <wallet> <USDC> 6 <WETH> 100 0.5` → `{ protocolVersion, to, callData, value, minAmountOut }`.
-4. Batch per `protocolVersion` — v3: ERC20 `approve(Permit2)` + Permit2 `approve(router)` + Router call; v2: ERC20 `approve(Vault)` + Vault call → `send_calls(chain: "base", calls)`.
+3. `node build-swap.mjs <wallet> <USDC> 6 <WETH> 100 0.5` → `{ chain, protocolVersion, minAmountOut, calls }` (USDC→WETH routes v2, so `calls` = ERC20 `approve(Vault)` + Vault call).
+4. Verify the emitted `calls`, then `send_calls({ chain: "base", calls })`.
 5. User approves → `get_request_status`.
 
 ```
@@ -231,7 +260,7 @@ Swap 1 WETH to USDC on Balancer — I'm on Claude.ai
 ## Risks & Warnings
 
 - **slippage** — swaps and liquidity changes can fill worse than quoted. The SDK derives `minAmountOut` / `minBptOut` (and `minAmountsOut` on removes) from the slippage you pass to `buildCall` (default 0.5%). Show the user the SOR `returnAmount` and `priceImpact` before submitting, and confirm the slippage. Never silently widen slippage to force a fill — re-quote and let the user decide.
-- **low-liquidity** — thin or newly-created pools mean large price impact, failed fills, and impermanent-loss exposure on volatile pairs. Check the pool's `dynamicData.totalLiquidity` (TVL) and the SOR `priceImpact` before swapping or LPing; warn the user when `priceImpact` is high (e.g. > 1%). Don't auto-route through, or LP into, a pool the user didn't intend, and don't add liquidity to a pool you couldn't read TVL for.
+- **low-liquidity** — thin or newly-created pools mean large price impact, failed fills, and impermanent-loss exposure on volatile pairs. Check the pool's `dynamicData.totalLiquidity` (TVL) and the SOR `priceImpact` before swapping or LPing; warn the user when `priceImpact` is high (e.g. > 1%). A **null** `priceImpact` carrying the API's "…still valid and can be executed" note is *unknown*, not high — don't treat it as an error or silently block on it; say it's unavailable and fall back to TVL and the `returnAmount`. Don't auto-route through, or LP into, a pool the user didn't intend, and don't add liquidity to a pool you couldn't read TVL for.
 
 ## Notes
 
