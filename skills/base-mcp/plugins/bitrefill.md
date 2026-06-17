@@ -8,7 +8,7 @@ integration: hybrid
 chains: [base]
 requires:
   shell: optional
-  allowlist: []
+  allowlist: [api.bitrefill.com]
   externalMcp:
     name: bitrefill
     url: https://api.bitrefill.com/mcp
