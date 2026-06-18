@@ -20,11 +20,9 @@ risk: [quote-expiry, slippage]
 > [!IMPORTANT]
 > Complete the Base MCP onboarding flow defined in `SKILL.md` before calling any GMGN endpoint. The user's wallet address — passed as `from_address` in every quote call — is fetched lazily when needed.
 
-GMGN on Base: token swaps using unsigned calldata returned directly from the quote endpoint, plus trending token market data. Use `web_request` to fetch the quote (which includes `data.tx.to`, `data.tx.value`, and `data.tx.data`), handle any approvals in `data.tx.approve_txs`, then execute with `send_calls`.
+GMGN on Base: token swaps using unsigned calldata returned directly from the quote endpoint, plus trending token market data. Fetch the quote (which includes `data.tx.to`, `data.tx.value`, and `data.tx.data`), handle any approvals in `data.tx.approve_txs`, then execute with `send_calls`.
 
 No additional MCP server is required.
-
-**Prerequisite:** `openapi.gmgn.ai` must be in the MCP server's `web_request` allowlist. If requests are rejected, inform the user.
 
 **Chain:** Base mainnet (chainId `8453`)
 
@@ -39,13 +37,13 @@ All requests require the `X-APIKEY` header and two query parameters:
 | `timestamp` | Current Unix timestamp in seconds (valid window ±5 s) |
 | `client_id` | Fresh UUID v4 per request (replay protection, 7 s window) |
 
-A public demo key is available for all read-only operations:
+A public API key is available for all read-only operations:
 
 ```
-X-APIKEY: gmgn_solbscbaseethmonadtron
+X-APIKEY: gmgn_basesolbscethmonadtron
 ```
 
-> **Note:** The demo key has lower rate limits and is for testing only. For production use, register a personal API key at **https://gmgn.ai/ai**.
+> **Note:** Register a personal API key at **https://gmgn.ai/ai** for higher rate limits and full access.
 
 ---
 
@@ -74,7 +72,7 @@ Example request (swap 0.00001 ETH → token):
 
 ```
 GET https://openapi.gmgn.ai/v1/trade/quote?chain=base&from_address=0xc76d...&input_token=0x0000000000000000000000000000000000000000&output_token=0xc2c1e0b7c401e6217193732272444d928646eba3&input_amount=10000000000000&slippage=5&timestamp=<ts>&client_id=<uuid>
-X-APIKEY: gmgn_solbscbaseethmonadtron
+X-APIKEY: gmgn_basesolbscethmonadtron
 ```
 
 **Response `data` fields:**
@@ -212,7 +210,7 @@ Response: `data.rank` array with token address, symbol, price (USD), market cap,
      &input_amount=<amount_in_wei>
      &slippage=5
      &timestamp=<ts>&client_id=<uuid>
-   Headers: X-APIKEY: gmgn_solbscbaseethmonadtron
+   Headers: X-APIKEY: gmgn_basesolbscethmonadtron
 
 3. Present quote to user:
      Input:           data.tx.amount_in / 10^data.tx.amount_in_decimals  (+ data.tx.amount_in_usd)
@@ -250,7 +248,7 @@ If `data.tx.approve_txs` is empty (native ETH input), omit the approval call and
 
 ```text
 1. web_request GET /v1/market/rank?chain=base&interval=1h&limit=10&order_by=volume&timestamp=<ts>&client_id=<uuid>
-   Headers: X-APIKEY: gmgn_solbscbaseethmonadtron
+   Headers: X-APIKEY: gmgn_basesolbscethmonadtron
 2. Present the top tokens: name, symbol, price, 1h change, volume, holder count
 3. Optionally follow up with GET /v1/trade/quote for any token the user wants to buy
 ```
@@ -305,6 +303,6 @@ For meme tokens with low liquidity, higher slippage (10–20%) is common — alw
 - `data.tx.data` is unsigned calldata — pass it directly to `send_calls`; never sign or modify it.
 - Quotes expire at `data.tx.deadline` (Unix timestamp). Re-fetch if the user has not confirmed within ~30 seconds.
 - `data.tx.approve_txs` handles ERC-20 allowances. It is empty when the input is native ETH or when a sufficient allowance already exists.
-- The demo key `gmgn_solbscbaseethmonadtron` is for testing only. Apply for a personal key at https://gmgn.ai/ai for higher rate limits.
+- Register a personal API key at https://gmgn.ai/ai for higher rate limits and full access.
 - `timestamp` must be within ±5 seconds of server time. `client_id` must be a fresh UUID per request.
 - Use `chain: "base"` (not numeric chain ID) with `send_calls`.
