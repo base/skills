@@ -545,6 +545,15 @@ dead address, `value: "0x0"`, amount in wei (whole tokens × 10^18).
   * $CLAWNCH token: `0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be` · burn
     address: `0x000000000000000000000000000000000000dEaD`
   * Clanker factory (deploy target): `0xE85A59c628F7d27878ACeB4bf3b35733630083a9`
+  * **Agent provenance.** Every launch carries `agentName` and `source` —
+    who/what initiated it. Launches deployed through Clawnch's
+    registered-agent path are cryptographically verified at deploy time (the
+    agent signs an ECDSA challenge before the deploy is accepted); launches
+    surfaced from other tracked sources are included too and are identifiable
+    by their `agentName` / `source` (e.g. an `*_anon_*` agent name is an
+    unattributed post, not a verified agent). The read API does not return a
+    boolean "verified" flag — derive provenance from these fields, and treat
+    it as *who launched a token*, not an endorsement of the token itself.
   * Swap amounts are human-readable decimals for `fromAsset`. If you ever use
     a contract address as `fromAsset`, include that token's `fromDecimals`.
   * Always use `chain: "base"` (string) with `swap`, not the numeric chainId.
