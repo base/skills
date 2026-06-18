@@ -22,7 +22,7 @@ risk: [low-liquidity, irreversible, local-exec]
 
 ## Overview
 
-Baseline is an onchain AMM for leveraged tokens. This plugin launches a Baseline token on Ethereum mainnet, Base mainnet, or Base Sepolia by running the Baseline CLI to prepare unsigned launch calls, then submitting those calls through Base MCP's `send_calls`, where the user approves in Base Account.
+Baseline is an onchain AMM for leveraged tokens. A Baseline token operates its own liquidity pool, so a creator or agent can launch without managing external LP positions, capture swap fees that would otherwise go to outside liquidity providers, and split those fees between a creator recipient and token stakers. This plugin launches a Baseline token on Ethereum mainnet, Base mainnet, or Base Sepolia by running the Baseline CLI to prepare unsigned launch calls, then submitting those calls through Base MCP's `send_calls`, where the user approves in Base Account.
 
 This is a **CLI-only plugin**: it only works in harnesses with shell/terminal access (Codex, Claude Code, Cursor, or similar). It does not work on chat-only surfaces that cannot run commands. No additional MCP server is required.
 
@@ -71,9 +71,9 @@ See [../references/custom-plugins.md](../references/custom-plugins.md) for the C
 }
 ```
 
-### Zero-reserve Launch
+### Zero-Reserve Pool (ZRP) Launch
 
-Zero-reserve launch (`zrp`) is the default mode. It deposits the full BToken supply into the pool without initial reserve liquidity.
+Zero-reserve pool launch (`zrp`) is the default mode. It deposits the full BToken supply into the pool without initial reserve liquidity.
 
 Base Sepolia example:
 
@@ -123,6 +123,21 @@ Treat Ethereum mainnet and Base mainnet as production. Confirm the user explicit
 
 Do not pass `--execute`, `--private-key`, or `BASELINE_PRIVATE_KEY` in this plugin flow. Base MCP is the only submission path.
 
+### Optional Launch Parameters
+
+Use these flags when the user asks to customize launch ownership or fee routing:
+
+| Flag | Purpose | Default |
+|------|---------|---------|
+| `--creator <address>` | Creator address recorded on the launch. | Launch account |
+| `--fee-recipient <address>` | Address receiving the creator share of swap fees. | Creator |
+| `--creator-fee-pct <percent>` | Creator share of swap fees, from `0` to `100`. | `50` |
+| `--swap-fee-pct <percent>` | Swap fee charged by the pool. | `1` |
+| `--salt <bytes32>` | Deterministic deployment salt. | Zero bytes32 |
+| `--reserve-decimals <number>` | Decimal precision for `--initial-pool-reserves`. | `18` |
+
+The remaining fee share goes to token stakers. With the default `--creator-fee-pct 50`, swap fees are split 50% to the creator fee recipient and 50% to stakers.
+
 ## Orchestration
 
 ### Launch
@@ -141,10 +156,11 @@ Do not pass `--execute`, `--private-key`, or `BASELINE_PRIVATE_KEY` in this plug
    - `calls` is an ordered array and every call has `to`, `data`, and `value`.
    - No `execution` field is present.
    - `zrp` has three calls; `standard` has four calls.
-7. Submit the calls through `send_calls` as described in [Submission](#submission).
-8. Show the returned approval URL and request ID. Open the approval URL with the local shell when the harness supports that.
-9. Wait for the user to confirm they approved in Base Account, then poll `get_request_status(requestId)`. If it is still pending, retry with a short delay; never report success until the request is completed.
-10. After completion, run `baseline info "$BTOKEN" --chain-id "$CHAIN_ID"` using the artifact `bToken` and `chainId` when the command is available.
+7. For `chainId` `1` or `8453`, confirm the exact chain, token name, symbol, supply, reserve, fees, creator, and fee recipient immediately before `send_calls`.
+8. Submit the calls through `send_calls` as described in [Submission](#submission).
+9. Show the returned approval URL as an `[Approve Transaction](<approvalUrl>)` link, include the request ID, print the link as a fallback, and open it with the local shell when the harness supports that.
+10. Wait for the user to confirm they approved in Base Account, then poll `get_request_status(requestId)`. If it is still pending, retry with a short delay; never report success until the request is completed.
+11. After completion, run `baseline info "$BTOKEN" --chain-id "$CHAIN_ID"` using the artifact `bToken` and `chainId` when the command is available.
 
 ## Submission
 
@@ -166,7 +182,7 @@ Expected call sequences:
 - `zrp`: Relay `createBToken`, BToken `approve`, Relay `createPoolFromInvariant`.
 - `standard`: Relay `createBToken`, BToken `approve`, reserve `approve`, Relay `createPool`.
 
-Any `send_calls` approval URL follows the standard Base MCP approval flow: show the approval link, wait for the user to approve in Base Account, then poll `get_request_status`. See [../references/approval-mode.md](../references/approval-mode.md) and [../references/batch-calls.md](../references/batch-calls.md).
+Any `send_calls` approval URL follows the standard Base MCP approval flow: show the approval URL as an `[Approve Transaction](<approvalUrl>)` link, include the request ID, print the link as a fallback, wait for the user to approve in Base Account, then poll `get_request_status`. See [../references/approval-mode.md](../references/approval-mode.md) and [../references/batch-calls.md](../references/batch-calls.md).
 
 ## Example Prompts
 
@@ -193,7 +209,7 @@ Launch on Base mainnet:
 3. Validate the artifact carefully before `send_calls`.
 4. Submit with `chain: "base"` only after the user confirms the mainnet launch.
 
-Use from a phone or chat-only app:
+Use from a chat-only app:
 
 1. Stop.
 2. Explain that this plugin is CLI-only and requires a shell-capable harness.
