@@ -134,8 +134,8 @@ Ownership transfer is separate from `agentSetWallet`. After transfer, Brickken's
 ### Base Sepolia testing
 
 - Use operation and payment network `eip155:84532` (`base-sepolia` in Base MCP).
-- The Brickken x402 test USDC is `0x8E17c614F99EbEFC73B57fA64a374A6Ef5F4C126` with 6 decimals.
-- Do not substitute Circle's canonical Base Sepolia USDC `0x036CbD53842c5426634e7929541eC2318f3dCF7e`; the x402 challenge requires the exact quoted asset.
+- The Brickken x402 test USDC is Circle USDC `0x036CbD53842c5426634e7929541eC2318f3dCF7e` with 6 decimals, settled via EIP-3009 (EIP-712 name `USDC`, version `2`, authorization window 300s).
+- Always fund and pay with the exact asset quoted in `x402Requirements`; do not substitute another token.
 - Expected ERC-8004 test registries are identity `0x8004A818BFB912233c491871b3d84c89A494BD9e` and reputation `0x8004B663056A597Dffe9eCcC1965A193B7388713`.
 - Before initiating x402, verify the payer holds the asset returned by `x402Requirements`. Testnet balances may not appear in portfolio indexing; use a Base Sepolia `balanceOf` RPC read when necessary.
 - If prepare reports that the registry is not configured, stop. No valid `txId` exists and no payment should be initiated.
@@ -145,7 +145,7 @@ Ownership transfer is separate from `agentSetWallet`. After transfer, Brickken's
 1. Confirm the target (`base` or `base-sepolia`), the irreversible action, custody, and any public or PII fields.
 2. Prepare through exposed Brickken MCP tools, hosted HTTP API, or CLI with `chainId: "8453"` for mainnet or `"84532"` for tests and `executionMode: "brickken-relayed"`.
 3. Require a scalar `txId` and exactly one transaction. Preserve `to`, `data`, and `value` exactly.
-4. Validate that the quote network matches the operation network and that the payer holds the exact quoted asset. On Base Sepolia require USDC `0x8E17c614F99EbEFC73B57fA64a374A6Ef5F4C126`. Parse the exact decimal from `extra.displayPrice` as `maxPayment`.
+4. Validate that the quote network matches the operation network and that the payer holds the exact quoted asset. On Base Sepolia require Circle USDC `0x036CbD53842c5426634e7929541eC2318f3dCF7e`. Parse the exact decimal from `extra.displayPrice` as `maxPayment`.
 5. Call Base MCP `initiate_x402_request` with method `POST`, the active Brickken environment's `/send-transactions` resource, the prepared body, and `maxPayment`. Do not switch environments between prepare and send.
 6. Show the approval URL. Poll Base MCP `get_request_status` only after the user acts, then call `complete_x402_request(requestId)`.
 7. Report confirmed only when Brickken returns `status: "confirmed"` and a transaction hash.
