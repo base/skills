@@ -3,14 +3,14 @@ title: "Boardwalk Plugin"
 description: "Launch, fund, and manage Boardwalk token launches — the CLI builds unsigned calldata → send_calls, or a prefilled launch link when no shell is available."
 tags: [token-launches, staking, governance, liquidity]
 name: boardwalk
-version: 0.4.1
+version: 0.4.2
 integration: hybrid
 chains: [base, ethereum, arbitrum]
 requires:
   shell: optional
   allowlist: []
   externalMcp: null
-  cliPackage: "npx -p @useboardwalk/sdk@0.4.1 boardwalk"
+  cliPackage: "npx -p @useboardwalk/sdk@0.4.2 boardwalk"
 auth: none
 risk: [low-liquidity, slippage, irreversible]
 ---
@@ -31,7 +31,7 @@ This plugin drives the `boardwalk` CLI (the `@useboardwalk/sdk` npm package), wh
 No install step is required — the CLI runs per call via `npx`:
 
 ```bash
-npx -p @useboardwalk/sdk@0.4.1 boardwalk <command> [flags]
+npx -p @useboardwalk/sdk@0.4.2 boardwalk <command> [flags]
 ```
 
 Optionally install it globally (`npm i -g @useboardwalk/sdk`) and call `boardwalk <command>` directly. The no-shell path needs nothing installed — it only produces a URL.
@@ -71,10 +71,10 @@ Every transaction command prints a JSON object to stdout: an ordered `calls` arr
 | `launch` | Create a launch (conditional BMX approve + `create-launch`) | `--chain --wallet --name --ticker --category --path` · express: `--issuer-fee` · advanced: `--presale-percent --fee --vesting --referrer` | multi-chain |
 | `launch-metadata` | Upload logo, print EIP-712 payload + submit request | `--tx\|--token --chain` · `--logo\|--logo-data\|--logo-url` · `--twitter --homepage --description --raise-goal …` | multi-chain |
 | `submit-metadata` | POST signed metadata (auto-retries on 404) | `--token --chain --signature --message` | multi-chain |
-| `contribute` | Join a presale (approve raise token + `contribute`) | `--token --amount --chain --wallet` · `--rpc` | multi-chain |
-| `claim` | Claim presale tokens (after seeded + 7-day cliff) | `--token --chain --wallet` · `--rpc` | multi-chain |
+| `contribute` | Join an auction (approve raise token + `contribute`) | `--token --amount --chain --wallet` · `--rpc` | multi-chain |
+| `claim` | Claim tokens (after seeded + 7-day cliff) | `--token --chain --wallet` · `--rpc` | multi-chain |
 | `refund` | Reclaim a contribution on a **failed** launch | `--token --chain --wallet` | multi-chain |
-| `seed-liquidity` | Activate trading after a successful presale | `--token --chain --wallet` | multi-chain |
+| `seed-liquidity` | Activate trading after a successful auction | `--token --chain --wallet` | multi-chain |
 | `stake-bmx` / `unstake-bmx` | Stake / unstake BMX | `--amount --wallet` · `--chain base` | **Base only** |
 | `handle-rewards` | Claim/compound staking rewards | `--wallet` · `--claim-op-bmx --stake-mp --claim-weth --convert-weth-to-eth` | **Base only** |
 | `vote` | Vote on fee direction (`--option 1-4`) | `--option --wallet` · `--chain base` | **Base only** |
