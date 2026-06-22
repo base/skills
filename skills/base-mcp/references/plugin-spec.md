@@ -11,6 +11,8 @@ It is written to be **self-contained**: if you are an agent and someone hands yo
 
 A plugin is a single Markdown file at `skills/base-mcp/plugins/<slug>.md`: YAML frontmatter (routing signals for the agent) followed by a fixed, canonically-named body. No build step or validator runs today — conformance is by review — so the file must be correct by construction.
 
+To make that review repeatable, this repo ships the **`plugin-review`** skill (`.claude/skills/plugin-review/`). It validates a plugin file against this spec and produces a conformance report with actionable findings. **Plugin authors should run it to self-check a plugin before opening a PR**, and reviewers use it to evaluate incoming submissions. Invoke it in Claude Code with `/plugin-review` (or just ask to "review my plugin against the spec").
+
 ---
 
 ## Frontmatter Schema
@@ -263,7 +265,7 @@ Follow these steps to write a new plugin file (`skills/base-mcp/plugins/<slug>.m
 3. **Write the body sections in canonical order** (see [Required Body Sections](#required-body-sections) and [What goes in each section](#what-goes-in-each-section)). Include every **R** section, every **C** section your frontmatter flags imply, and use the exact canonical heading names.
 4. **Name the submission tool.** `## Submission` must say which Base MCP tool the flow lands on — `send_calls`, `swap`, `sign`, or `none` — and the exact mapping/normalization needed to get there.
 5. **Show the happy path.** `## Orchestration` walks user intent → Base MCP call as ordered steps. `## Example Prompts` gives 2–4 concrete prompts, each mapped to numbered steps.
-6. **Self-review against the [Authoring Checklist](#authoring-checklist)** and confirm your diff stays within [Contribution Scope](#contribution-scope), then open a PR that adds `skills/base-mcp/plugins/<slug>.md`.
+6. **Self-review against the [Authoring Checklist](#authoring-checklist)** and confirm your diff stays within [Contribution Scope](#contribution-scope). Run the **`plugin-review`** skill to validate the file against this spec and resolve its findings, then open a PR that adds `skills/base-mcp/plugins/<slug>.md`.
 
 ## Contribution Scope
 
@@ -294,7 +296,7 @@ Given a non-conforming or partially-conforming plugin file (or a protocol's raw 
    - No `## Submission`? Extract the "how we send it" content (often buried in an orchestration step or a raw `send_calls` block) into its own section and name the tool.
    - No `## Example Prompts`? Write 2–4 from the documented capabilities.
 6. **Preserve content.** Move deep reference material under `## Notes` or as `###` subsections rather than deleting it. When you change a heading that internal links point to, keep the link text in sync — Markdown anchors are derived from heading text, so a rename can break `#anchor` references elsewhere in the file.
-7. **Self-review against the [Authoring Checklist](#authoring-checklist).**
+7. **Self-review against the [Authoring Checklist](#authoring-checklist)**, then run the **`plugin-review`** skill to confirm the adapted file conforms to this spec.
 
 ## Plugin Skeleton Template
 
