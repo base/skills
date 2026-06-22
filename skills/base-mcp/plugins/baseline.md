@@ -1,9 +1,9 @@
 ---
 title: "Baseline Plugin"
 description: "Launch Baseline tokens with the Baseline CLI, then submit unsigned calls through Base MCP send_calls."
-tags: [token-launches, liquidity, ai-agents]
+tags: [token-launches, liquidity, dex]
 name: baseline
-version: 0.2.0
+version: 0.2.1
 integration: cli-only
 chains: [base, base-sepolia, ethereum]
 requires:
@@ -57,7 +57,7 @@ See [../references/custom-plugins.md](../references/custom-plugins.md) for the C
 
 ## Commands
 
-`baseline launch` writes an unsigned call artifact. The artifact is a superset of the `send_calls` payload: `chain` and `calls` are submitted directly, while `chainId`, `account`, and `bToken` are validation and reporting metadata.
+`baseline launch` writes an unsigned call artifact. The artifact is a superset of the `send_calls` payload: `chain` and `calls` are submitted directly, while `chainId`, `account`, `bToken`, `appUrl`, and `explorerUrl` are validation and reporting metadata.
 
 ```json
 {
@@ -65,11 +65,15 @@ See [../references/custom-plugins.md](../references/custom-plugins.md) for the C
   "chain": "base-sepolia",
   "account": "0xBaseAccount",
   "bToken": "0xBToken",
+  "appUrl": "https://dev.app.baseline.markets/tokens/84532/0xBToken",
+  "explorerUrl": "https://sepolia.basescan.org/address/0xBToken",
   "calls": [
     { "to": "0xTarget", "data": "0xCalldata", "value": "0x0" }
   ]
 }
 ```
+
+`appUrl` and `explorerUrl` are precomputed from the predicted `bToken`, so the post-launch links are available straight from the artifact without a follow-up call.
 
 ### Zero-Reserve Pool (ZRP) Launch
 
@@ -143,9 +147,9 @@ The remaining fee share goes to token stakers. With the default `--creator-fee-p
 ### Launch
 
 1. Complete Base MCP onboarding and confirm Base MCP tools are available.
-2. Fetch the wallet address only when needed with `get_wallets`; use the in-session Base Account address as `BASE_MCP_WALLET`.
+2. Call `get_wallets`, confirm the launch chain is one the connected Base Account supports, and use the in-session Base Account address as `BASE_MCP_WALLET`. If the Base Account is not in session, stop and ask the user to reconnect Base MCP.
 3. Gather token name, symbol, total supply, launch mode, chain, reserve token, creator, fee recipient, swap fee, and creator fee. Default to Base Sepolia `84532` and `zrp` unless the user explicitly chooses otherwise.
-4. For `standard`, require both `POOL_BTOKENS` and a nonzero `RESERVE_SEED`. `POOL_BTOKENS` must be less than `TOTAL_SUPPLY` so some supply remains outside the initial pool.
+4. Validate inputs before building. `TOTAL_SUPPLY` must be at least `10000` tokens (the protocol minimum), and any custom swap fee must be within `0.15%` to `50%`. For `standard`, require both `POOL_BTOKENS` and a nonzero `RESERVE_SEED`; `POOL_BTOKENS` must be less than `TOTAL_SUPPLY` so some supply remains outside the initial pool.
 5. Run `baseline launch` with `--output`. If the CLI exits nonzero, fix inputs and rerun; do not salvage partial output.
 6. Parse the artifact JSON and validate it before submission:
    - `account` equals the connected Base Account.
@@ -160,7 +164,7 @@ The remaining fee share goes to token stakers. With the default `--creator-fee-p
 8. Submit the calls through `send_calls` as described in [Submission](#submission).
 9. Show the returned approval URL as an `[Approve Transaction](<approvalUrl>)` link, include the request ID, print the link as a fallback, and open it with the local shell when the harness supports that.
 10. Wait for the user to confirm they approved in Base Account, then poll `get_request_status(requestId)`. If it is still pending, retry with a short delay; never report success until the request is completed.
-11. After completion, run `baseline info "$BTOKEN" --chain-id "$CHAIN_ID"` using the artifact `bToken` and `chainId` when the command is available.
+11. After completion, share the artifact `appUrl` and `explorerUrl` if present, then run `baseline info "$BTOKEN" --chain-id "$CHAIN_ID"` (same CLI) using the artifact `bToken` and `chainId` to confirm deployment status.
 
 ## Submission
 
@@ -175,7 +179,7 @@ Submit with Base MCP `send_calls`. Use `artifact.chain` directly and pass `artif
 }
 ```
 
-Do not include `artifact.account` in the `send_calls` payload; Base MCP uses the connected Base Account session for approval and execution.
+The `send_calls` payload is only `{ chain, calls }`. Do not pass `artifact.account` or any other artifact metadata (`bToken`, `appUrl`, `explorerUrl`, `chainId`); Base MCP uses the connected Base Account session for approval and execution.
 
 Expected call sequences:
 
@@ -242,6 +246,7 @@ zeroBytes32: 0x0000000000000000000000000000000000000000000000000000000000000000
 Default launch assumptions:
 
 - `zrp` is the default launch mode.
+- Total supply must be at least `10000` tokens; the protocol upper bound is ~`20.28` trillion tokens.
 - Swap fee defaults to `1%`; protocol bounds are `0.15%` to `50%`.
 - Creator fee share defaults to `50%`.
 - Creator defaults to the launch account.
