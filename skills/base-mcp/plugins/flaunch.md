@@ -386,7 +386,7 @@ The token contract address can come from Flaunch discovery or direct user input.
 1. Resolve the token address from Flaunch discovery or use the address provided by the user.
 2. Confirm symbol/name/address when known.
 3. Warn about low liquidity and slippage.
-4. Ask the user to confirm: "Buy 0.001 ETH of <symbol> (<address>)?"
+4. Ask the user to confirm: "Buy 0.001 ETH of `<symbol>` (`<address>`)?"
 5. On confirmation, call Base MCP `swap` with `fromAsset="ETH"`, `toAsset="<token contract address>"`, `amount="0.001"`, and `chain="base"`.
 6. Surface the "Approve Transaction" link and poll request status only after the user acts.
 

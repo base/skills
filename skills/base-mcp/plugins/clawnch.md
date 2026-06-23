@@ -468,7 +468,7 @@ dead address, `value: "0x0"`, amount in wei (whole tokens × 10^18).
 
 1. `web_request` GET `https://www.clawn.ch/api/tokens?limit=1&sort=volume&prices=1`.
 2. Take `tokens[0]`. Show: symbol, name, address, current price, 24h volume.
-3. Ask the user to confirm — "Buy 0.001 ETH of `<SYMBOL>` (`<address>`) at ~$<price>?".
+3. Ask the user to confirm — "Buy 0.001 ETH of `<SYMBOL>` (`<address>`) at `~$<price>`?".
 4. On confirmation: `swap` with `fromAsset=ETH`, `toAsset=<token.address>`, `amount="0.001"`, `chain="base"`.
 5. Open the approval URL; poll `get_request_status` once the user has approved.
 

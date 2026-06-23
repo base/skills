@@ -60,9 +60,9 @@ Use the returned key in the `X-API-KEY` header on all subsequent requests.
 - 5 requests/min for fulfillment endpoints
 - Keys expire after 30 days
 
-To upgrade to higher rate limits, visit <https://opensea.io/settings/developer>.
+To upgrade to higher rate limits, visit [OpenSea developer settings](https://opensea.io/settings/developer).
 
-Full documentation: <https://docs.opensea.io/reference/api-keys#instant-api-key-for-agents>
+Full documentation: [OpenSea API key docs](https://docs.opensea.io/reference/api-keys#instant-api-key-for-agents)
 
 Or set an existing key:
 
