@@ -291,42 +291,32 @@ curl -s -X POST "https://api.opensea.io/api/v2/offers/fulfillment_data" \
 ## Value Conversion
 
 > [!IMPORTANT]
-> The OpenSea API returns `value` as a **decimal string** in swap and cross-chain fulfillment responses (e.g. `"20000000000000000"`). The `send_calls` tool expects `value` as a **hex string** (e.g. `"0x470de4df820000"`). You must convert before submitting.
+> The OpenSea API returns `value` as a **decimal string** in swap and cross-chain fulfillment responses (e.g. `"20000000000000000"`). The `send_calls` tool expects `value` as a **hex string** (e.g. `"0x470de4df820000"`). You **must** convert every `value` field to a `0x`-prefixed hex string before passing it to `send_calls`.
 >
-> **Do NOT compute this conversion manually.** LLMs frequently get large-number hex conversions wrong, which causes transactions to revert with `InsufficientNativeTokensSupplied`. Always use the normalizer script or shell/JS commands below.
+> **Do NOT compute this conversion mentally.** LLMs frequently get large-number hex conversions wrong (e.g. converting `4600000000000` to `0x42E52B800` instead of the correct `0x42F055DB000`), which causes transactions to revert with `InsufficientNativeTokensSupplied`. Always use a tool, function call, or shell command to perform the conversion.
 >
-> Exception: The mint endpoint (`/drops/{slug}/mint`) returns `value` already as hex.
+> Exception: The mint endpoint (`/drops/{slug}/mint`) returns `value` already as a hex string. No conversion needed for mint.
 
-Normalize the full API response before calling `send_calls`. This converts decimal `value` strings to hex and strips fields `send_calls` doesn't need:
+### Conversion rules
 
-```bash
-python3 -c 'import json, sys
-raw = json.load(sys.stdin)
-if isinstance(raw, list):
-    txs = raw
-elif "transactions" in raw:
-    txs = raw["transactions"]
-else:
-    txs = [raw]
-def hex_value(v):
-    if v is None or v == "" or v == 0:
-        return "0x0"
-    if isinstance(v, str) and v.startswith("0x"):
-        return v
-    return hex(int(v))
-print(json.dumps([
-    {"to": t.get("to", ""), "data": t.get("data") or "0x", "value": hex_value(t.get("value"))}
-    for t in txs
-], indent=2))'
-```
+1. Extract `transactions` from the response (swap and fulfillment wrap them in `{"transactions": [...]}`; mint returns a single flat object).
+2. For each transaction, convert `value` from decimal to hex:
+   - If `value` is missing, null, empty, or `"0"`, use `"0x0"`.
+   - If `value` already starts with `"0x"`, pass it through unchanged.
+   - Otherwise, convert the decimal string to a `0x`-prefixed hex string.
+3. Map each transaction to `send_calls` using only `to`, `data`, and the converted `value`.
 
-Pipe the full API response through this script. It handles all response shapes: a bare `[{to,data,value}]` array, a `{"transactions":[...]}` wrapper (swap/fulfillment), or a single `{to,data,value,chain}` object (mint). Pass the normalized output as `calls` to `send_calls`.
+### Conversion methods
 
-Alternatively, convert individual values:
+In shell: `printf "0x%x" 20000000000000000` outputs `0x470de4df820000`
 
-In shell: `printf "0x%x" 20000000000000000`
+In JavaScript: `"0x" + BigInt("20000000000000000").toString(16)` outputs `"0x470de4df820000"`
 
-In JavaScript: `"0x" + BigInt(value).toString(16)`
+In Python: `hex(20000000000000000)` outputs `"0x470de4df820000"`
+
+### Example
+
+API returns `value: "20000000000000000"` (decimal). Convert: `"20000000000000000"` -> `"0x470de4df820000"` (hex). Pass `"0x470de4df820000"` as `value` in `send_calls`.
 
 ## Orchestration
 
@@ -340,9 +330,9 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
      --quantity <amount> --address <address>
    (or GET /api/v2/swap/quote?from_chain=...&quantity=<amount_in_wei>&...)
 4. Review quote with user: check price_impact, costs, total_price_usd
-5. Normalize response.transactions using the Value Conversion script
-6. For each normalized transaction:
-     send_calls(chain=<transaction.chain>, calls=[{to, value, data}])
+5. Convert each transaction's `value` from decimal to hex (see Value Conversion)
+6. For each transaction:
+     send_calls(chain=<transaction.chain>, calls=[{to, value (hex), data}])
 7. User approves → get_request_status(requestId)
 ```
 
@@ -376,9 +366,9 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
 6. POST /api/v2/listings/cross_chain_fulfillment_data with:
    listings=[{hash, chain, protocol_address}], fulfiller={address}, payment={chain, address}
    (works for same-chain and cross-chain)
-7. Normalize response.transactions using the Value Conversion script
-8. For each normalized transaction (in order):
-     send_calls(chain=<transaction.chain>, calls=[{to, value, data}])
+7. Convert each transaction's `value` from decimal to hex (see Value Conversion)
+8. For each transaction (in order):
+     send_calls(chain=<transaction.chain>, calls=[{to, value (hex), data}])
 9. User approves → get_request_status(requestId)
 ```
 
@@ -398,16 +388,16 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
 
 Target tool: **`send_calls`**
 
-All OpenSea write operations produce unsigned transaction data. Normalize `value` to hex before passing to `send_calls` using the Value Conversion normalizer script (except mint which is already hex).
+All OpenSea write operations produce unsigned transaction data. Convert `value` from decimal to hex before passing to `send_calls` (see Value Conversion). Exception: mint returns `value` already as hex.
 
-**Swap** — normalize `response.transactions[]`, then iterate:
+**Swap** — convert `value` in each `response.transactions[]` entry to hex, then iterate:
 
 ```json
 {
   "chain": "<transaction.chain>",
   "calls": [{
     "to": "<transaction.to>",
-    "value": "<transaction.value (hex, from normalizer)>",
+    "value": "<transaction.value (converted to hex)>",
     "data": "<transaction.data>"
   }]
 }
@@ -415,14 +405,14 @@ All OpenSea write operations produce unsigned transaction data. Normalize `value
 
 If multiple transactions, submit them in order (each may be on a different chain).
 
-**Buy (cross-chain fulfillment)** — normalize `response.transactions[]`, then iterate in order:
+**Buy (cross-chain fulfillment)** — convert `value` in each `response.transactions[]` entry to hex, then iterate in order:
 
 ```json
 {
   "chain": "<transaction.chain>",
   "calls": [{
     "to": "<transaction.to>",
-    "value": "<transaction.value (hex, from normalizer)>",
+    "value": "<transaction.value (converted to hex)>",
     "data": "<transaction.data>"
   }]
 }
@@ -454,7 +444,7 @@ Swap 0.02 ETH for USDC on Base
 2. Get wallet address via `get_wallets`.
 3. Run `opensea swaps quote --from-chain base --from-address 0x0000000000000000000000000000000000000000 --to-chain base --to-address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 --quantity 0.02 --address <address>` (or GET `/api/v2/swap/quote` with `quantity=20000000000000000`).
 4. Review quote with user (price impact, fees).
-5. Normalize transactions using the Value Conversion script; map each to `send_calls`.
+5. Convert each transaction's `value` from decimal to hex (see Value Conversion); map each to `send_calls`.
 
 ```
 Buy a Bored Ape on Ethereum
@@ -464,7 +454,7 @@ Buy a Bored Ape on Ethereum
 3. Run `opensea listings best boredapeyachtclub --limit 5` to show cheapest listings.
 4. User picks one; extract `order_hash`.
 5. POST to `/api/v2/listings/cross_chain_fulfillment_data` with listing hash, fulfiller, and payment (ETH on ethereum).
-6. Normalize transactions using the Value Conversion script; submit each via `send_calls` in order.
+6. Convert each transaction's `value` from decimal to hex (see Value Conversion); submit each via `send_calls` in order.
 
 ```
 What drops are coming up on Base?
