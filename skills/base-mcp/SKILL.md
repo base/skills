@@ -42,6 +42,7 @@ Two patterns deserve their own references because they span multiple tools:
 | Batched contract calls (EIP-5792) | [references/batch-calls.md](references/batch-calls.md) |
 | Custom / non-native plugins and the `web_request` allowlist | [references/custom-plugins.md](references/custom-plugins.md) |
 | Platform install steps | [references/install.md](references/install.md) |
+| Quote sanity checks (for transaction approvals and DeFi swaps) | [references/quote-sanity.md](references/quote-sanity.md) |
 | Tone and language rules | [references/tone.md](references/tone.md) |
 
 ### Loading referenced files
