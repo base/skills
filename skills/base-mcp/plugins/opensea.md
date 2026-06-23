@@ -301,7 +301,13 @@ Normalize the full API response before calling `send_calls`. This converts decim
 
 ```bash
 python3 -c 'import json, sys
-txs = json.load(sys.stdin)
+raw = json.load(sys.stdin)
+if isinstance(raw, list):
+    txs = raw
+elif "transactions" in raw:
+    txs = raw["transactions"]
+else:
+    txs = [raw]
 def hex_value(v):
     if v is None:
         return "0x0"
@@ -314,7 +320,7 @@ print(json.dumps([
 ], indent=2))'
 ```
 
-Pipe the `transactions` array from the API response through this script, then pass the normalized calls to `send_calls`.
+Pipe the full API response through this script. It handles all response shapes: a bare `[{to,data,value}]` array, a `{"transactions":[...]}` wrapper (swap/fulfillment), or a single `{to,data,value,chain}` object (mint). Pass the normalized output as `calls` to `send_calls`.
 
 Alternatively, convert individual values:
 
@@ -394,7 +400,7 @@ Target tool: **`send_calls`**
 
 All OpenSea write operations produce unsigned transaction data. Normalize `value` to hex before passing to `send_calls` using the Value Conversion normalizer script (except mint which is already hex).
 
-**Swap / Buy (cross-chain fulfillment)** — normalize `response.transactions[]`, then iterate:
+**Swap** — normalize `response.transactions[]`, then iterate:
 
 ```json
 {
@@ -407,7 +413,22 @@ All OpenSea write operations produce unsigned transaction data. Normalize `value
 }
 ```
 
-If multiple transactions, submit them in order (each may be on a different chain). Transactions may span multiple chains (e.g. approval on Base, then fulfill on Ethereum). Submit each `send_calls` in sequence, waiting for confirmation before the next.
+If multiple transactions, submit them in order (each may be on a different chain).
+
+**Buy (cross-chain fulfillment)** — normalize `response.transactions[]`, then iterate in order:
+
+```json
+{
+  "chain": "<transaction.chain>",
+  "calls": [{
+    "to": "<transaction.to>",
+    "value": "<transaction.value (hex, from normalizer)>",
+    "data": "<transaction.data>"
+  }]
+}
+```
+
+Transactions may span multiple chains (e.g. approval on Base, then fulfill on Ethereum). Submit each `send_calls` in sequence, waiting for confirmation before the next.
 
 **Mint** — map response directly (value is already hex):
 
