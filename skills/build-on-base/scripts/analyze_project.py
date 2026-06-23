@@ -128,7 +128,8 @@ def analyze_file(filepath: Path) -> dict:
             result['provider_type'] = 'OnchainKitProvider'
             result['provider_lines'].append({
                 'line': i,
-                'code': line.strip()
+                'code': line.strip(),
+                'provider_type': 'OnchainKitProvider'
             })
         
         # Check for MiniKitProvider
@@ -137,7 +138,8 @@ def analyze_file(filepath: Path) -> dict:
             result['provider_type'] = 'MiniKitProvider'
             result['provider_lines'].append({
                 'line': i,
-                'code': line.strip()
+                'code': line.strip(),
+                'provider_type': 'MiniKitProvider'
             })
         
         # Check for miniKit prop
@@ -205,7 +207,9 @@ def analyze_project(project_dir: str) -> AnalysisReport:
                 report['provider_locations'].append({
                     'file': rel_path,
                     'line': provider_info['line'],
-                    'code': provider_info['code']
+                    'code': provider_info['code'],
+                    'provider_type': provider_info.get('provider_type'),
+                    'is_minikit_prop': provider_info.get('is_minikit_prop', False)
                 })
     
     # Build summary

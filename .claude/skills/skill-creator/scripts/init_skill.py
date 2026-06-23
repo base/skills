@@ -11,13 +11,14 @@ Examples:
     init_skill.py custom-skill --path /custom/location
 """
 
+import re
 import sys
 from pathlib import Path
 
 
 SKILL_TEMPLATE = """---
 name: {skill_name}
-description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+description: 'TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.'
 ---
 
 # {skill_title}
@@ -191,6 +192,21 @@ def title_case_skill_name(skill_name):
     return ' '.join(word.capitalize() for word in skill_name.split('-'))
 
 
+def validate_skill_name(skill_name):
+    """Validate a skill name. Returns an error message, or None if valid.
+
+    Kept in sync with the rules enforced by quick_validate.py.
+    """
+    if not re.match(r'^[a-z0-9-]+$', skill_name):
+        return ("Name must be hyphen-case (lowercase letters, digits, "
+                "and hyphens only)")
+    if skill_name.startswith('-') or skill_name.endswith('-') or '--' in skill_name:
+        return "Name cannot start/end with a hyphen or contain consecutive hyphens"
+    if len(skill_name) > 64:
+        return f"Name is too long ({len(skill_name)} characters). Maximum is 64 characters."
+    return None
+
+
 def init_skill(skill_name, path):
     """
     Initialize a new skill directory with template SKILL.md.
@@ -276,7 +292,7 @@ def main():
         print("\nSkill name requirements:")
         print("  - Hyphen-case identifier (e.g., 'data-analyzer')")
         print("  - Lowercase letters, digits, and hyphens only")
-        print("  - Max 40 characters")
+        print("  - Max 64 characters")
         print("  - Must match directory name exactly")
         print("\nExamples:")
         print("  init_skill.py my-new-skill --path skills/public")
@@ -286,6 +302,11 @@ def main():
 
     skill_name = sys.argv[1]
     path = sys.argv[3]
+
+    name_error = validate_skill_name(skill_name)
+    if name_error:
+        print(f"❌ Invalid skill name '{skill_name}': {name_error}")
+        sys.exit(1)
 
     print(f"🚀 Initializing skill: {skill_name}")
     print(f"   Location: {path}")
