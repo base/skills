@@ -1,18 +1,18 @@
 ---
 title: "GMGN Plugin"
-description: "Token swap quotes and on-chain market intelligence for Base via GMGN API. Returns unsigned calldata for send_calls execution."
-tags: [swap, quote, defi, market-data, trading]
+description: "Token swap quotes and on-chain market intelligence for Base via GMGN API. Requires shell to generate auth parameters; returns unsigned calldata for send_calls execution."
+tags: [swap, trading, discovery]
 name: gmgn
 version: "1.0.0"
-integration: http-api
+integration: cli-only
 chains: [base]
 requires:
-  shell: none
+  shell: bash
   allowlist: [openapi.gmgn.ai]
   externalMcp: null
   cliPackage: null
 auth: api-key
-risk: [quote-expiry, slippage]
+risk: [slippage, low-liquidity]
 ---
 
 # GMGN Plugin
@@ -20,28 +20,56 @@ risk: [quote-expiry, slippage]
 > [!IMPORTANT]
 > Complete the Base MCP onboarding flow defined in `SKILL.md` before calling any GMGN endpoint. The user's wallet address — passed as `from_address` in every quote call — is fetched lazily when needed.
 
-GMGN on Base: token swaps using unsigned calldata returned directly from the quote endpoint, plus trending token market data. Fetch the quote (which includes `data.tx.to`, `data.tx.value`, and `data.tx.data`), handle any approvals in `data.tx.approve_txs`, then execute with `send_calls`.
+## Overview
 
-No additional MCP server is required.
+GMGN is a trading platform providing token swap routing and on-chain market intelligence for Base mainnet. This plugin calls the GMGN HTTP API via `web_request` to obtain full unsigned transaction calldata from the quote endpoint, then submits it through `send_calls` — no server-side key binding or additional MCP server required.
+
+**Shell requirement:** Every request requires a Unix timestamp (±5 s accuracy) and a fresh UUID v4 as auth parameters. These must be generated via shell commands (`date +%s` and `uuidgen`) to guarantee correctness. This plugin only runs on CLI harnesses (Claude Code, Codex) where shell access is available.
+
+Three capabilities are exposed:
+- **Swap quotes** — returns complete unsigned calldata (`data.tx.to/value/data`) and ERC-20 approval transactions (`data.tx.approve_txs`) ready for `send_calls`
+- **Gas prices** — current low/average/high fee tiers for Base
+- **Trending tokens** — top tokens ranked by swap activity, volume, and holder count
 
 **Chain:** Base mainnet (chainId `8453`)
 
 ---
 
-## Authentication
+## Auth
 
-All requests require the `X-APIKEY` header and two query parameters:
+All requests require the `X-APIKEY` header and two query parameters generated via shell:
 
-| Parameter   | Description |
-| ----------- | ----------- |
-| `timestamp` | Current Unix timestamp in seconds (valid window ±5 s) |
-| `client_id` | Fresh UUID v4 per request (replay protection, 7 s window) |
+| Parameter   | Description | Shell command |
+| ----------- | ----------- | ------------- |
+| `timestamp` | Current Unix timestamp in seconds (valid window ±5 s) | `date +%s` |
+| `client_id` | Fresh UUID v4 per request (replay protection, 7 s window) | `uuidgen \| tr '[:upper:]' '[:lower:]'` |
+
+Generate before every request:
+
+```bash
+TS=$(date +%s)
+CID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+```
 
 A public API key is available for all read-only operations:
 
 ```
 X-APIKEY: gmgn_basesolbscethmonadtron
 ```
+
+---
+
+## Surface Routing
+
+| Capability          | Tool          | Notes |
+| ------------------- | ------------- | ----- |
+| Generate auth params | shell (`bash`) | `date +%s` for timestamp; `uuidgen` for client_id — required before every request |
+| Swap quote          | `web_request` | `GET /v1/trade/quote` — returns unsigned calldata |
+| Gas price           | `web_request` | `GET /v1/trade/gas_price` |
+| Trending tokens     | `web_request` | `GET /v1/market/rank` |
+| Execute swap        | `send_calls`  | Uses calldata from quote response — no signing required |
+
+All HTTP calls go to `openapi.gmgn.ai` (in the `allowlist`). Shell is required for auth parameter generation.
 
 ---
 
@@ -62,7 +90,7 @@ Query parameters:
 | `input_token`  | Yes      | Input token contract address (`0x000...000` for native ETH) |
 | `output_token` | Yes      | Output token contract address |
 | `input_amount` | Yes      | Input amount in base units (USDC: × 1e6, ETH: × 1e18) |
-| `slippage`     | Yes      | Integer 0–100 (e.g., `5` = 5%). See [Slippage Guidance](#slippage-guidance). |
+| `slippage`     | Yes      | Integer 0–100 (e.g., `5` = 5%). See [Risks & Warnings](#risks--warnings). |
 | `timestamp`    | Yes      | Auth: Unix seconds |
 | `client_id`    | Yes      | Auth: fresh UUID v4 |
 
@@ -89,22 +117,22 @@ Top-level summary fields:
 
 `data.tx` fields (the full unsigned transaction for `send_calls`):
 
-| Field                  | Description |
-| ---------------------- | ----------- |
-| `tx.to`                | Router contract address — use as `to` in `send_calls` |
-| `tx.value`             | Native ETH to send in wei (string) — use as `value` in `send_calls` |
-| `tx.data`              | Encoded calldata — use as `data` in `send_calls` |
-| `tx.approve_txs`       | Approval transactions to send before the swap (empty for native ETH input) |
-| `tx.amount_in`         | Input amount (base units) |
-| `tx.amount_out`        | Expected output amount (base units) |
-| `tx.amount_min_out`    | Minimum output after slippage (base units) |
-| `tx.amount_in_usd`     | Input value in USD |
-| `tx.amount_out_usd`    | Expected output value in USD |
+| Field                    | Description |
+| ------------------------ | ----------- |
+| `tx.to`                  | Router contract address — use as `to` in `send_calls` |
+| `tx.value`               | Native ETH to send in wei (string) — use as `value` in `send_calls` |
+| `tx.data`                | Encoded calldata — use as `data` in `send_calls` |
+| `tx.approve_txs`         | Approval transactions to send before the swap (empty for native ETH input) |
+| `tx.amount_in`           | Input amount (base units) |
+| `tx.amount_out`          | Expected output amount (base units) |
+| `tx.amount_min_out`      | Minimum output after slippage (base units) |
+| `tx.amount_in_usd`       | Input value in USD |
+| `tx.amount_out_usd`      | Expected output value in USD |
 | `tx.amount_in_decimals`  | Input token decimals |
 | `tx.amount_out_decimals` | Output token decimals |
-| `tx.gas_limit`         | Estimated gas limit (string) |
-| `tx.deadline`          | Transaction deadline (Unix timestamp) |
-| `tx.chain_id`          | Chain ID (`8453` for Base) |
+| `tx.gas_limit`           | Estimated gas limit (string) |
+| `tx.deadline`            | Transaction deadline (Unix timestamp) |
+| `tx.chain_id`            | Chain ID (`8453` for Base) |
 
 Example response:
 
@@ -162,13 +190,13 @@ Query parameters:
 
 Key response fields under `data`:
 
-| Field                    | Description |
-| ------------------------ | ----------- |
-| `low` / `average` / `high` | Gas price tiers in wei |
+| Field                                                                | Description |
+| -------------------------------------------------------------------- | ----------- |
+| `low` / `average` / `high`                                           | Gas price tiers in wei |
 | `low_estimate_time` / `average_estimate_time` / `high_estimate_time` | Estimated confirmation time (seconds) |
-| `suggest_base_fee`       | Suggested EIP-1559 base fee (wei) |
-| `average_prio_fee`       | Average priority fee (wei) |
-| `native_token_usd_price` | ETH price in USD |
+| `suggest_base_fee`                                                   | Suggested EIP-1559 base fee (wei) |
+| `average_prio_fee`                                                   | Average priority fee (wei) |
+| `native_token_usd_price`                                             | ETH price in USD |
 
 ---
 
@@ -200,35 +228,52 @@ Response: `data.rank` array with token address, symbol, price (USD), market cap,
 ```text
 1. get_wallets -> user address (from_address)
 
-2. web_request GET /v1/trade/quote
+2. shell: TS=$(date +%s) && CID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+
+3. web_request GET /v1/trade/quote
      ?chain=base
      &from_address=<address>
      &input_token=0x0000000000000000000000000000000000000000   (native ETH)
      &output_token=<token_address>
      &input_amount=<amount_in_wei>
      &slippage=5
-     &timestamp=<ts>&client_id=<uuid>
+     &timestamp=$TS&client_id=$CID
    Headers: X-APIKEY: gmgn_basesolbscethmonadtron
 
-3. Present quote to user:
+4. Present quote to user:
      Input:           data.tx.amount_in / 10^data.tx.amount_in_decimals  (+ data.tx.amount_in_usd)
      Expected output: data.tx.amount_out / 10^data.tx.amount_out_decimals (+ data.tx.amount_out_usd)
      Minimum output:  data.tx.amount_min_out / 10^data.tx.amount_out_decimals
-     Check slippage against Slippage Guidance table before proceeding.
+     Check slippage against Risks & Warnings before proceeding.
 
-4. Confirm with user before submitting.
+5. Confirm with user before submitting.
 
-5. Build calls from the quote response:
-     approvalCalls = data.tx.approve_txs.map(t => ({ to: t.to, value: t.value ?? "0x0", data: t.data }))
-     swapCall      = { to: data.tx.to, value: data.tx.value, data: data.tx.data }
-     calls         = [...approvalCalls, swapCall]
-
-6. send_calls("base", calls)
-
-7. get_request_status only after the user acts on the approval link.
+6. See Submission section to build and send the calls.
 ```
 
-### Swap `send_calls` body
+### Market discovery flow: "What tokens are trending on Base?"
+
+```text
+1. shell: TS=$(date +%s) && CID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+2. web_request GET /v1/market/rank?chain=base&interval=1h&limit=10&order_by=volume&timestamp=$TS&client_id=$CID
+   Headers: X-APIKEY: gmgn_basesolbscethmonadtron
+3. Present the top tokens: name, symbol, price, 1h change, volume, holder count
+4. Optionally follow up with GET /v1/trade/quote for any token the user wants to buy
+```
+
+---
+
+## Submission
+
+Build the `send_calls` payload from the quote response:
+
+```javascript
+approvalCalls = data.tx.approve_txs.map(t => ({ to: t.to, value: t.value ?? "0x0", data: t.data }))
+swapCall      = { to: data.tx.to, value: data.tx.value, data: data.tx.data }
+calls         = [...approvalCalls, swapCall]
+```
+
+If `data.tx.approve_txs` is empty (native ETH input), omit the approval call and send only the swap call.
 
 ```json
 {
@@ -240,16 +285,7 @@ Response: `data.rank` array with token address, symbol, price (USD), market cap,
 }
 ```
 
-If `data.tx.approve_txs` is empty (native ETH input), omit the approval call and send only the swap call.
-
-### Market discovery flow: "What tokens are trending on Base?"
-
-```text
-1. web_request GET /v1/market/rank?chain=base&interval=1h&limit=10&order_by=volume&timestamp=<ts>&client_id=<uuid>
-   Headers: X-APIKEY: gmgn_basesolbscethmonadtron
-2. Present the top tokens: name, symbol, price, 1h change, volume, holder count
-3. Optionally follow up with GET /v1/trade/quote for any token the user wants to buy
-```
+Call `send_calls("base", calls)`, then `get_request_status` only after the user acts on the approval link.
 
 ---
 
@@ -279,7 +315,9 @@ If `data.tx.approve_txs` is empty (native ETH input), omit the approval call and
 
 ---
 
-## Slippage Guidance
+## Risks & Warnings
+
+### Slippage
 
 | Tolerance      | Level     | Action |
 | -------------- | --------- | ------ |
@@ -288,7 +326,13 @@ If `data.tx.approve_txs` is empty (native ETH input), omit the approval call and
 | > 5% and ≤ 20% | High      | Warn that the trade can fill significantly below quote and is a likely sandwich target. Require explicit confirmation. |
 | > 20%          | Very high | Strongly warn; do not submit without the user re-confirming the exact number. |
 
-For meme tokens with low liquidity, higher slippage (10–20%) is common — always warn and confirm before proceeding.
+### Low Liquidity
+
+For meme tokens with low liquidity, higher slippage (10–20%) is common. Always warn the user and require explicit confirmation before proceeding. Thin markets increase the risk of severe price impact and sandwich attacks.
+
+### Quote Expiry
+
+Quotes expire at `data.tx.deadline` (Unix timestamp). If the user has not confirmed within ~30 seconds, re-fetch the quote before submitting. Submitting an expired quote will cause the transaction to revert on-chain.
 
 ---
 
@@ -299,7 +343,6 @@ For meme tokens with low liquidity, higher slippage (10–20%) is common — alw
 - WETH on Base: `0x4200000000000000000000000000000000000006`
 - Token amounts are in base units. Use `data.tx.amount_in_decimals` / `data.tx.amount_out_decimals` from the quote response to convert to human-readable values.
 - `data.tx.data` is unsigned calldata — pass it directly to `send_calls`; never sign or modify it.
-- Quotes expire at `data.tx.deadline` (Unix timestamp). Re-fetch if the user has not confirmed within ~30 seconds.
 - `data.tx.approve_txs` handles ERC-20 allowances. It is empty when the input is native ETH or when a sufficient allowance already exists.
 - `timestamp` must be within ±5 seconds of server time. `client_id` must be a fresh UUID per request.
 - Use `chain: "base"` (not numeric chain ID) with `send_calls`.
