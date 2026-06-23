@@ -293,15 +293,30 @@ curl -s -X POST "https://api.opensea.io/api/v2/offers/fulfillment_data" \
 > [!IMPORTANT]
 > The OpenSea API returns `value` as a **decimal string** in swap and cross-chain fulfillment responses (e.g. `"20000000000000000"`). The `send_calls` tool expects `value` as a **hex string** (e.g. `"0x470de4df820000"`). You must convert before submitting.
 >
+> **Do NOT compute this conversion manually.** LLMs frequently get large-number hex conversions wrong, which causes transactions to revert with `InsufficientNativeTokensSupplied`. Always use the normalizer script or shell/JS commands below.
+>
 > Exception: The mint endpoint (`/drops/{slug}/mint`) returns `value` already as hex.
 
-Conversion:
+Normalize the full API response before calling `send_calls`. This converts decimal `value` strings to hex and strips fields `send_calls` doesn't need:
 
+```bash
+python3 -c 'import json, sys
+txs = json.load(sys.stdin)
+def hex_value(v):
+    if v is None:
+        return "0x0"
+    if isinstance(v, str) and v.startswith("0x"):
+        return v
+    return hex(int(v))
+print(json.dumps([
+    {"to": t["to"], "data": t.get("data") or "0x", "value": hex_value(t.get("value", 0))}
+    for t in txs
+], indent=2))'
 ```
-decimal "20000000000000000" → hex "0x470de4df820000"
-decimal "1000000000000000000" → hex "0xde0b6b3a7640000"
-decimal "0" → hex "0x0"
-```
+
+Pipe the `transactions` array from the API response through this script, then pass the normalized calls to `send_calls`.
+
+Alternatively, convert individual values:
 
 In shell: `printf "0x%x" 20000000000000000`
 
@@ -319,10 +334,10 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
      --quantity <amount> --address <address>
    (or GET /api/v2/swap/quote?from_chain=...&quantity=<amount_in_wei>&...)
 4. Review quote with user: check price_impact, costs, total_price_usd
-5. For each transaction in response.transactions:
-     Convert value decimal→hex
+5. Normalize response.transactions using the Value Conversion script
+6. For each normalized transaction:
      send_calls(chain=<transaction.chain>, calls=[{to, value, data}])
-6. User approves → get_request_status(requestId)
+7. User approves → get_request_status(requestId)
 ```
 
 ### Mint
@@ -355,10 +370,10 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
 6. POST /api/v2/listings/cross_chain_fulfillment_data with:
    listings=[{hash, chain, protocol_address}], fulfiller={address}, payment={chain, address}
    (works for same-chain and cross-chain)
-7. For each transaction in response.transactions (in order):
-     Convert value decimal→hex
+7. Normalize response.transactions using the Value Conversion script
+8. For each normalized transaction (in order):
      send_calls(chain=<transaction.chain>, calls=[{to, value, data}])
-8. User approves → get_request_status(requestId)
+9. User approves → get_request_status(requestId)
 ```
 
 ### Sell NFT (accept offer — shell only)
@@ -377,22 +392,22 @@ In JavaScript: `"0x" + BigInt(value).toString(16)`
 
 Target tool: **`send_calls`**
 
-All OpenSea write operations produce unsigned transaction data. Convert `value` to hex before passing to `send_calls` (except mint which is already hex).
+All OpenSea write operations produce unsigned transaction data. Normalize `value` to hex before passing to `send_calls` using the Value Conversion normalizer script (except mint which is already hex).
 
-**Swap** — iterate `response.transactions[]`:
+**Swap / Buy (cross-chain fulfillment)** — normalize `response.transactions[]`, then iterate:
 
 ```json
 {
   "chain": "<transaction.chain>",
   "calls": [{
     "to": "<transaction.to>",
-    "value": "0x<hex(transaction.value)>",
+    "value": "<transaction.value (hex, from normalizer)>",
     "data": "<transaction.data>"
   }]
 }
 ```
 
-If multiple transactions, submit them in order (each may be on a different chain).
+If multiple transactions, submit them in order (each may be on a different chain). Transactions may span multiple chains (e.g. approval on Base, then fulfill on Ethereum). Submit each `send_calls` in sequence, waiting for confirmation before the next.
 
 **Mint** — map response directly (value is already hex):
 
@@ -407,21 +422,6 @@ If multiple transactions, submit them in order (each may be on a different chain
 }
 ```
 
-**Buy (cross-chain fulfillment)** — iterate `response.transactions[]` in order:
-
-```json
-{
-  "chain": "<transaction.chain>",
-  "calls": [{
-    "to": "<transaction.to>",
-    "value": "0x<hex(transaction.value)>",
-    "data": "<transaction.data>"
-  }]
-}
-```
-
-Transactions may span multiple chains (e.g. approval on Base, then fulfill on Ethereum). Submit each `send_calls` in sequence, waiting for confirmation before the next.
-
 See [../references/batch-calls.md](../references/batch-calls.md) and [../references/approval-mode.md](../references/approval-mode.md).
 
 ## Example Prompts
@@ -433,7 +433,7 @@ Swap 0.02 ETH for USDC on Base
 2. Get wallet address via `get_wallets`.
 3. Run `opensea swaps quote --from-chain base --from-address 0x0000000000000000000000000000000000000000 --to-chain base --to-address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 --quantity 0.02 --address <address>` (or GET `/api/v2/swap/quote` with `quantity=20000000000000000`).
 4. Review quote with user (price impact, fees).
-5. Convert `value` decimal→hex; map each transaction to `send_calls`.
+5. Normalize transactions using the Value Conversion script; map each to `send_calls`.
 
 ```
 Buy a Bored Ape on Ethereum
@@ -443,7 +443,7 @@ Buy a Bored Ape on Ethereum
 3. Run `opensea listings best boredapeyachtclub --limit 5` to show cheapest listings.
 4. User picks one; extract `order_hash`.
 5. POST to `/api/v2/listings/cross_chain_fulfillment_data` with listing hash, fulfiller, and payment (ETH on ethereum).
-6. Convert `value` decimal→hex; submit each transaction via `send_calls` in order.
+6. Normalize transactions using the Value Conversion script; submit each via `send_calls` in order.
 
 ```
 What drops are coming up on Base?
@@ -461,7 +461,7 @@ Buy an NFT on Ethereum using USDC from Base
 3. Find the listing: `opensea listings best-for-nft <slug> <token_id>`.
 4. Confirm price and payment token with user.
 5. POST to `/api/v2/listings/cross_chain_fulfillment_data` with payment `{chain: "base", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"}`.
-6. Convert values decimal→hex; submit each transaction via `send_calls` in order (approval on Base → bridge → fulfill on Ethereum).
+6. Normalize transactions using the Value Conversion script; submit each via `send_calls` in order (approval on Base → bridge → fulfill on Ethereum).
 
 ## Risks & Warnings
 
