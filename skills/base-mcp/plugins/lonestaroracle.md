@@ -262,7 +262,7 @@ GET https://macro.lonestaroracle.xyz/macro
 ## News & Sentiment
 
 ### NewsSentiment — $0.05
-News sentiment for stocks and crypto. Crypto tickers (BTC/ETH/SOL/AVAX etc.) auto-detect and pull CoinDesk + CoinTelegraph. Returns bullish/bearish/neutral signal, headline analysis, and `aggregate_score` (−1.0 to +1.0).
+News sentiment for stocks and crypto. Crypto queries auto-route to native sources; AI synthesizes and returns `aggregate_score` (−1.0 to +1.0) alongside bullish/bearish/neutral signal.
 
 ```
 GET https://news.lonestaroracle.xyz/news
