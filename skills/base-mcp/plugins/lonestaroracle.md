@@ -8,46 +8,7 @@ integration: http-api
 chains: [base]
 requires:
   shell: none
-  allowlist:
-    - token.lonestaroracle.xyz
-    - wallet.lonestaroracle.xyz
-    - contract.lonestaroracle.xyz
-    - news.lonestaroracle.xyz
-    - equity.lonestaroracle.xyz
-    - options.lonestaroracle.xyz
-    - portfolio.lonestaroracle.xyz
-    - macro.lonestaroracle.xyz
-    - earnings.lonestaroracle.xyz
-    - insider.lonestaroracle.xyz
-    - floyd.lonestaroracle.xyz
-    - chainscout.lonestaroracle.xyz
-    - content.lonestaroracle.xyz
-    - crownblock.lonestaroracle.xyz
-    - realestate.lonestaroracle.xyz
-    - agri.lonestaroracle.xyz
-    - grid.lonestaroracle.xyz
-    - rattler.lonestaroracle.xyz
-    - cottonmouth.lonestaroracle.xyz
-    - copperhead.lonestaroracle.xyz
-    - ta.lonestaroracle.xyz
-    - compute.lonestaroracle.xyz
-    - metals.lonestaroracle.xyz
-    - supply.lonestaroracle.xyz
-    - latam.lonestaroracle.xyz
-    - govedge.lonestaroracle.xyz
-    - lease.lonestaroracle.xyz
-    - stake.lonestaroracle.xyz
-    - doc.lonestaroracle.xyz
-    - aero.lonestaroracle.xyz
-    - stable.lonestaroracle.xyz
-    - launches.lonestaroracle.xyz
-    - defi.lonestaroracle.xyz
-    - whale.lonestaroracle.xyz
-    - geo.lonestaroracle.xyz
-    - cascade.lonestaroracle.xyz
-    - wealth.lonestaroracle.xyz
-    - bundle.lonestaroracle.xyz
-    - weather.lonestaroracle.xyz
+  allowlist: [token.lonestaroracle.xyz, wallet.lonestaroracle.xyz, contract.lonestaroracle.xyz, news.lonestaroracle.xyz, equity.lonestaroracle.xyz, options.lonestaroracle.xyz, portfolio.lonestaroracle.xyz, macro.lonestaroracle.xyz, earnings.lonestaroracle.xyz, insider.lonestaroracle.xyz, floyd.lonestaroracle.xyz, chainscout.lonestaroracle.xyz, content.lonestaroracle.xyz, crownblock.lonestaroracle.xyz, realestate.lonestaroracle.xyz, agri.lonestaroracle.xyz, grid.lonestaroracle.xyz, rattler.lonestaroracle.xyz, cottonmouth.lonestaroracle.xyz, copperhead.lonestaroracle.xyz, ta.lonestaroracle.xyz, compute.lonestaroracle.xyz, metals.lonestaroracle.xyz, supply.lonestaroracle.xyz, latam.lonestaroracle.xyz, govedge.lonestaroracle.xyz, lease.lonestaroracle.xyz, stake.lonestaroracle.xyz, doc.lonestaroracle.xyz, aero.lonestaroracle.xyz, stable.lonestaroracle.xyz, launches.lonestaroracle.xyz, defi.lonestaroracle.xyz, whale.lonestaroracle.xyz, geo.lonestaroracle.xyz, cascade.lonestaroracle.xyz, wealth.lonestaroracle.xyz, bundle.lonestaroracle.xyz, weather.lonestaroracle.xyz]
   externalMcp: null
   cliPackage: null
 auth: none
@@ -57,24 +18,33 @@ risk: []
 # LoneStarOracle Plugin
 
 > [!IMPORTANT]
-> Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any LoneStarOracle endpoint. The user's wallet address is needed for x402 payment execution via `send_calls`.
+> Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any LoneStarOracle endpoint. The user's wallet address is needed to execute x402 payments via `send_calls`.
 
 ## Overview
 
 LoneStarOracle (LSO) is an AI data oracle with 39 pay-per-query services covering crypto intelligence, equity research, federal contract procurement, on-chain analytics, and real-world market signals. All endpoints run on Base mainnet and accept x402 micropayments in USDC ($0.02–$2.00 per query). No API keys required.
-
-Endpoints return structured JSON with AI-generated signals, scores, and narratives. All reads are GET requests and work on every surface via `web_request`.
 
 **Payment wallet:** `0x52Ab53912D37759B2ad364f22dD06B16714b6C06`  
 **USDC on Base:** `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 
 ---
 
+## Surface Routing
+
+| Capability | Where it runs |
+|---|---|
+| **All GET endpoints** — data reads across all 39 services | Every surface. Use Base MCP `web_request` in chat apps; harness HTTP tool in CLI environments. |
+| **POST endpoints** — RattlerAI, CottonmouthAI, CopperheadAI audits; ContentForge; DocEdge; Floyd agent | CLI harnesses only (Claude Code, Cursor terminal). In chat-only surfaces, direct the user to the relevant subdomain (e.g. `rattler.lonestaroracle.xyz`) to submit via their browser. |
+
+Do not submit payments or invoke POST operations without explicit user confirmation.
+
+---
+
 ## x402 Payment Pattern
 
-LSO endpoints gate access via x402. When a call returns HTTP 402:
+All LSO endpoints are gated by x402 micropayments. When an endpoint returns HTTP 402:
 
-1. Parse the response header `X-Payment-Required` for:
+1. Parse the `X-Payment-Required` response header for:
    - `maxAmountRequired` — price in USDC atomic units (6 decimals, e.g. `50000` = $0.05)
    - `payTo` — always `0x52Ab53912D37759B2ad364f22dD06B16714b6C06`
 
@@ -84,7 +54,7 @@ LSO endpoints gate access via x402. When a call returns HTTP 402:
    value: 0x0
    data:  0xa9059cbb
           + 000000000000000000000000 + 52Ab53912D37759B2ad364f22dD06B16714b6C06
-          + <maxAmountRequired as 32-byte hex>
+          + <maxAmountRequired as 32-byte hex, zero-padded to 32 bytes>
    ```
 
 3. Execute via `send_calls`:
@@ -203,7 +173,7 @@ GET https://wallet.lonestaroracle.xyz/score
 ```
 
 ### WealthPulse — $0.25
-Cross-asset portfolio risk analyzer. Auto-fetches Base on-chain holdings (ERC-20 + ETH via Alchemy), values each position, calculates stablecoin % and concentration. Also accepts stock tickers and token contracts. Returns unified risk score 1–10 + AI narrative.
+Cross-asset portfolio risk analyzer. Auto-fetches Base on-chain holdings (ERC-20 + ETH), values each position, calculates stablecoin % and concentration. Also accepts stock tickers and token contracts. Returns unified risk score 1–10 + AI narrative.
 
 ```
 GET https://wealth.lonestaroracle.xyz/analyze
@@ -260,6 +230,7 @@ GET https://ta.lonestaroracle.xyz/analyze
 GET https://ta.lonestaroracle.xyz/scan
   ?symbol=<ticker>
 ```
+
 `/scan` returns all 4 timeframes with confluence score (strong_buy → strong_sell).
 
 ### InsiderFlow — $0.03
@@ -416,6 +387,9 @@ GET https://weather.lonestaroracle.xyz/forecast
 
 ## Smart Contract Security Audits
 
+> [!NOTE]
+> Audit endpoints require POST and are available in CLI harnesses only. On chat-only surfaces, direct the user to the service subdomain.
+
 ### RattlerAI — $2.00
 Smart contract security audit: Claude Opus + Slither static analysis. Returns vulnerabilities, severity ratings, attack surface summary.
 
@@ -444,8 +418,11 @@ POST https://copperhead.lonestaroracle.xyz/audit
 
 ## Content & Documents
 
+> [!NOTE]
+> ContentForge and DocEdge require POST and are available in CLI harnesses only.
+
 ### ContentForge — $0.15
-URL → LinkedIn post, tweets, newsletter, SEO content. Pass a URL and target format.
+URL → LinkedIn post, tweets, newsletter, SEO content.
 
 ```
 POST https://content.lonestaroracle.xyz/repurpose
@@ -463,6 +440,9 @@ POST https://doc.lonestaroracle.xyz/convert
 ---
 
 ## Autonomous Agent
+
+> [!NOTE]
+> Floyd requires POST and is available in CLI harnesses only.
 
 ### Floyd — $0.50
 Hire Floyd autonomous coding agent. Floyd writes code and opens pull requests on GitHub.
