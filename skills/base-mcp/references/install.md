@@ -49,6 +49,25 @@ ChatGPT prompts for authorization the first time a wallet tool is called.
 
 ---
 
+## Perplexity
+
+**Step 1 — Add the MCP connector**
+
+1. Go to **[perplexity.ai/computer/connectors](https://www.perplexity.ai/computer/connectors)**
+2. Search for **Base** and select **Base by Coinbase**
+3. Click **Connect** and authorize with your Base Account
+
+**Step 2 — Add the skill**
+
+1. Download the Base MCP skill zip from **[github.com/base/skills](https://github.com/base/skills)**  
+   (Code → Download ZIP, or grab the latest release)
+2. Go to **[perplexity.ai/computer/skills](https://www.perplexity.ai/computer/skills)**
+3. Click **Create skill** and upload the zip file
+
+Perplexity prompts for authorization the first time a wallet tool is called.
+
+---
+
 ## Claude Code
 
 Add to the current project:
