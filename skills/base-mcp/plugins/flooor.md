@@ -3,7 +3,7 @@ title: "flooor.fun Plugin"
 description: "Query live auction state and submit bids, sign, claim, and settle NFT auctions on flooor.fun using Base MCP send_calls and chain_rpc_request."
 tags: [nft, auction, marketplace, base]
 name: flooor
-version: 0.1.0
+version: 0.2.0
 integration: onchain-only
 chains: [base]
 risk: [irreversible]
@@ -23,10 +23,39 @@ flooor.fun runs a perpetual NFT auction on Base. Each epoch:
 3. After the sign phase, NFT holders claim their share of the accumulated fee pool.
 4. The NFT owner settles the auction by calling `sellToHighest`, receiving 99.5% of the winning bid. The remaining 0.5% goes to the protocol.
 
-**Contract:** `0xF6B2C2411a101Db46c8513dDAef10b11184c58fF` on Base  
+**Contract:** `0xF6B2C2411a101Db46c8513dDAef10b11184c58fF` on Base
 **NFT Collection:** resolved at runtime via `collectionId()` read
 
 No external API is required. All interactions use Base MCP `chain_rpc_request` for reads and `send_calls` for writes.
+
+---
+
+## Agent Wallet (recommended, one-time setup)
+
+For frictionless repeat use — especially `signOrClaim` which runs every epoch — set up an agent wallet so the agent can submit transactions without a browser approval each time.
+
+**Setup (user action, one-time):**
+
+1. Open Base Account at `keys.coinbase.com` → Agents / Spend Permissions
+2. Create an agent key (or import the agent's pubkey if provided)
+3. Configure spend policy with these limits:
+   - **Allowed contract:** `0xF6B2C2411a101Db46c8513dDAef10b11184c58fF`
+   - **Allowed selectors:** `0x4abd3ac1` (`signOrClaim`)
+   - **Max value per call:** `0`
+   - **Chain:** Base mainnet
+   - **Optional:** daily call limit (e.g. 2/day matches one sign + one claim per epoch)
+4. Sign the delegation transaction in Base Account
+
+**Important:** Do NOT include `0x0d489fd4` (`sellToHighest`) in the agent's allowed selectors. Settlement is irreversible and must remain under explicit user approval.
+
+**Agent verification (before every write):**
+
+Call Base MCP `get_wallets`. Then:
+
+- `agentWallets[]` is empty OR no entry with `inSession: true` → fall back to Base Account approval flow (default `send_calls` behavior)
+- `agentWallets[].inSession == true` AND its spend policy covers the target call → submit `send_calls` with that `agentWalletId`. No approval URL is generated; the call executes immediately.
+
+If the agent wallet exists but the call is outside its policy (e.g. `sellToHighest`, or value > 0), do NOT attempt to use it — route through Base Account approval instead.
 
 ---
 
@@ -93,8 +122,10 @@ User intent: *"Sign", "Sign for this epoch", "Participate in current epoch"*
 
 1. Run Pre-check — user must hold exactly 1 NFT → resolve `tokenId`.
 2. Read `isSignPhase()` (`0x73c87a52`) → must return `true`. If `false`, stop: *"The sign phase is not active right now. Wait for the current auction to settle."*
-3. Confirm with user: *"Sign for epoch [epochId] with token [tokenId]?"*
-4. On confirmation, submit via Base MCP `send_calls`:
+3. Check agent wallet via `get_wallets`:
+   - **Agent in session + policy covers signOrClaim** → submit immediately without confirmation. No approval URL.
+   - **No agent / out of policy** → confirm with user: *"Sign for epoch [epochId] with token [tokenId]?"* then submit; surface approval URL.
+4. Submit via Base MCP `send_calls`:
 
 ```json
 {
@@ -107,7 +138,7 @@ User intent: *"Sign", "Sign for this epoch", "Participate in current epoch"*
 }
 ```
 
-Surface the approval URL as "Approve Transaction". Confirm success via `get_request_status` after user acts.
+Confirm success via `get_request_status` after submission.
 
 ---
 
@@ -117,8 +148,10 @@ User intent: *"Claim my reward", "Claim my share", "Collect my earnings", "Claim
 
 1. Run Pre-check — user must hold exactly 1 NFT → resolve `tokenId`.
 2. Read `isSignPhase()` (`0x73c87a52`) → must return `false`. If `true`, stop: *"Claim phase is not active yet. Wait for the sign phase to end."*
-3. Confirm with user: *"Claim pool rewards for epoch [epochId] with token [tokenId]?"*
-4. On confirmation, submit via Base MCP `send_calls`:
+3. Check agent wallet via `get_wallets`:
+   - **Agent in session + policy covers signOrClaim** → submit immediately without confirmation. No approval URL.
+   - **No agent / out of policy** → confirm with user: *"Claim pool rewards for epoch [epochId] with token [tokenId]?"* then submit; surface approval URL.
+4. Submit via Base MCP `send_calls`:
 
 ```json
 {
@@ -131,7 +164,7 @@ User intent: *"Claim my reward", "Claim my share", "Collect my earnings", "Claim
 }
 ```
 
-Surface the approval URL as "Approve Transaction". Confirm success via `get_request_status` after user acts.
+Confirm success via `get_request_status` after submission.
 
 ---
 
@@ -144,6 +177,8 @@ This is the primary settlement function. When called by the NFT owner, it:
 - Sends 99.5% of the winning bid to the seller
 - Sends 0.5% fee to the protocol
 - Starts a new epoch
+
+**Always requires explicit user approval — never auto-executed even when an agent wallet is in session.**
 
 1. Run Pre-check — user must hold exactly 1 NFT → resolve `tokenId` automatically. Never ask the user for the token ID.
 2. Read current auction state: show `activebidAM` (in ETH) and `activeBidder` so user knows what they will receive.
@@ -170,9 +205,10 @@ Surface the approval URL as "Approve Transaction". Confirm success via `get_requ
 | User says | Action |
 |---|---|
 | "current bid", "who's winning", "auction status", "what epoch" | Read `activebidAM` + `activeBidder` + `nextMinBid` + `currentEpochId` |
-| "sign", "participate", "sign for epoch" | Pre-check → `isSignPhase` true → `signOrClaim(tokenId)` |
-| "claim", "claim reward", "collect", "claim pool" | Pre-check → `isSignPhase` false → `signOrClaim(tokenId)` |
-| "sell", "settle", "sell to highest", "close auction" | Pre-check → show bid amount → `sellToHighest(tokenId)` |
+| "sign", "participate", "sign for epoch" | Pre-check → `isSignPhase` true → check agent wallet → `signOrClaim(tokenId)` (silent if agent in session) |
+| "claim", "claim reward", "collect", "claim pool" | Pre-check → `isSignPhase` false → check agent wallet → `signOrClaim(tokenId)` (silent if agent in session) |
+| "sell", "settle", "sell to highest", "close auction" | Pre-check → show bid amount → confirm → `sellToHighest(tokenId)` (always approval flow) |
+| "set up agent", "auto sign", "no more approvals" | Walk user through Agent Wallet setup section |
 
 ---
 
@@ -196,6 +232,7 @@ Surface the approval URL as "Approve Transaction". Confirm success via `get_requ
 
 ## Risks & Warnings
 
-- `irreversible`: Once the user approves `sellToHighest`, the NFT is transferred and ETH is distributed — this cannot be undone. Always confirm the bid amount and recipient before calling `send_calls`.
+- `irreversible`: Once `sellToHighest` is approved, the NFT is transferred and ETH is distributed — this cannot be undone. Always confirm bid amount and recipient before submitting. Never include this selector in an agent wallet spend policy.
 - Always run the Pre-check before any write operation. Proceeding with 0 or multiple NFTs will cause the transaction to fail or produce unexpected results.
 - Do not report success until Base MCP `get_request_status` confirms completion.
+- When using an agent wallet, the user has pre-authorized `signOrClaim` calls within their configured spend policy. Stay strictly within that policy — if a call would exceed policy bounds (different selector, non-zero value, daily limit hit), fall back to Base Account approval.
