@@ -69,6 +69,20 @@ policyRegistry.finalizeUpdateAdmin(policyId);          // called by the new (pen
 policyRegistry.renounceAdmin(policyId); // membership can never be changed again, irreversible
 ```
 
+### PolicyRegistry-Level Errors
+
+Distinct from the B20-token-level `PolicyNotFound(uint64)`/`UnsupportedPolicyType(bytes32)` in
+[errors.md](errors.md) — these come from the registry itself when managing policies directly:
+
+| Error | Cause |
+|-------|-------|
+| `PolicyNotFound()` | Referenced `policyId` doesn't exist (no args — unlike the B20-level error of the same name) |
+| `IncompatiblePolicyType()` | Called `updateAllowlist` on a BLOCKLIST policy, or `updateBlocklist` on an ALLOWLIST policy |
+| `Unauthorized()` | Caller isn't the policy's current admin |
+| `ZeroAddress()` | Passed `address(0)` as `admin` to `createPolicy`/`createPolicyWithAccounts` |
+| `BatchSizeTooLarge(uint256 maxBatchSize)` | `accounts` array exceeds the registry's per-call limit |
+| `NoPendingAdmin()` | Called `finalizeUpdateAdmin` with no transfer staged |
+
 ## The Four Policy Scopes B20 Enforces
 
 | Scope | Gates |
