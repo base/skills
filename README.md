@@ -25,12 +25,13 @@
 
 ## Recommended Skills
 
-Two consolidated skills that cover the most common use cases. Each uses progressive reference loading — the skill loads a single entry point and pulls in detailed references only when needed.
+Skills that cover the most common use cases. Each uses progressive reference loading — the skill loads a single entry point and pulls in detailed references only when needed.
 
 | Skill | Install | Description |
 | ----- | ------- | ----------- |
 | [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, wallet auth, payments, attribution, and migrations. Consolidates all individual skills into one. |
 | [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via mcp.base.org. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
+| [b20-token](./skills/b20-token/SKILL.md) | `npx skills add base/skills --skill b20-token` | Deploy, operate, and accept payments in B20 tokens — Base's native ERC-20-superset precompile. Roles, supply caps, policy gating, memos, and the client-side encoding gotchas that trip up wallet-signed integrations. |
 
 ## Installation
 
