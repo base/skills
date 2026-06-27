@@ -5,6 +5,14 @@ Wallet, WalletConnect — rather than a Foundry script holding a private key), y
 `B20FactoryLib`'s encoding in TypeScript. This is the single most error-prone part of a client-side
 B20 integration.
 
+## Table of Contents
+
+- [The Gotcha](#the-gotcha)
+- [Correct viem Encoding](#correct-viem-encoding)
+- [`initCalls` Entries Are Normal Function-Call Encoding](#initcalls-entries-are-normal-function-call-encoding)
+- [Decoding Custom Errors](#decoding-custom-errors)
+- [Builder Code Attribution (ERC-8021)](#builder-code-attribution-erc-8021)
+
 ## The Gotcha
 
 `B20FactoryLib.encodeStablecoinCreateParams` (and the ASSET equivalent) does:

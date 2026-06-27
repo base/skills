@@ -2,17 +2,15 @@
 name: deploy-b20-token
 description: >
   Deploy and operate B20 tokens on Base — Base's native ERC-20-superset precompile (roles, supply
-  caps, pausing, policy gating, memos, permit — no contract to write or audit). Covers: (1) Setup —
-  base-foundryup, base-std library, why vanilla forge/cast/anvil fail against the precompile;
-  (2) Activation check — verifying the Activation Registry has the ASSET/STABLECOIN feature live
-  on a given network before attempting a deploy, avoiding FeatureNotActivated reverts;
-  (3) Deploy — B20Factory.createB20, ASSET vs STABLECOIN params, the B20FactoryLib param-encoding
-  gotcha (abi.encode(struct) wraps as a single dynamic tuple, not a flat field list — gets this
-  wrong silently if hand-rolled in JS/TS), salt uniqueness, TokenAlreadyExists; (4) Post-deploy —
-  minting (deploy alone never mints), grantRole(MINT_ROLE), supply cap math by decimals,
-  transferWithMemo for payment references; (5) Common errors — FeatureNotActivated,
-  AccessControlUnauthorizedAccount, SupplyCapExceeded, InsufficientBalance, PolicyForbids, and what
-  each actually means.
+  caps, pausing, policy gating, memos, permit). Covers setup (base-foundryup, base-std), checking
+  Activation Registry status before deploying (avoids FeatureNotActivated), createB20 for
+  ASSET/STABLECOIN variants including the abi.encode(struct) single-tuple encoding gotcha for
+  JS/TS clients, the full roles and admin model (MINT_ROLE, BURN_ROLE, PAUSE_ROLE,
+  renounceLastAdmin), the PolicyRegistry allowlist/blocklist compliance model and its
+  open-by-default trap, post-deploy minting/supply-cap/memo operations, ASSET-only features
+  (multiplier, announce, batchMint), metadata/permit (ERC-2612, ERC-7572), and the full custom-error
+  catalog with fixes. Use when deploying, minting, configuring roles/policies on, or debugging
+  errors from a B20 token.
 ---
 
 # Deploy B20 Tokens on Base
@@ -47,6 +45,11 @@ bytecode to verify on an explorer — the logic lives at the protocol level. Two
   supply cap). Minting is a separate `mint()` call requiring `MINT_ROLE`.
 - **Use `base-forge`/`base-cast`/`base-anvil`, never vanilla `forge`/`cast`/`anvil`** — standard
   Foundry can't simulate the precompile and aborts with "call to non-contract address."
+- **Don't assume a deployed token is compliance-gated just because it's B20.** Every policy scope
+  defaults to `ALWAYS_ALLOW` — an unattended deployment is fully open. See
+  [references/policy.md](references/policy.md).
+- **`renounceLastAdmin()` is irreversible.** Walk the user through final role/policy assignments
+  before suggesting it. See [references/roles-and-admin.md](references/roles-and-admin.md).
 
 ## Task Routing
 
@@ -55,8 +58,12 @@ bytecode to verify on an explorer — the logic lives at the protocol level. Two
 | **Setup** | Install `base-foundryup`, add `base-std`, configure `foundry.toml` | [references/setup.md](references/setup.md) |
 | **Check activation** | Verify a network's Activation Registry has B20 live before deploying | [references/activation-check.md](references/activation-check.md) |
 | **Encode params (JS/TS)** | Building a wallet-signed UI (viem/wagmi) instead of a Foundry script | [references/encoding.md](references/encoding.md) |
-| **Deploy** | `createB20` call, ASSET vs STABLECOIN params, salt, Foundry script | [references/deploy.md](references/deploy.md) |
-| **Mint / grant roles / supply cap / memo transfers** | Post-deploy operations | [references/post-deploy.md](references/post-deploy.md) |
+| **Deploy** | `createB20` call, address derivation, ASSET vs STABLECOIN params, salt, Foundry script | [references/deploy.md](references/deploy.md) |
+| **Roles & admin** | Role list, custom roles, `renounceLastAdmin`, admin-less behavior, pause | [references/roles-and-admin.md](references/roles-and-admin.md) |
+| **Policy / compliance gating** | PolicyRegistry, allowlist/blocklist, the 4 policy scopes, defaults | [references/policy.md](references/policy.md) |
+| **Mint / supply cap / memo transfers** | Post-deploy token operations | [references/post-deploy.md](references/post-deploy.md) |
+| **ASSET-only features** | Multiplier/rebase, `announce()`, `batchMint`, extra metadata | [references/asset-variant.md](references/asset-variant.md) |
+| **Metadata & permit** | `updateName`/`updateSymbol`, `contractURI`, ERC-2612 permit, EIP-712 | [references/metadata-and-permit.md](references/metadata-and-permit.md) |
 | **Errors** | Decode a revert into what actually went wrong | [references/errors.md](references/errors.md) |
 
 ## Operating Procedure

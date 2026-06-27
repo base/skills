@@ -1,5 +1,14 @@
 # Deploying a B20 Token
 
+## Table of Contents
+
+- [Input Validation](#input-validation)
+- [Foundry Script (CLI Path)](#foundry-script-cli-path)
+- [Salt Uniqueness](#salt-uniqueness)
+- [Variant Parameter Reference](#variant-parameter-reference)
+- [Address Derivation (Deterministic, No RPC Needed)](#address-derivation-deterministic-no-rpc-needed)
+- [What `createB20` Actually Does](#what-createb20-actually-does)
+
 ## Input Validation
 
 Before constructing shell commands, validate all user-provided values:
@@ -93,19 +102,45 @@ This never reverts — use it to confirm a salt is unused before spending gas on
 |-------|-------|------------|
 | `decimals` | Caller-supplied, must be in `[6, 18]` (reverts `InvalidDecimals` otherwise) | Fixed at 6, not a param |
 | `currency` | n/a | Required, uppercase `A`-`Z` only (reverts `InvalidCurrency` otherwise) |
-| Extra capabilities | Balance multiplier, batch mint/clawback, extra metadata | None — simpler role set |
+| Extra capabilities | Balance multiplier, `announce()`, batch mint, extra metadata — see [asset-variant.md](asset-variant.md) | None — simpler role set |
+
+## Address Derivation (Deterministic, No RPC Needed)
+
+```
+[10-byte B20 prefix][1-byte variant][9-byte keccak256(deployer, salt)]
+```
+
+| Variant | Byte |
+|---------|------|
+| `ASSET` | `0x00` |
+| `STABLECOIN` | `0x01` |
+
+The variant is recoverable from the address alone, without an RPC call — the byte right after the
+10-byte B20 prefix tells you which variant a given B20 address is, before you ever query it.
+
+```solidity
+function isB20(address token) external view returns (bool);             // matches the address prefix
+function isB20Initialized(address token) external view returns (bool);  // flips once createB20 completes
+```
 
 ## What `createB20` Actually Does
 
-1. Derives the token's address from `(variant, sender, salt)`.
+1. Derives the token's address from `(variant, sender, salt)` per the scheme above.
 2. Decodes `params` per the leading version byte (see [encoding.md](encoding.md) for the
    client-side encoding pitfall).
 3. Emits `B20Created`.
 4. Runs each entry in `initCalls` in order, with factory-originated calls bypassing the new
-   token's role gates and transfer-side policy gates for that window only (so `grantRole`,
-   `updatePolicy`, and bootstrap transfers work without the factory holding any role itself).
-   `MINT_RECEIVER_POLICY` is never bypassed, and pause state is never bypassed — if you want a
-   start-paused token, sequence the `pause(...)` call last in `initCalls`.
+   token's role gates and transfer-side policy gates (`TRANSFER_SENDER_POLICY`,
+   `TRANSFER_RECEIVER_POLICY`, `TRANSFER_EXECUTOR_POLICY`) for that window only — so `grantRole`,
+   `updatePolicy`, and bootstrap transfers work without the factory holding any role itself.
+   - `MINT_RECEIVER_POLICY` is **always** enforced, even during `initCalls` — a bootstrap mint to a
+     policy-denied recipient still reverts `PolicyForbids`.
+   - Pause state is **never** bypassed — it defaults to nothing-paused at creation; sequence a
+     `pause(...)` call last in `initCalls` if you want a start-paused token.
+   - Token invariants (supply-cap math, balance accounting) are **never** bypassed.
+   - The bootstrap window closes the moment `createB20` returns — the factory retains no
+     persisted access afterward.
 
 **`createB20` itself never mints anything** — see [post-deploy.md](post-deploy.md) for how to
-actually put supply into circulation.
+actually put supply into circulation. For the full roles/admin/policy picture, see
+[roles-and-admin.md](roles-and-admin.md) and [policy.md](policy.md).

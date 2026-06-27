@@ -9,6 +9,19 @@ though read-only calls like `getB20Address` succeed fine.
 wasted transaction (and the confusing experience of a read call working while the write call
 reverts).
 
+Use the bundled script rather than retyping the commands:
+
+```bash
+scripts/check-activation.sh https://mainnet.base.org
+# ASSET activated:      false
+# STABLECOIN activated: false
+# (exits 1 — do not proceed with createB20 on this network)
+```
+
+Exit code `0` means both variants are activated; `1` means at least one isn't (or the registry
+itself isn't reachable). The sections below explain what's happening if you need to debug it
+manually instead.
+
 ## The Two Things to Check Are Different
 
 | Check | What it tells you |

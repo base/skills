@@ -22,6 +22,11 @@ user a raw selector. In viem, add the error ABI entries to your contract's ABI s
 | `ContractPaused` | `ContractPaused(uint8)` | The relevant feature bit (TRANSFER/MINT/BURN) is currently paused | Wait for `unpause`, or this is intentional issuer behavior |
 | `PolicyForbids` | `PolicyForbids(bytes32,uint64)` | A `PolicyRegistry` allowlist/blocklist denied this transfer/mint | Not a bug — the issuer's compliance policy is blocking this address/action |
 | `AccountNotBlocked` | `AccountNotBlocked(address)` | Called `burnBlocked` on an address that isn't currently denied under `TRANSFER_SENDER_POLICY` | `burnBlocked` only seizes from already-blocked accounts, not arbitrary ones |
+| `PolicyNotFound` | `PolicyNotFound(uint64)` | Referenced a policy ID that doesn't exist where existence was required | Create the policy first, or use `ALWAYS_ALLOW`/`ALWAYS_BLOCK` |
+| `UnsupportedPolicyType` | `UnsupportedPolicyType(bytes32)` | Called `updatePolicy` with a `scope` that isn't one of the four recognized constants | Use `TRANSFER_SENDER_POLICY`/`TRANSFER_RECEIVER_POLICY`/`TRANSFER_EXECUTOR_POLICY`/`MINT_RECEIVER_POLICY` |
+| `InternalCallFailed` | `InternalCallFailed(uint256)` | One of the `internalCalls` inside `announce()` reverted (ASSET only) | The real cause is one level deeper — inspect the wrapped inner call, not just this error |
+| `ExpiredSignature` | `ExpiredSignature(uint256)` | `permit()` called after its `deadline` | Get a fresh signature with a later deadline |
+| `InvalidSigner` | `InvalidSigner(address,address)` | `permit()` recovered a signer that doesn't match the claimed owner | Usually a stale `name()` in the signed domain after `updateName` rotated it — re-fetch `name()` before signing |
 | `AbiDecodeFailed` / opaque revert on `createB20` | — | Client-side params encoding is wrong (most often the JS/TS single-tuple gotcha) | See [encoding.md](encoding.md) |
 
 ## TypeScript Error-Formatting Pattern

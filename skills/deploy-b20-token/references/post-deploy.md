@@ -1,5 +1,12 @@
 # Post-Deploy: Minting, Roles, Supply Cap, Memos
 
+## Table of Contents
+
+- [Deploying Never Mints — This Trips Up Almost Everyone](#deploying-never-mints--this-trips-up-almost-everyone)
+- [Role-Based Access Control](#role-based-access-control)
+- [Supply Cap](#supply-cap)
+- [Transfers With Memo (Payment References)](#transfers-with-memo-payment-references)
+
 ## Deploying Never Mints — This Trips Up Almost Everyone
 
 `createB20` creates the token and runs `initCalls` (typically `grantRole` + `updateSupplyCap`).
