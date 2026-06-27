@@ -1,22 +1,24 @@
 ---
-name: deploy-b20-token
+name: b20-token
 description: >
-  Deploy and operate B20 tokens on Base — Base's native ERC-20-superset precompile (roles, supply
-  caps, pausing, policy gating, memos, permit). Covers setup (base-foundryup, base-std), checking
-  Activation Registry status before deploying (avoids FeatureNotActivated), createB20 for
-  ASSET/STABLECOIN variants including the abi.encode(struct) single-tuple encoding gotcha for
-  JS/TS clients, the full roles and admin model (MINT_ROLE, BURN_ROLE, PAUSE_ROLE,
-  renounceLastAdmin), the PolicyRegistry allowlist/blocklist compliance model and its
-  open-by-default trap, post-deploy minting/supply-cap/memo operations, ASSET-only features
-  (multiplier, announce, batchMint), metadata/permit (ERC-2612, ERC-7572), and the full custom-error
-  catalog with fixes. Use when deploying, minting, configuring roles/policies on, or debugging
-  errors from a B20 token.
+  Deploy, operate, and accept payments in B20 tokens on Base — Base's native ERC-20-superset
+  precompile (roles, supply caps, pausing, policy gating, memos, permit). Covers setup
+  (base-foundryup, base-std), checking Activation Registry status before deploying (avoids
+  FeatureNotActivated), createB20 for ASSET/STABLECOIN variants including the abi.encode(struct)
+  single-tuple encoding gotcha for JS/TS clients, the full roles and admin model (MINT_ROLE,
+  BURN_ROLE, PAUSE_ROLE, renounceLastAdmin), the PolicyRegistry allowlist/blocklist compliance
+  model and its open-by-default trap, post-deploy minting/supply-cap/memo operations, accepting
+  B20 payments with memo-based order tracking in an app/merchant integration, ASSET-only features
+  (multiplier, announce, batchMint), metadata/permit (ERC-2612, ERC-7572), and the full
+  custom-error catalog with fixes. Use when deploying, minting, accepting payments in, configuring
+  roles/policies on, or debugging errors from a B20 token.
 ---
 
-# Deploy B20 Tokens on Base
+# B20 Tokens on Base
 
-Playbook for deploying and operating B20 — Base's native ERC-20-superset precompile — covering the
-Foundry CLI path and the client-side (viem/wagmi) encoding path for building a UI around it.
+Playbook for the full B20 lifecycle on Base — Base's native ERC-20-superset precompile: deploying
+(Foundry CLI or a wallet-signed viem/wagmi UI), operating (roles, policy, supply), and accepting
+B20 as payment in an app.
 
 ## What B20 Is
 
@@ -62,6 +64,7 @@ bytecode to verify on an explorer — the logic lives at the protocol level. Two
 | **Roles & admin** | Role list, custom roles, `renounceLastAdmin`, admin-less behavior, pause | [references/roles-and-admin.md](references/roles-and-admin.md) |
 | **Policy / compliance gating** | PolicyRegistry, allowlist/blocklist, the 4 policy scopes, defaults | [references/policy.md](references/policy.md) |
 | **Mint / supply cap / memo transfers** | Post-deploy token operations | [references/post-deploy.md](references/post-deploy.md) |
+| **Accept B20 payments** | Merchant/app integration: receive payments tagged with an order ID, verify them | [references/accepting-payments.md](references/accepting-payments.md) |
 | **ASSET-only features** | Multiplier/rebase, `announce()`, `batchMint`, extra metadata | [references/asset-variant.md](references/asset-variant.md) |
 | **Metadata & permit** | `updateName`/`updateSymbol`, `contractURI`, ERC-2612 permit, EIP-712 | [references/metadata-and-permit.md](references/metadata-and-permit.md) |
 | **Errors** | Decode a revert into what actually went wrong | [references/errors.md](references/errors.md) |
@@ -80,11 +83,13 @@ bytecode to verify on an explorer — the logic lives at the protocol level. Two
 ## For Edge Cases and Latest API Changes
 
 - **B20 token standard**: [docs.base.org/get-started/launch-b20-token](https://docs.base.org/get-started/launch-b20-token)
+- **B20 spec (Beryl upgrade)**: [docs.base.org/base-chain/specs/upgrades/beryl/b20](https://docs.base.org/base-chain/specs/upgrades/beryl/b20)
 - **Accepting B20 payments (memos)**: [docs.base.org/apps/guides/accept-b20-payments](https://docs.base.org/apps/guides/accept-b20-payments)
+- **Query B20 events at scale**: [docs.cdp.coinbase.com/data/sql-api/b20-events](https://docs.cdp.coinbase.com/data/sql-api/b20-events)
 - **AI-optimized docs index**: [docs.base.org/llms.txt](https://docs.base.org/llms.txt)
 
 ## Installation
 
 ```bash
-npx skills add base/skills --skill deploy-b20-token
+npx skills add base/skills --skill b20-token
 ```
