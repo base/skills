@@ -3,7 +3,7 @@ title: "Base Voucher Plugin"
 description: "Create and redeem ETH/USDC crypto gift cards on Base via Base Voucher MCP or HTTP prepare API → Base MCP send_calls."
 tags: [agent-commerce, payment-cards, gift-cards]
 name: base-voucher
-version: 0.2.0
+version: 0.3.0
 integration: hybrid
 chains: [base]
 requires:
@@ -29,7 +29,7 @@ Base Voucher is a decentralized crypto gift card protocol on Base mainnet (ETH a
 
 This plugin has two prepare paths that both return unsigned `calls[]` for Base MCP `send_calls`:
 
-1. **Base Voucher MCP (preferred):** hosted at `https://base-analytics-app.vercel.app/api/mcp` — tools `voucher_prepare_create`, `voucher_prepare_redeem`, `voucher_lookup_batch`.
+1. **Base Voucher MCP (preferred):** hosted at `https://base-analytics-app.vercel.app/api/mcp` — tools `voucher_prepare_create`, `voucher_prepare_redeem`, `voucher_lookup_batch`, `voucher_list_by_creator`.
 2. **HTTP fallback:** GET prepare endpoints on `base-analytics-app.vercel.app` when the MCP is not connected but HTTP is available (harness HTTP, allowlisted `web_request`, or GET user-paste on consumer chat surfaces).
 
 **App:** https://base-analytics-app.vercel.app  
@@ -78,7 +78,8 @@ Reconnect or restart the harness after adding. For HTTP fallback on chat-only su
 |------|------------|---------|
 | `voucher_prepare_create` | `total`, `cards`, `asset?`, `message?`, `creator?` | JSON with `valid`, `calls[]`, `cards[]` |
 | `voucher_prepare_redeem` | `cardId`, `secret` | JSON with `valid`, `calls[]`, `preview` |
-| `voucher_lookup_batch` | `batchId` | Public batch metadata (no secrets) |
+| `voucher_lookup_batch` | `batchId` | Live batch + per-card `redeemed` flags (no secrets) |
+| `voucher_list_by_creator` | `creator` | All batches for wallet + `totalUnredeemed` summary |
 
 After a successful prepare tool call, map `calls[]` to Base MCP `send_calls` with `chain: "base"`.
 
@@ -89,7 +90,8 @@ HTTP routing follows [../references/custom-plugins.md](../references/custom-plug
 | Capability | Harness with Base Voucher MCP | Harness HTTP / allowlisted `web_request` | Chat-only, host not allowlisted |
 | --- | --- | --- | --- |
 | Prepare create / redeem | `voucher_prepare_create` / `voucher_prepare_redeem` | GET prepare URLs below | User-paste GET URL → parse JSON |
-| Read batch metadata | `voucher_lookup_batch` | GET `/api/vouchers?batchId=` | User-paste GET URL |
+| List creator batches | `voucher_list_by_creator` | GET `/api/vouchers?creator=&live=1` | User-paste GET URL |
+| Batch redemption status | `voucher_lookup_batch` | GET `/api/vouchers?batchId=&live=1` | User-paste GET URL |
 | Execute onchain | Base MCP `send_calls` | Base MCP `send_calls` | Base MCP `send_calls` |
 
 Shell access is not required. If neither Base Voucher MCP nor any HTTP path can reach `base-analytics-app.vercel.app`, stop and link https://base-analytics-app.vercel.app.
@@ -101,11 +103,50 @@ Base URL: `https://base-analytics-app.vercel.app`
 ### Read endpoints (Path 2)
 
 ```
-GET https://base-analytics-app.vercel.app/api/vouchers?batchId=<batchId>
-GET https://base-analytics-app.vercel.app/api/vouchers?creator=<0x-address>
+GET https://base-analytics-app.vercel.app/api/vouchers?batchId=<batchId>&live=1
+GET https://base-analytics-app.vercel.app/api/vouchers?creator=<0x-address>&live=1
 ```
 
-Returns public batch metadata only — **no card secrets**. Fields include `batchId`, `creator`, `asset`, `totalAmount`, `amountPerCard`, `cardCount`, `message`, `redeemedCount`.
+**`live=1`** reads onchain redemption state. No card secrets are returned.
+
+**Creator summary** (`creator` + `live=1`):
+
+```json
+{
+  "creator": "0x...",
+  "batchCount": 2,
+  "totalCards": 15,
+  "totalRedeemed": 3,
+  "totalUnredeemed": 12,
+  "batches": [
+    {
+      "batchId": 42,
+      "cardCount": 5,
+      "redeemedCount": 1,
+      "unredeemedCount": 4,
+      "amountPerCardFormatted": "$2.00 USDC"
+    }
+  ]
+}
+```
+
+**Batch detail** (`batchId` + `live=1`):
+
+```json
+{
+  "batch": {
+    "batchId": 42,
+    "redeemedCount": 1,
+    "unredeemedCount": 4
+  },
+  "cards": [
+    { "cardIndex": 0, "cardId": "42-0", "redeemed": true },
+    { "cardIndex": 1, "cardId": "42-1", "redeemed": false }
+  ]
+}
+```
+
+Without `live=1`, stored metadata only (may be stale for `redeemedCount`).
 
 ### Prepare create (Path 2)
 
@@ -224,8 +265,16 @@ If `preview.alreadyRedeemed` is `true` or `valid` is `false`, stop — do not ca
 ### Lookup batch (read-only)
 
 ```
-1. voucher_lookup_batch(batchId) or GET /api/vouchers?batchId=<n>
-2. Report redeemedCount / cardCount and per-card amount (no secrets)
+1. voucher_lookup_batch(batchId) or GET /api/vouchers?batchId=<n>&live=1
+2. Report redeemedCount, unredeemedCount, and per-card redeemed flags (no secrets)
+```
+
+### List creator batches (read-only)
+
+```
+1. get_wallets → address (Base MCP)
+2. voucher_list_by_creator(creator=address) or GET /api/vouchers?creator=<address>&live=1
+3. Report batchCount, totalUnredeemed, and each batch's unredeemedCount
 ```
 
 ## Submission
@@ -282,8 +331,16 @@ Map every object in `response.calls[]` directly into the `calls` array:
 ### Check batch status
 
 ```
-1. GET /api/vouchers?batchId=12
-2. Report redeemedCount / cardCount and per-card amount (no secrets)
+1. voucher_lookup_batch(batchId=12)
+2. Report unredeemedCount and which cardIds are still available
+```
+
+### How many of my vouchers are unredeemed?
+
+```
+1. get_wallets → address
+2. voucher_list_by_creator(creator=<address>)
+3. Say: "You created X batches. Y of Z cards are not redeemed yet." List each batch with unredeemedCount.
 ```
 
 ## Risks & Warnings
