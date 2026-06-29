@@ -14,7 +14,19 @@ Plugins differ in how they reach their backend, and each plugin's own file (`../
 - Some hybrid plugins split by operation: their **view-only / read hosts** are allowlisted for `web_request` and work on every surface, while their **write or tx-builder hosts** require a CLI harness. On chat-only surfaces, do not retry a write host through `web_request` and do not fall back to user-paste — follow the plugin file, which typically links the user to the protocol's web UI instead.
 
 Custom or user-supplied plugins are almost certainly **not** in the allowlist and will be rejected by `web_request`.
+## Transaction-builder call troubleshooting
 
+Custom plugins that return calldata for `send_calls` should keep state-changing calls as small and predictable as possible. If a call fails during `send_calls` gas estimation but the same calldata appears valid in a direct simulation, treat it as a transaction-submission limitation rather than a `web_request` routing issue.
+
+When this happens:
+
+- verify the target contract, calldata, `from` address, balance, and token allowance;
+- test the same calldata with `eth_call` from the same sender when possible;
+- try splitting approval and execution into separate calls;
+- avoid batching gas-heavy state-changing calls unless the plugin has already tested the flow end-to-end;
+- if the call still cannot be estimated, direct the user to the protocol's web UI or a wallet flow instead of repeatedly retrying the same `send_calls` payload.
+
+`send_calls` does not currently expose a per-call gas override in this skill. Plugin authors should document any known gas-heavy flows in the plugin file so agents can route users to the safest execution path.
 ## Priority order for HTTP calls
 
 Use this order **for every HTTP-based plugin call — native or not**. CLI-only plugins follow their plugin file and require shell access. Hybrid plugins follow the CLI/HTTP routing in their own plugin file.
