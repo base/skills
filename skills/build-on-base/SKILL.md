@@ -13,7 +13,10 @@ description: >
   (6) Node operation — run Base node, Reth setup, hardware requirements, self-hosted RPC, sync;
   (7) Migrations — migrate OnchainKit, OnchainKitProvider to WagmiProvider, wagmi migration,
   remove onchainkit dependency, MiniKit to Farcaster SDK, convert miniapp, Farcaster miniapp to
-  regular app, convert Farcaster miniapp.
+  regular app, convert Farcaster miniapp; (8) CDP SDK — server wallets, server-side signing,
+  create server wallet, smart account on Base, ERC-4337 user operations, token swap on Base,
+  CDP faucet, policy management, EIP-7702 delegation, coinbase developer platform, gasless
+  transactions for bots and AI agent backends.
 ---
 
 # Base Development
@@ -31,6 +34,7 @@ developer tool attribution, and framework migrations.
 | Payments | Base Pay — USDC, gasless, settles in <2s |
 | Transactions | wagmi + viem |
 | Attribution | Builder Codes — ERC-8021 via `ox/erc8021` |
+| Server wallets | CDP SDK (`@coinbase/cdp-sdk`) — backends, bots, AI agents |
 | RPC (prod) | Dedicated node provider or self-hosted Reth |
 
 ## Safety Guardrails
@@ -54,6 +58,7 @@ Read the reference for your task:
 | **Builder Codes** | Add ERC-8021 attribution to transactions | [references/builder-codes/overview.md](references/builder-codes/overview.md) |
 | **Base Account SDK** | SIWB, Base Pay, subscriptions, sub-accounts | [references/base-account/overview.md](references/base-account/overview.md) |
 | **Register AI agent/bot** | Register wallet, get builder code, wire attribution | [references/agents/register.md](references/agents/register.md) |
+| **CDP SDK (server wallets)** | Server-side wallets/signing, smart accounts, swaps, faucet, policies | [references/cdp-sdk.md](references/cdp-sdk.md) |
 | **Migrate from OnchainKit** | OnchainKitProvider → wagmi, wallet/tx components | [references/migrations/onchainkit/overview.md](references/migrations/onchainkit/overview.md) |
 | **MiniKit → Farcaster SDK** | `@coinbase/onchainkit/minikit` → `@farcaster/miniapp-sdk` | [references/migrations/minikit-to-farcaster/overview.md](references/migrations/minikit-to-farcaster/overview.md) |
 | **Farcaster miniapp → regular app** | Remove Mini App host coupling, convert to Base/web app | [references/migrations/farcaster-miniapp-to-app.md](references/migrations/farcaster-miniapp-to-app.md) |
