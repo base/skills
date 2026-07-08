@@ -1,0 +1,37 @@
+{
+  "name": "@base/skills-clicks-protocol",
+  "version": "0.1.0",
+  "description": "Autonomous yield infrastructure for AI agents on Base",
+  "keywords": ["base", "ai-agents", "x402", "yield", "defi", "payments"],
+  "homepage": "https://clicksprotocol.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/base/skills.git",
+    "directory": "skills/clicks-protocol"
+  },
+  "license": "MIT",
+  "author": "Clicks Protocol <hello@clicksprotocol.xyz>",
+  "contributors": [],
+  "files": ["SKILL.md"],
+  "scripts": {
+    "test": "echo \"No tests specified\""
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@clicks-protocol/sdk": "^0.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "base": {
+    "category": "payments",
+    "subcategory": "yield",
+    "chains": ["base"],
+    "x402": true,
+    "mcp": true,
+    "agentTypes": ["claude-code", "codex", "opencode", "cursor", "openclaw"]
+  }
+}
