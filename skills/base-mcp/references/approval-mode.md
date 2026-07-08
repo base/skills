@@ -35,3 +35,4 @@ In approval mode, every write call (send, swap, sign, batched calls, and any plu
 - Polling the status tool in a tight loop instead of once after the user confirms.
 - Forgetting to also auto-open the link in CLI harnesses where a shell is available — printing alone makes the user copy-paste unnecessarily.
 - Trying to auto-open in chat-only harnesses where no shell exists — that just produces an error.
+- Displaying a swap/DeFi quote or transaction amount summary without verifying the human-readable value against the raw wei amount and the token's decimals — see [quote-sanity.md](quote-sanity.md) before showing any quote or approval summary.
