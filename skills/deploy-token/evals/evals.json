@@ -1,0 +1,49 @@
+{
+  "skill_name": "b20-token-creator",
+  "evals": [
+    {
+      "id": 0,
+      "name": "eur-stablecoin-compliance",
+      "prompt": "I'm building a EUR stablecoin on Base in this Foundry project (base-std is already in lib/). Requirements: our ops multisig 0x1111111111111111111111111111111111111111 should be the admin, minting is done by a separate backend signer 0x2222222222222222222222222222222222222222, and compliance (0x3333333333333333333333333333333333333333) needs to be able to freeze-and-burn funds held by sanctioned addresses \u2014 we maintain a blocklist. Also mint 250,000 tokens to our treasury 0x4444444444444444444444444444444444444444 at launch. Call it \"Euro Coin\" with symbol EURC. Write the deploy script and tests.",
+      "expected_output": "A Foundry script calling IB20Factory.createB20 with the STABLECOIN variant (currency EUR, fixed 6 decimals so the mint amount must be 250_000e6), initCalls granting MINT_ROLE/BURN_BLOCKED_ROLE/etc., a BLOCKLIST policy created in the PolicyRegistry BEFORE createB20 and wired to TRANSFER_SENDER_POLICY (required for burnBlocked freeze-and-seize), the initial mint, and passing tests against the base-std mocks.",
+      "files": [],
+      "assertions": [
+        "Token is created via IB20Factory.createB20 with the STABLECOIN variant \u2014 no hand-rolled ERC-20 token contract is implemented",
+        "Currency is EUR and amounts use 6 decimals (treasury launch mint encodes 250_000e6)",
+        "Roles wired to the specified addresses: DEFAULT_ADMIN to the ops multisig, MINT_ROLE to the backend signer, BURN_BLOCKED_ROLE to compliance",
+        "A BLOCKLIST policy is created in the PolicyRegistry before createB20 runs and is wired to TRANSFER_SENDER_POLICY (required for burnBlocked freeze-and-seize)",
+        "forge build and forge test both pass in the produced project",
+        "Tests assert the treasury balance of 250,000 tokens and include at least one negative-path test (e.g. unauthorized mint or burnBlocked against a non-blocked account reverts)"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "capped-asset-treasury",
+      "prompt": "create a token for our vault rewards program: name 'Vault Points', symbol VPTS, 18 decimals, total supply capped at 10 million, and 1 million minted to the treasury (0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA) up front. admin should be 0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB. this is a foundry project with base-std in lib/ already. need a forge script + tests",
+      "expected_output": "A Foundry script calling IB20Factory.createB20 with the ASSET variant (18 decimals), initCalls containing batchMint (or mint) of 1_000_000e18 to the treasury and updateSupplyCap(10_000_000e18), and passing tests verifying cap, balance, decimals, and admin.",
+      "files": [],
+      "assertions": [
+        "Token is created via IB20Factory.createB20 with the ASSET variant and 18 decimals \u2014 no hand-rolled ERC-20 token contract is implemented",
+        "initCalls set the supply cap to 10_000_000e18 and mint 1_000_000e18 to the treasury during creation",
+        "DEFAULT_ADMIN_ROLE is assigned to 0xBBBB...BBBB via the create params' initialAdmin",
+        "forge build and forge test both pass in the produced project",
+        "Tests verify supply cap, treasury balance, decimals, and admin role on the created token"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "kyc-allowlist-mint-ordering",
+      "prompt": "We're tokenizing a private credit fund on Base (foundry project, base-std already installed in lib/). Fund shares: name \"Meridian Private Credit\", symbol MPC, 6 decimals. Compliance rule: tokens may only ever be MINTED to investors that passed KYC \u2014 we keep an allowlist, starting with our seed investor 0x5555555555555555555555555555555555555555. At creation we issue 500,000 shares to that seed investor. Admin is 0x6666666666666666666666666666666666666666 and our fund ops address 0x7777777777777777777777777777777777777777 handles ongoing minting. Deploy script plus tests please.",
+      "expected_output": "A Foundry script that creates an ALLOWLIST policy (seeded with the investor) in the PolicyRegistry BEFORE createB20, then calls createB20 with the ASSET variant (6 decimals), with initCalls that either mint before setting MINT_RECEIVER_POLICY or mint to the allowlisted investor (the mint must not revert PolicyForbids), grants MINT_ROLE to fund ops, and tests proving a non-allowlisted recipient cannot be minted to while the seed investor can.",
+      "files": [],
+      "assertions": [
+        "Token is created via IB20Factory.createB20 with the ASSET variant and 6 decimals \u2014 no hand-rolled ERC-20 token contract is implemented",
+        "An ALLOWLIST policy seeded/updated with the seed investor is created in the PolicyRegistry BEFORE createB20, and the token's MINT_RECEIVER_POLICY is set to it in initCalls",
+        "The creation-time mint of 500_000e6 to the seed investor succeeds \u2014 initCalls are ordered so the bootstrap mint does not revert PolicyForbids (mint to an allowlisted recipient, or mint sequenced before the restrictive policy)",
+        "MINT_ROLE is granted to the fund ops address",
+        "forge build and forge test both pass in the produced project",
+        "Tests prove minting to a NON-allowlisted address reverts while minting to an allowlisted investor succeeds"
+      ]
+    }
+  ]
+}
