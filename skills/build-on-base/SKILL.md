@@ -72,6 +72,29 @@ Read the reference for your task:
 - **Base Account reference**: [docs.base.org/base-account](https://docs.base.org/base-account)
 - **Base chain docs**: [docs.base.org](https://docs.base.org)
 
+## Common Development Workflows
+
+### Deploy a Contract
+
+1. Configure Base Sepolia RPC
+2. Fund your deployer wallet using the faucet
+3. Deploy using `forge create`
+4. Verify on BaseScan
+
+### Accept USDC Payments
+
+1. Install `@base-org/account`
+2. Use Base Pay to create a payment request
+3. Verify payment status server-side
+4. Fulfill the order after confirmation
+
+### Register an AI Agent
+
+1. Register the agent wallet
+2. Obtain a Builder Code
+3. Add ERC-8021 attribution
+4. Verify attribution is included in transactions
+
 ## Installation
 
 ```bash
