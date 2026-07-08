@@ -20,7 +20,7 @@ Every agent needs a wallet to sign transactions. Ask the user before doing anyth
 
 1. **Ask: "Do you have a wallet? If yes, share your wallet address."**
 2. **If yes** — take the wallet address they provide and move to Phase 2.
-3. **If no** — direct them to the Base wallet setup guide: https://docs.base.org/ai-agents/guides/wallet-setup — do not proceed until they have a wallet and can provide their address.
+3. **If no** — direct them to create a Base Account at https://base.app — do not proceed until they have a wallet and can provide their address.
 
 ---
 
