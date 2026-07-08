@@ -82,7 +82,7 @@ A BaseScan API key is required for the `--verify` flag to auto-verify contracts 
 
 > **Agent behavior:** If you have browser access, navigate to the BaseScan site and create the key. Otherwise, ask the user to complete these steps and provide the API key.
 
-1. Go to [basescan.org/myapikey](https://basescan.org/apidashboard) (or [etherscan.io/myapikey](https://etherscan.io/apidashboard) — same account works)
+1. Go to [basescan.org/apidashboard](https://basescan.org/apidashboard) (or [etherscan.io/apidashboard](https://etherscan.io/apidashboard) — same account works)
 2. Sign in or create a free account
 3. Click **Add** to create a new API key
 4. Copy the key and set it in your environment:
@@ -113,6 +113,7 @@ base = { key = "${ETHERSCAN_API_KEY}", url = "https://api.basescan.org/api" }
 forge create src/MyContract.sol:MyContract \
   --rpc-url https://sepolia.base.org \
   --account <keystore-account> \
+  --broadcast \
   --verify \
   --etherscan-api-key $ETHERSCAN_API_KEY
 ```
@@ -123,6 +124,7 @@ forge create src/MyContract.sol:MyContract \
 forge create src/MyContract.sol:MyContract \
   --rpc-url https://mainnet.base.org \
   --account <keystore-account> \
+  --broadcast \
   --verify \
   --etherscan-api-key $ETHERSCAN_API_KEY
 ```
