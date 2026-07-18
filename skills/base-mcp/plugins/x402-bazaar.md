@@ -23,14 +23,18 @@ risk: []
 
 ## Overview
 
-x402 Bazaar is a pay-per-call API marketplace on Base exposing 60+ read-only
+x402 Bazaar is a pay-per-call API marketplace on Base exposing 90+ read-only
 services — token safety (risk, honeypot, rug score), wallet intelligence (net
 worth, age/activity, approvals, transfers, NFTs), OFAC sanctions screening,
 prices/momentum/pools, and Claude-written AI token & wallet reports. It also
-ships the first **B20-aware** safety check: B20 is Base's native token standard
+ships the only **B20** safety suite (~25 tools): B20 is Base's native token standard
 (live 2026-07-08), and unlike ERC-20 a B20 issuer can freeze or seize a holder's
 balance at the protocol level (Policy Registry / `burnBlocked`) — `b20_safety`
-reads those powers into one hold/caution/avoid verdict. It is
+reads those powers into one hold/caution/avoid verdict, and the wider suite covers
+seizure history, full blocklist membership, transfer preflight, supply/rebase and
+an AI due-diligence dossier. Newer drain-surface reads include `wallet_delegation`
+(EIP-7702 rogue-delegate check) and `agent_wallet_audit` (approvals + spend
+permissions + delegation in one verdict). It is
 reached through the **`x402-bazaar-mcp`** server. Each call settles a tiny USDC
 micro-payment over **x402** on Base (gasless for the payer; the wallet key never
 leaves the caller's machine). It complements Base MCP: Base MCP lets an agent
@@ -91,3 +95,4 @@ MCP submission tool (`send_calls`/`swap`/`sign`).
 3. "Profile wallet `0x…` — net worth, age, what can drain it." → call `wallet_networth`, `wallet_summary`, `token_approvals`; summarize.
 4. "What's the 24h price & momentum of `0x…`?" → call `token_momentum`; report price and 1h/6h/24h change.
 5. "Is `0x…` a B20 token that can freeze or seize my funds?" → call `b20_safety`; report the hold/caution/avoid verdict and which issuer powers (freeze / seize / pause / rebase) are live.
+6. "Is wallet `0x…` 7702-delegated to code I should worry about?" → call `wallet_delegation`; report the delegate and whether it is a known Coinbase implementation or unrecognized (takeover risk).
