@@ -23,7 +23,7 @@ risk: []
 
 ## Overview
 
-x402 Bazaar is a pay-per-call API marketplace on Base exposing 90+ read-only
+x402 Bazaar is a pay-per-call API marketplace on Base exposing 100+ read-only
 services — token safety (risk, honeypot, rug score), wallet intelligence (net
 worth, age/activity, approvals, transfers, NFTs), OFAC sanctions screening,
 prices/momentum/pools, and Claude-written AI token & wallet reports. It also
