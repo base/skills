@@ -123,7 +123,7 @@ Response shape:
 ### Token resolution (GET /tokenList, GET /searchTokens)
 
 - `GET /tokenList?chain=<haikuChain>` — returns Haiku's token list (`iid`, `address`, `symbol`, `decimals`, `network`). Filter candidates to the requested chain before matching a symbol: prefer `iid` prefix (`base:`, `arb:`, `eth:`, etc.) or the `network` chainId from the table in `## Notes`. Use the filtered `iid` directly in `input_positions` / `target_weights`.
-- `GET /searchTokens?...` — search tokens not in the base list via Relay's currencies index.
+- `GET /searchTokens?q=<query>` — search tokens not in the base list via Relay's currencies index. The response can include multiple chains and unverified symbols; filter by intended `iid` prefix / `network`, prefer verified tokens, and confirm the exact address with the user for long-tail results. The query parameter is `q` (not `query`).
 
 Prefer the known-addresses table in `## Notes` first, then these endpoints.
 
