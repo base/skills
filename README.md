@@ -31,7 +31,7 @@ Consolidated skills that cover the most common use cases. Each uses progressive 
 | ----- | ------- | ----------- |
 | [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, wallet auth, payments, attribution, and migrations. Consolidates all individual skills into one. |
 | [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via mcp.base.org. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
-| [vibenet](./skills/vibenet/SKILL.md) | `npx skills add base/skills --skill vibenet` | Build on vibenet, Base's devnet for native account abstraction (EIP-8130) with viem: smart accounts, batched calls, session keys and policies, and ERC-8168 payer gas sponsorship. |
+| [vibenet](./skills/vibenet/SKILL.md) | `npx skills add base/skills --skill vibenet` | Build on [vibenet](https://chain.base.org/vibenet), the Base Vibes devnet for native account abstraction (EIP-8130) with viem: smart accounts, batched calls, session keys and policies, and ERC-8168 payer gas sponsorship. |
 
 ## Installation
 
@@ -66,6 +66,68 @@ Convert my existing Farcaster miniapp to a standard app on Base
 ```text
 Register my trading bot and add builder code attribution to its transactions
 ```
+
+```text
+Create an EIP-8130 smart account on vibenet and fund it from the faucet
+```
+
+```text
+Deploy a smart account on vibenet with sponsored gas, so the user needs no ETH
+```
+
+```text
+Authorize a session key on my 8130 account with a weekly USDC spend limit
+```
+
+### Example: gasless onboarding on vibenet
+
+A worked example of what the `vibenet` skill produces — creating an EIP-8130
+smart account and deploying it with zero user funds, via an ERC-8168 payer:
+
+```ts
+import type { Hex } from "viem";
+import { createPublicClient, http } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import {
+  allPhasesSucceeded,
+  newSmartAccount8130,
+  waitForTransactionReceipt8130,
+} from "viem/experimental/eip8130";
+import { createPayerClient, sendSponsoredCalls } from "viem/experimental/eip8168";
+
+const chain = {
+  id: 84538453,
+  name: "vibenet",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["https://rpc.vibes.base.org"] } },
+};
+const client = createPublicClient({ chain, transport: http() });
+
+// The address is derived locally — synchronous, no RPC, nothing on-chain yet.
+// (The fork types `signer` for P-256 keys, so a K1 account needs a cast.)
+const signer = privateKeyToAccount(generatePrivateKey());
+const account = newSmartAccount8130({ signer: signer as never });
+
+// There is no deploy step: the account is created by its first transaction.
+// The payer covers gas, so this works at a zero balance — no faucet needed.
+const payerClient = createPayerClient({
+  url: "https://api.vibes.base.org/api/vibenet/account/payer",
+});
+const { transactionHash: hash } = (await sendSponsoredCalls(client, {
+  account,
+  payerClient,
+  accountChanges: [account.createChange], // only on the first tx
+  calls: [{ to: account.address, value: 0n, data: "0x" }],
+  context: { flow: "onboarding" },
+})) as unknown as { transactionHash: Hex };
+
+const receipt = await waitForTransactionReceipt8130(client, { hash });
+if (!allPhasesSucceeded(receipt)) throw new Error("a phase reverted");
+```
+
+See the [vibenet skill](./skills/vibenet/SKILL.md) for the install steps (the
+8130 tooling ships on a viem fork branch), the account lifecycle, session keys,
+and the devnet's sharper edges.
 
 ## Contributing
 
