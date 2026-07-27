@@ -25,34 +25,63 @@ native **ERC-8168** gas sponsorship. The tooling lives in viem's
 | Endpoint | Value |
 |----------|-------|
 | Chain ID | `84538453` |
-| Public execution RPC (Node/scripts) | `https://rpc.vibes.base.org` — 8130-capable (`AA_TX_TYPE` / `0x79`) |
-| Browser RPC proxy (CORS-safe) | `https://vibes.base.org/api/vibenet/account/rpc` — passes through all `eth_*`, including `0x79` broadcasts and receipt polling |
-| Hosted payer (ERC-8168) | `https://vibes.base.org/api/vibenet/account/payer` |
-| Faucet | `POST https://vibes.base.org/api/vibenet/faucet/drip` with `{ "address": "0x…" }` |
+| Public execution RPC | `https://rpc.vibes.base.org` — 8130-capable (`AA_TX_TYPE` / `0x79`), serves `access-control-allow-origin: *` |
+| Browser RPC proxy | `https://api.vibes.base.org/api/vibenet/account/rpc` — passes through all `eth_*`, including `0x79` broadcasts and receipt polling |
+| Hosted payer (ERC-8168) | `https://api.vibes.base.org/api/vibenet/account/payer` |
+| Faucet | `POST https://api.vibes.base.org/api/vibenet/faucet/drip` with `{ "address": "0x…" }` |
+| Faucet status | `GET https://api.vibes.base.org/api/vibenet/faucet/status` — drip size, cooldowns, USDV/NFV token addresses |
+| Chain health | `GET https://api.vibes.base.org/api/vibenet/chain-health` — `{ healthy, head, headAgeSecs, … }` |
+| Landing page / explorer | `https://chain.base.org/vibenet`, `https://chain.base.org/vibenet/explorer` |
 | Base Sepolia (also 8130-enabled) | `https://sepolia.base.org`, chain id `84532` |
 
-Install viem from the fork branch, then import from
-`viem/experimental/eip8130` (and `viem/experimental/eip8168` for payers):
+**The API host is `api.vibes.base.org`, not `vibes.base.org`.** The bare host
+302-redirects to the `chain.base.org/vibenet` HTML page; viem's HTTP transport
+then tries to parse that as JSON and throws `Unrecognized token '<'`, which
+reads like a code bug rather than a wrong URL.
 
-```bash
-bun add "viem@github:chunter-cb/viem#feat/eip-8130"
-```
+All `api.vibes.base.org` endpoints (RPC proxy, payer, faucet) send permissive
+CORS headers, and so does `rpc.vibes.base.org` — so browser apps can talk to
+either. Prefer `rpc.vibes.base.org` for execution and reserve the `account/rpc`
+proxy for when you specifically want the hosted path.
 
-**npm cannot install this branch directly from git** — the fork's workspace
-uses pnpm's `catalog:` protocol, so `npm install "viem@github:…"` fails, and
-even the bun git install yields an unbuilt monorepo. The reliable path for
-npm projects is clone → build → depend on the built package (which lives in
-the fork's `src/` directory):
+The tooling is **not published to npm** and cannot be installed from git
+directly: the fork's workspace uses pnpm's `catalog:` protocol, so
+`npm install "viem@github:…"` fails outright, and `bun add "viem@github:…"`
+"succeeds" but leaves you an unbuilt monorepo with no `exports` field. Clone,
+build, then depend on the built package (which lives in the fork's `src/`):
 
 ```bash
 git clone -b feat/eip-8130 https://github.com/chunter-cb/viem viem-fork
 cd viem-fork && npx pnpm install --ignore-scripts && npx pnpm run build
-# then in your app: npm install "viem@file:../viem-fork/src"
+
+# then in your app — --install-links is required:
+npm install --install-links "viem@file:../viem-fork/src"
 ```
 
-In TypeScript projects, set `"target": "ES2020"` (or later) in
-`tsconfig.json` — the 8130 module uses BigInt literals, which the common
-ES2017 default rejects at build time.
+Then import from `viem/experimental/eip8130` (and `viem/experimental/eip8168`
+for payers). Core helpers like `createPublicClient` / `parseEther` come from
+plain `viem` — the 8130 module does not re-export them.
+
+**Use `--install-links`.** Without it npm symlinks `node_modules/viem` to a path
+outside the project root, and Turbopack/Next.js then fails with
+`Module not found: Can't resolve 'viem'` for a package that is plainly there
+(`tsc` resolves it fine, which makes it look like a bundler bug).
+
+If your TypeScript build rejects the module's BigInt literals, set
+`"target": "ES2020"` or later in `tsconfig.json`. Next.js 16's generated config
+already works as-is, since its `lib` includes `esnext`.
+
+## Accounts Have No Deploy Step
+
+Creating an account derives a CREATE2 address locally — synchronous, zero RPC,
+`eth_getCode` still `0x`. It becomes real as a **side effect of its first
+transaction**, which carries `account.createChange` alongside your actual calls.
+There is nothing else to call. The shortest path from nothing to a deployed
+account is a *sponsored* first tx (no faucet, no funding); the self-paid route
+needs the address funded first. Read deployment state from `eth_getCode`, never
+from optimistic local state — it decides whether the next tx carries
+`createChange`. Full lifecycle:
+[references/eip8130-accounts.md](references/eip8130-accounts.md).
 
 ## Safety Guardrails
 
@@ -73,7 +102,7 @@ Read the reference for your task:
 
 | Task | When to Use | Reference |
 |------|-------------|-----------|
-| **Accounts & transactions** | Create an 8130 smart account, send batched calls, attribution metadata, gas estimation, reading account state, locking, gotchas | [references/eip8130-accounts.md](references/eip8130-accounts.md) |
+| **Accounts & transactions** | Create an 8130 smart account, the counterfactual→deployed lifecycle, send batched calls, attribution metadata, gas estimation, reading account state, locking, gotchas | [references/eip8130-accounts.md](references/eip8130-accounts.md) |
 | **Session keys & policies** | Authorize/revoke actors, scopes, SessionPolicy spend limits, config sequences, verifying "silent" changes | [references/session-keys-and-policies.md](references/session-keys-and-policies.md) |
 | **Gas sponsorship** | Sponsor gas with a payer (ERC-8168), gasless onboarding, `send` vs `sign` modes | [references/payer-sponsorship.md](references/payer-sponsorship.md) |
 
@@ -81,8 +110,9 @@ Read the reference for your task:
 
 1. **Classify the task** using the table above and read the relevant reference
    before implementing.
-2. **Pick the right RPC**: `rpc.vibes.base.org` from Node/scripts; the
-   `account/rpc` browser proxy from web UIs (same chain, CORS-safe).
+2. **Pick the right RPC**: `rpc.vibes.base.org` works from both Node and the
+   browser; `api.vibes.base.org/api/vibenet/account/rpc` is the hosted proxy to
+   the same chain. Never `vibes.base.org` — that host is not an API.
 3. **Implement** with explicit chain id, the fork-branch install, and read-back
    verification for any account-config change.
 4. **Deliver** runnable code, install commands, and any manual steps (env

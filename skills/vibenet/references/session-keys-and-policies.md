@@ -49,10 +49,24 @@ Check them by **reading back on-chain state**, not by the receipt:
   is not surfaced as a normal EVM log here — "no events" is NOT a failure. Do
   not gate success on scanning logs.
 - **`allPhasesSucceeded` / `phaseStatuses` only cover CALL phases**, not the
-  account-change application. A skipped authorize marks no failed phase, throws
-  nothing, and the tx still reports `status: success`.
-- **The only reliable success check is a read-back:** `isActor8130`,
-  `getActorConfig8130`, or a bumped `getConfigSequence8130`.
+  account-change application. On a change-only transaction (no calls)
+  `phaseStatuses` is absent entirely and `allPhasesSucceeded` returns `true`
+  vacuously — it is reporting on nothing.
+- **A wrong sequence is rejected at broadcast, not silently applied.** Signing a
+  change over a stale *or* future sequence makes `eth_sendRawTransaction` fail
+  with `EIP-8130 validation failed: config change sequence mismatch` (surfaced
+  by viem as `InvalidInputRpcError: Missing or invalid parameters`). The tx
+  never lands, so there is no receipt to inspect — the failure is loud, but the
+  error text names neither the sequence you used nor the one expected.
+- **The real trap is the inverse: a config change can apply on a transaction
+  that reports failure.** Live-confirmed — a tx carrying an authorize plus a
+  reverting call came back `status: 0x0` with `phaseStatuses: ["0x0"]`, yet the
+  actor was bound and the config sequence had bumped. Account changes are not
+  atomic with the calls they ride along with, in either direction. **Never infer
+  config state from `receipt.status`.**
+- **The only reliable check is a read-back:** `isActor8130`,
+  `getActorConfig8130`, or a bumped `getConfigSequence8130` — after a failed tx
+  as much as a successful one.
 - **Reads lag ~1 block (~2s)** behind the receipt — poll the read-back.
 
 ## Sequence correctness
