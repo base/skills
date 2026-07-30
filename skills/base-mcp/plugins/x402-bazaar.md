@@ -12,7 +12,7 @@ requires:
   externalMcp: x402-bazaar-mcp
   cliPackage: null
 auth: none
-risk: []
+risk: [irreversible]
 ---
 
 # x402 Bazaar Plugin
@@ -83,6 +83,21 @@ Prefer credits where the host config is shared or synced: a spent-out credit
 token is worth nothing, while a leaked key is worth everything in the wallet.
 Package: `x402-bazaar-mcp` (npm) · registry `io.github.sukrutkrdg/x402-bazaar-mcp`.
 
+## Auth
+
+No account, no API key, no login. Access is decided per call by what the host
+supplies, and the agent never performs an auth handshake:
+
+- **Nothing supplied** — the free tier serves one call per service per day, keyed
+  by IP. Enough to try any tool before paying for it.
+- **`X402_CREDIT_TOKEN`** — a bearer token bought once, debited per call. Send it
+  and nothing else; there is no signature per call and no wallet involved.
+- **`AGENT_PRIVATE_KEY`** — the server signs an x402 payment locally per call.
+  The key stays on the machine; only a signed payment authorization is sent.
+
+Nothing here requires SIWE or grants write access to the wallet: an x402 payment
+authorizes one transfer of the quoted amount to the seller, nothing else.
+
 ## Surface Routing
 
 | Capability | Surface | Execution path |
@@ -91,6 +106,37 @@ Package: `x402-bazaar-mcp` (npm) · registry `io.github.sukrutkrdg/x402-bazaar-m
 | Same | chat-only host without the MCP server | Not available — instruct the user to add `x402-bazaar-mcp` (see Installation) |
 
 Shell-less fallback: none required — all access is via the MCP server's tools.
+
+## Endpoints
+
+The server registers every catalogued service as a tool at startup, so the
+authoritative list is the MCP tool catalog itself (and
+`https://402.com.tr/.well-known/x402`). The ones an agent reaches for most:
+
+| Tool | Price | Returns |
+|---|---|---|
+| `token_risk` | $0.03 | ERC-20 conformance, ownership renounce, proxy upgradeability → risk level |
+| `rug_score` | $0.03 | Liquidity, holder concentration and deployer history → rug score |
+| `sellability` | $0.08 | Simulated exit: can this token actually be sold, and at what tax |
+| `pre_trade_gate` | $0.10 | The four checks above as one GO / HOLD / STOP before a buy |
+| `b20_safety` | $0.04 | B20 issuer powers (freeze, seize, pause, rebase) → hold/caution/avoid |
+| `wallet_networth` | $0.02 | Token balances and total value for a wallet |
+| `token_approvals` | $0.02 | Live ERC-20 approvals, ranked by what they can drain |
+| `wallet_delegation` | $0.03 | EIP-7702 delegate, and whether it is a recognized implementation |
+| `agent_wallet_audit` | $0.06 | Approvals + spend permissions + delegation as one drain-surface verdict |
+| `sanctions` | $0.02 | OFAC screening for a wallet address |
+| `sanctions_name` | $0.05 | OFAC screening for a person or company name |
+| `email_verify` | $0.02 | Syntax, MX/A deliverability, disposable/role detection → GO/HOLD/STOP |
+| `domain_check` | $0.02 | Registration age, expiry and registry status from RDAP → GO/HOLD/STOP |
+| `url_extract` | $0.002 | Any web page as clean, agent-ready text |
+| `url_to_json` | $0.04 | The same page as structured JSON against a caller-supplied shape |
+| `ai_token_report` | $0.12 | Claude-written token due diligence |
+| `deep_dd` | $0.75 | The full multi-signal due-diligence report |
+
+Prices are quoted live in each 402 challenge; the numbers above are indicative.
+Verdict tools additionally return a decision receipt — input hash, policy
+version, confidence band, and a structured refusal instead of a guess when a
+feed is unavailable.
 
 ## Orchestration
 
@@ -113,3 +159,39 @@ MCP submission tool (`send_calls`/`swap`/`sign`).
 5. "Is `0x…` a B20 token that can freeze or seize my funds?" → call `b20_safety`; report the hold/caution/avoid verdict and which issuer powers (freeze / seize / pause / rebase) are live.
 6. "Is wallet `0x…` 7702-delegated to code I should worry about?" → call `wallet_delegation`; report the delegate and whether it is a known Coinbase implementation or unrecognized (takeover risk).
 7. "This invoice asks me to pay a new supplier at `billing@acme-payments.com` — check it." → call `email_verify` and `domain_check`; report deliverability plus how old the domain is, since a domain registered weeks ago is the standard vendor-impersonation pattern.
+
+## Risks & Warnings
+
+- **Paid calls are irreversible.** Each call settles a USDC micro-payment on
+  Base. It cannot be undone, so do not loop a paid tool over a list without the
+  user agreeing to the total first. Quote the price before a batch.
+- **This is data, not advice.** Verdicts (`GO`/`HOLD`/`STOP`, risk levels,
+  scores) are computed from onchain and registry data. They are inputs to the
+  user's decision, not a recommendation to buy, sell or trust anything. Present
+  them with their reasons, not as conclusions.
+- **A refusal is not a pass.** When a feed is unavailable the response carries a
+  refusal with `confidence.band: "low"` rather than a verdict. Never read that as
+  "clean" — say the check could not be completed.
+- **Freshness.** Everything is read at call time; a token or wallet can change
+  the block after the answer. For anything time-sensitive, re-check rather than
+  reusing an earlier result.
+- **Wallet mode holds a key.** With `AGENT_PRIVATE_KEY` the host config contains
+  a Base private key. Prefer the credit token where the config is shared, synced
+  or committed. Fund the wallet with USDC only.
+- **Read-only by construction.** No tool here produces a transaction, so nothing
+  in this plugin can move the user's assets other than the per-call payment.
+
+## Notes
+
+- **Free tier:** one call per service per day, no key needed — enough to try any
+  tool before spending anything.
+- **Free calls return a preview.** Once the daily free call is used the endpoint
+  serves a trimmed teaser marked `preview: true`; treat that as a sample, not the
+  answer, and pay for the full report when the user needs the detail.
+- **Decision receipts** are documented at
+  <https://github.com/sukrutkrdg/402/blob/main/docs/decision-receipt.md>.
+- **Coverage is honest about its edges:** RDAP does not exist for every TLD and
+  OFAC screening is name/address matching, so those tools refuse rather than
+  guess. Surface the refusal reason to the user.
+- Live catalogue and prices: <https://402.com.tr/.well-known/x402> · docs:
+  <https://402.com.tr/agents>
