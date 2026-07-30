@@ -1,9 +1,9 @@
 ---
 title: "x402 Bazaar Plugin"
-description: "Read-only onchain data & AI reports for Base (token risk, B20 token safety, wallet intelligence, OFAC sanctions, prices, NFTs) via the x402-bazaar-mcp server; paid per call in USDC over x402. Returns data only — makes no Base MCP transaction."
+description: "Read-only onchain data & AI reports for Base (token risk, B20 token safety, wallet intelligence, OFAC sanctions, prices, NFTs) plus off-chain counterparty checks (page-to-text, email and domain verification) via the x402-bazaar-mcp server; paid per call in USDC over x402. Returns data only — makes no Base MCP transaction."
 tags: [data, token-risk, b20, wallet-intel, compliance, x402]
 name: x402-bazaar
-version: 0.1.0
+version: 0.1.1
 integration: external-mcp
 chains: [base]
 requires:
@@ -23,11 +23,18 @@ risk: []
 
 ## Overview
 
-x402 Bazaar is a pay-per-call API marketplace on Base exposing 100+ read-only
-services — token safety (risk, honeypot, rug score), wallet intelligence (net
-worth, age/activity, approvals, transfers, NFTs), OFAC sanctions screening,
-prices/momentum/pools, and Claude-written AI token & wallet reports. It also
-ships the only **B20** safety suite (~25 tools): B20 is Base's native token standard
+x402 Bazaar is a pay-per-call API marketplace on Base exposing 118 read-only
+services today — token safety (risk, honeypot, rug score), wallet intelligence
+(net worth, age/activity, approvals, transfers, NFTs), OFAC sanctions screening,
+prices/momentum/pools, and Claude-written AI token & wallet reports. The agent
+reads the tool list live from the catalog at startup, so the count tracks the
+marketplace rather than this document. Alongside the onchain reads it now also
+covers checks an agent needs before it acts off-chain: `url_extract` /
+`url_to_json` (any page as agent-ready text or structured JSON), `email_verify`
+and `domain_check` (deliverability, registration age and registry status — the
+counterparty checks before an invoice or a signup is trusted) and
+`sanctions_name` (OFAC screening for people and companies, not just wallets).
+It also ships the only **B20** safety suite (~29 tools): B20 is Base's native token standard
 (live 2026-07-08), and unlike ERC-20 a B20 issuer can freeze or seize a holder's
 balance at the protocol level (Policy Registry / `burnBlocked`) — `b20_safety`
 reads those powers into one hold/caution/avoid verdict, and the wider suite covers
@@ -58,14 +65,23 @@ Add the MCP server to the host config (Claude Desktop / Cursor / any MCP client)
     "x402-bazaar": {
       "command": "npx",
       "args": ["-y", "x402-bazaar-mcp"],
-      "env": { "AGENT_PRIVATE_KEY": "0xYOUR_BASE_WALLET_KEY" }
+      "env": { "X402_CREDIT_TOKEN": "ck_YOUR_PREPAID_TOKEN" }
     }
   }
 }
 ```
 
-The wallet needs only USDC on Base. Package: `x402-bazaar-mcp` (npm) ·
-registry `io.github.sukrutkrdg/x402-bazaar-mcp`.
+Three modes, in order of how much they expose:
+
+| Mode | Env | What the host holds |
+|---|---|---|
+| Free tier | none | nothing — one free call per service per day |
+| Prepaid credits (recommended) | `X402_CREDIT_TOKEN` | a bearer token with a capped balance, bought once at `https://402.com.tr/credits` |
+| Wallet | `AGENT_PRIVATE_KEY` | a Base private key; only USDC is needed, and it never leaves the machine |
+
+Prefer credits where the host config is shared or synced: a spent-out credit
+token is worth nothing, while a leaked key is worth everything in the wallet.
+Package: `x402-bazaar-mcp` (npm) · registry `io.github.sukrutkrdg/x402-bazaar-mcp`.
 
 ## Surface Routing
 
@@ -96,3 +112,4 @@ MCP submission tool (`send_calls`/`swap`/`sign`).
 4. "What's the 24h price & momentum of `0x…`?" → call `token_momentum`; report price and 1h/6h/24h change.
 5. "Is `0x…` a B20 token that can freeze or seize my funds?" → call `b20_safety`; report the hold/caution/avoid verdict and which issuer powers (freeze / seize / pause / rebase) are live.
 6. "Is wallet `0x…` 7702-delegated to code I should worry about?" → call `wallet_delegation`; report the delegate and whether it is a known Coinbase implementation or unrecognized (takeover risk).
+7. "This invoice asks me to pay a new supplier at `billing@acme-payments.com` — check it." → call `email_verify` and `domain_check`; report deliverability plus how old the domain is, since a domain registered weeks ago is the standard vendor-impersonation pattern.
