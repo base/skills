@@ -3,14 +3,14 @@ title: "Boardwalk Plugin"
 description: "Launch, fund, and manage Boardwalk token launches — the CLI builds unsigned calldata → send_calls, or a prefilled launch link when no shell is available."
 tags: [token-launches, staking, governance, liquidity]
 name: boardwalk
-version: 1.0.1
+version: 1.0.2
 integration: hybrid
 chains: [ethereum, base, arbitrum]
 requires:
   shell: optional
   allowlist: []
   externalMcp: null
-  cliPackage: "npx -p @useboardwalk/sdk@1.0.1 boardwalk"
+  cliPackage: "npx -p @useboardwalk/sdk@1.0.2 boardwalk"
 auth: none
 risk: [low-liquidity, slippage, irreversible]
 ---
@@ -31,7 +31,7 @@ This plugin drives the `boardwalk` CLI (the `@useboardwalk/sdk` npm package), wh
 No install step is required — the CLI runs per call via `npx`:
 
 ```bash
-npx -p @useboardwalk/sdk@1.0.1 boardwalk <command> [flags]
+npx -p @useboardwalk/sdk@1.0.2 boardwalk <command> [flags]
 ```
 
 Optionally install it globally (`npm i -g @useboardwalk/sdk`) and call `boardwalk <command>` directly. The no-shell path needs nothing installed — it only produces a URL.
@@ -68,7 +68,7 @@ Every transaction command prints a JSON object to stdout: an ordered `calls` arr
 
 | Command | What it does | Key flags | Scope |
 |---|---|---|---|
-| `launch` | Create a launch (conditional BWLK approve + `create-launch`) | `--chain --wallet --name --ticker --category --path` · express: `--issuer-fee` · advanced: `--presale-percent --fee --vesting --referrer` | multi-chain |
+| `launch` | Create a launch (conditional BWLK approve + `create-launch`) | `--chain --wallet --name --ticker --category --path` · express: `--issuer-fee` · standard (`--path advanced`): `--presale-percent --fee --vesting --referrer` | multi-chain |
 | `launch-metadata` | Upload logo, print EIP-712 payload + submit request | `--tx\|--token --chain` · `--logo\|--logo-data\|--logo-url` · `--twitter --homepage --description --raise-goal …` | multi-chain |
 | `submit-metadata` | POST signed metadata (auto-retries on 404) | `--token --chain --signature --message` | multi-chain |
 | `contribute` | Join an auction (approve raise token + `contribute`) | `--token --amount --chain --wallet` · `--rpc` | multi-chain |
@@ -104,13 +104,13 @@ Every on-chain action follows the same shape: **`get_wallets` → run CLI → ta
    ```
    → `calls = [approve-bwlk, create-launch]` plus top-level `bwlkBurnCost`, `config`, `graduationThreshold`. `send_calls` the batch → `get_request_status`.
 3. Capture the `create-launch` tx hash from the `send_calls` result (no log-parsing — the next command resolves the token from the receipt).
-4. `boardwalk launch-metadata --tx 0x<hash> --chain base --logo ./logo.png --twitter … --homepage …` → returns `{ token, auctionUrl, sign, next }`. (Have the token already? Pass `--token <addr>` instead of `--tx`.) Advanced `--raise-goal` must **exceed** the chain's graduation threshold (surfaced by `launch` as `graduationThreshold`).
+4. `boardwalk launch-metadata --tx 0x<hash> --chain base --logo ./logo.png --twitter … --homepage …` → returns `{ token, auctionUrl, sign, next }`. (Have the token already? Pass `--token <addr>` instead of `--tx`.) The standard path's `--raise-goal` must **exceed** the chain's graduation threshold (surfaced by `launch` as `graduationThreshold`).
 5. Sign the returned EIP-712 `sign` object with the **issuer** wallet via Base MCP `sign` → `0x…` signature.
 6. `boardwalk submit-metadata --token 0x<token> --chain base --signature 0x<sig> --message '<sign.message JSON>'`. It auto-retries on 404 to ride out indexer lag.
 
 > The token is live after step 2, but **don't stop there** — a launch with no metadata shows on the Boardwalk UI with no name, logo, or socials. Always finish steps 4–6.
 
-Advanced path adds `--presale-percent` (25–50, steps of 5), repeatable `--fee <label:address:percent>` (1–4 recipients), and repeatable `--vesting <label:address:percent>` (up to 5; required when `--presale-percent` < 50; not allowed at 50).
+The **standard** path — `--path advanced`, the name the CLI, SDK types, and onchain contracts still use — adds `--presale-percent` (25–50, steps of 5), repeatable `--fee <label:address:percent>` (1–4 recipients), and repeatable `--vesting <label:address:percent>` (up to 5; required when `--presale-percent` < 50; not allowed at 50).
 
 ### Contribute (only while `status == "presale"`)
 
@@ -180,6 +180,7 @@ I'm in a plain chat with no terminal — help me launch a token on Base
 - **Chains.** `chains` is the intersection of Boardwalk's deployments and Base MCP's `send_calls` support: `ethereum` (1), `base` (8453), `arbitrum` (42161). Boardwalk and the CLI also run on **Robinhood Chain** (4663), but Base MCP can't route `send_calls` there, so it's out of scope for this plugin — for Robinhood Chain, point the user at the Boardwalk UI (`launch-link` emits the prefilled URL for launches). `stake-bwlk`, `unstake-bwlk`, `handle-rewards`, `claim-participation`, and `vote` are **Ethereum-only** (the staking/governance contracts are placeholders elsewhere; the CLI errors clearly); everything else works on all three chains above.
 - **Attribution.** On **Base** every call's `data` carries Boardwalk's ERC-8021 builder-code suffix (Base is where the code is registered), so Base volume is attributed even when submitted through the agent's own wallet. Non-Base chains carry no suffix. There is no flag to set, and it never alters the action, recipient, or amount.
 - **No login.** There is no Privy/session step for on-chain actions — the only prerequisites are on-chain (enough BWLK to launch/vote; enough WETH to contribute; the wallet on the right chain).
-- **Graduation threshold** (advanced `--raise-goal` must exceed it): 5 WETH on every chain, both paths.
+- **Graduation threshold** (the standard path's `--raise-goal` must exceed it): 5 WETH on every chain, both paths.
+- **Launch paths.** Two: **express** (24h) and **standard** (7d after a 24h start delay). "Standard" is the product name; the CLI flag, the SDK types, and the onchain contracts spell it `advanced`, so pass `--path advanced` and report results as a standard launch.
 - **Networking / allowlist.** `allowlist` is empty because the agent never fetches over Base MCP `web_request` in any supported flow: the shell path runs the CLI (which does its own networking to `api.useboardwalk.com` for the metadata POST and `app.useboardwalk.com` for the launch link), and the no-shell path only emits a URL. Nothing the agent does on a chat-only surface needs an allowlisted host.
 - **Docs.** Conceptual material (auction mechanics, fee model, governance/voting, vesting) lives at <https://www.useboardwalk.com/docs> and <https://www.useboardwalk.com/llms.txt>. This plugin is the executable layer.
