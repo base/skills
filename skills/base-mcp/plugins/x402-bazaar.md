@@ -23,7 +23,7 @@ risk: [irreversible]
 
 ## Overview
 
-x402 Bazaar is a pay-per-call API marketplace on Base exposing 118 read-only
+x402 Bazaar is a pay-per-call API marketplace on Base exposing 124 read-only
 services today — token safety (risk, honeypot, rug score), wallet intelligence
 (net worth, age/activity, approvals, transfers, NFTs), OFAC sanctions screening,
 prices/momentum/pools, and Claude-written AI token & wallet reports. The agent
@@ -75,7 +75,7 @@ Three modes, in order of how much they expose:
 
 | Mode | Env | What the host holds |
 |---|---|---|
-| Free tier | none | nothing — one free call per service per day |
+| Free trial | none | nothing — one free call per service per day, opted into with `?free=1` |
 | Prepaid credits (recommended) | `X402_CREDIT_TOKEN` | a bearer token with a capped balance, bought once at `https://402.com.tr/credits` |
 | Wallet | `AGENT_PRIVATE_KEY` | a Base private key; only USDC is needed, and it never leaves the machine |
 
@@ -88,8 +88,10 @@ Package: `x402-bazaar-mcp` (npm) · registry `io.github.sukrutkrdg/x402-bazaar-m
 No account, no API key, no login. Access is decided per call by what the host
 supplies, and the agent never performs an auth handshake:
 
-- **Nothing supplied** — the free tier serves one call per service per day, keyed
-  by IP. Enough to try any tool before paying for it.
+- **Nothing supplied** — add `?free=1` to the URL and the trial serves one call
+  per service per day, keyed by IP. Enough to try any tool before paying for it.
+  Without that flag an unpaid call always answers `402` with the price, so that a
+  crawler reading the catalog sees what a service costs rather than its output.
 - **`X402_CREDIT_TOKEN`** — a bearer token bought once, debited per call. Send it
   and nothing else; there is no signature per call and no wallet involved.
 - **`AGENT_PRIVATE_KEY`** — the server signs an x402 payment locally per call.
@@ -183,8 +185,9 @@ MCP submission tool (`send_calls`/`swap`/`sign`).
 
 ## Notes
 
-- **Free tier:** one call per service per day, no key needed — enough to try any
-  tool before spending anything.
+- **Free trial:** one call per service per day, no key needed — but it is opt-in.
+  Pass `?free=1` (or the header `x-402-free: 1`); a plain unpaid call returns `402`
+  by design. AI services and a few others are never free and ignore the flag.
 - **Free calls return a preview.** Once the daily free call is used the endpoint
   serves a trimmed teaser marked `preview: true`; treat that as a sample, not the
   answer, and pay for the full report when the user needs the detail.
