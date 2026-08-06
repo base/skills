@@ -3,9 +3,9 @@ title: "Umia Plugin"
 description: "Discover and trade Umia decision markets and bid in token auctions via the umia-cli or HTTP API; builds unsigned calldata routed through send_calls."
 tags: [futarchy, decision-markets, token-auctions, governance, trading]
 name: umia
-version: 0.2.0
+version: 0.3.0
 integration: hybrid
-chains: [base, base-sepolia]
+chains: [base, base-sepolia, sepolia]
 requires:
   shell: optional
   allowlist: ["api.testnet.umia.finance", "api.mainnet.umia.finance"]
@@ -66,7 +66,7 @@ to `send_calls`).
 | Capability | Harness HTTP / `web_request` | CLI (shell available) | Fallback |
 |---|---|---|---|
 | Read markets/prices/positions/portfolio | `GET {API}/api/v1/...` | `umia markets/market/prices/positions/portfolio` | Umia hub UI link |
-| Read auctions/analytics/leaderboard/bids | `GET {API}/api/v1/hub/fundraises...` | `umia auctions`, `umia auction <slug> [analytics\|leaderboard\|bids]` | hub UI link |
+| Read auctions/analytics/ticks/leaderboard/bids | `GET {API}/api/v1/hub/fundraises...` | `umia auctions`, `umia auction <slug> [analytics\|ticks\|leaderboard\|bids]` | hub UI link |
 | Build market enter/trade/merge/claim/settle | `POST {API}/api/v1/calldata/*` | `umia enter\|trade\|merge\|claim\|settle` | hub UI link |
 | Build auction bid/claim | `POST {API}/api/v1/calldata/auction-{bid,claim}` | `umia auction <slug> bid\|claim` | hub UI link (also where verification-gated bids go) |
 | Submit | `send_calls` | `send_calls` | n/a |
@@ -93,7 +93,8 @@ umia positions <venture> <id> <address>
 umia portfolio <address>
 umia auctions [--status upcoming|live|ended|settled] [--limit] [--offset]
 umia auction <slug>                       # metadata, vesting, on-chain address
-umia auction <slug> analytics             # clearing price, raised, bids, graduation
+umia auction <slug> analytics             # clearing price, min/max bid, raised, graduation
+umia auction <slug> ticks [--price <p>]   # the tick grid + the minimum viable bid
 umia auction <slug> leaderboard [--limit]
 umia auction <slug> bids --wallet <addr>  # a wallet's bids + forecast/claimable
 
@@ -103,7 +104,7 @@ umia trade  --proposal <id> --side buy|sell --amount-in <a> [--min-out <m>] [--s
 umia merge  --market <id> --venture-amount <a> --money-amount <b>
 umia claim  --markets <id,id,...>
 umia settle --market <id>                 # permissionless
-umia auction <slug> bid   --max-price <p> --amount <a> --taker <addr>
+umia auction <slug> bid   (--max-price <p> | --market-bid) --amount <a> --taker <addr>
 umia auction <slug> claim --taker <addr>
 ```
 
@@ -112,7 +113,8 @@ All commands accept `UMIA_ENV`/`--env`, `--chain-id`, `--json`. Amounts are
 chain's USDC decimals, auction bids via the auction's currency decimals) and
 every conversion is echoed as human + wei. `--max-price` is currency-per-token
 and is snapped **down** to the auction's tick grid; pass `--max-price-x96` to
-supply a raw tick price instead. `trade` defaults to a 100 bps (1%) slippage
+supply a raw tick price instead, or `--market-bid` to bid at the highest price
+the auction allows. `trade` defaults to a 100 bps (1%) slippage
 floor when `--min-out` is omitted (tune with `--slippage-bps`), caps price
 impact via `--max-price-impact-bps`, and accepts an optional `--deadline`.
 Action commands print `{ chainId, calls: [...] }`; if an auction step requires verification,
@@ -148,7 +150,7 @@ live allowances):
 | `/calldata/merge` | `{chainId, marketId, ventureAmount, moneyAmount}` |
 | `/calldata/claim` | `{chainId, marketIds: [..]}` |
 | `/calldata/settle` | `{chainId, marketId}` |
-| `/calldata/auction-bid` | `{slug \| auctionAddress+chainId, maxPrice, amount, taker}`; `maxPrice` is a raw X96 tick price aligned to the tick grid; gated steps return `{requiresVerification, reason, hubUrl}` with no calls |
+| `/calldata/auction-bid` | `{slug \| auctionAddress+chainId, orderType?, maxPrice?, amount, taker}`; `orderType` is `"limit"` (default, needs a tick-aligned `maxPrice` strictly above clearing) or `"market"` (omit `maxPrice`; the API bids at the auction's ceiling). The response echoes the encoded `maxPrice`. Gated steps return `{requiresVerification, reason, hubUrl}` with no calls |
 | `/calldata/auction-claim` | `{slug \| auctionAddress+chainId, taker}`; may return `calls: []` plus a `note`, and `claimable: {bidIds, claimBlock, blocksRemaining}` before the claim window opens |
 
 Auction claims compose **exit calls first, then one `claimTokensBatch`**: the
@@ -189,16 +191,28 @@ refund step.
    `umia auction <slug> leaderboard`.
 
 ### Bid in an auction (permissionless steps)
-1. `umia auction <slug> analytics` → read the current clearing price; choose a
-   `--max-price` above it (the API rejects a price at or below the current
-   clearing price) and an `--amount` in currency units.
-2. `umia auction <slug> bid --max-price <p> --amount <a> --taker <wallet> --json`.
-   The CLI snaps the price down to the tick grid and echoes the effective
-   price; the API computes the tick-insertion hint and de-dupes the
+1. `umia auction <slug> ticks` → the tick grid. **Bid at or above `min bid`, never
+   at the clearing price**: a bid must be a multiple of the tick size *and*
+   strictly above clearing, and the clearing price itself always sits on a tick,
+   so any price inside the clearing tick snaps back down onto it and is rejected.
+   `min bid` is already rounded so it can be passed straight back as `--max-price`.
+2. Pick a price. Either `--max-price <p>` with `p >= min bid`, or `--market-bid`
+   to take the highest price the auction allows (its `MAX_BID_PRICE`, or the hook
+   cap when one is set, snapped to a tick). The CCA is **uniform-price**: a market
+   bidder still settles at the final clearing price, so the max price buys queue
+   priority, not a worse fill.
+3. `umia auction <slug> bid --max-price <p> --amount <a> --taker <wallet> --json`
+   (or `--market-bid` in place of `--max-price`). The CLI snaps the price down to
+   the grid, refuses one that could not clear, and echoes both the requested and
+   the submitted price; the API computes the tick-insertion hint and de-dupes the
    currency→Permit2→auction approval chain.
-3. If it returns `calls` → `send_calls`. If it exits 1 with
+4. If it returns `calls` → `send_calls`. If it exits 1 with
    `requiresVerification` → tell the user this auction step needs verification
    and link the `hubUrl`; do not retry or work around it.
+
+To check a price before committing: `umia auction <slug> ticks --price <p>`
+reports where it snaps and whether it clears, exiting 1 when it does not.
+Clearing rises as bids land, so re-read `ticks` if any time has passed.
 
 ### Claim market winnings / auction tokens
 - Markets (after settlement): `umia claim --markets <ids> --chain-id <id> --json` → `send_calls`.
@@ -246,9 +260,11 @@ I think proposal 14 is right — buy 50 USDC of it.
 ```
 Show me live Umia token auctions and bid 200 USDC at 0.05 in the <project> one.
 ```
-1. `umia auctions --status live`, then `umia auction <slug> analytics` for the clearing price.
-2. `umia auction <slug> bid --max-price 0.05 --amount 200 --taker <wallet> --json`.
-3. `send_calls` on success; on `requiresVerification`, link the hub instead.
+1. `umia auctions --status live`, then `umia auction <slug> ticks` for the grid.
+2. If 0.05 is at or below `min bid`, say so and confirm the higher price with the
+   user before bidding — do not raise it silently.
+3. `umia auction <slug> bid --max-price 0.05 --amount 200 --taker <wallet> --json`.
+4. `send_calls` on success; on `requiresVerification`, link the hub instead.
 
 ```
 Claim everything I'm owed from the <project> auction.
@@ -269,6 +285,11 @@ Claim everything I'm owed from the <project> auction.
   unspent currency is refunded at exit/claim); purchased tokens may be
   subject to vesting (`umia auction <slug>` → vesting). Confirm price,
   amount, and vesting with the user before `send_calls`.
+- `--market-bid` commits the full `--amount` at the auction's highest allowed
+  price. Uniform-price settlement means the fill is still at the final clearing
+  price, but the bid cannot be outbid and cannot be exited while it is in the
+  money — state that before submitting, and never substitute it for a limit
+  price the user named.
 - `local-exec`: the CLI path runs third-party code via `npx umia-cli@latest`. Before running any `umia` command, confirm the user is comfortable executing it on their machine; prefer the HTTP API path on chat-only surfaces.
 
 ## Notes
@@ -285,11 +306,22 @@ Claim everything I'm owed from the <project> auction.
   testnet env until mainnet contracts ship.
 - ERC6909 ids: a proposal's virtual venture token is `proposalId*2`, virtual
   money is `proposalId*2+1`; winners convert 1:1 at settlement.
-- Bid prices are X96 fixed-point and must align to the auction's tick grid
-  (`price % tickSpacing == 0`); the CLI handles conversion + snapping from a
-  human price. Chat-only surfaces should compute
-  `maxPrice = floor(human · 2^96 · 10^currencyDecimals / 10^tokenDecimals / tickSpacing) · tickSpacing`
-  from the fundraise's `auction` data, or send the user to the hub.
+- Bid prices are X96 fixed-point and face **two** constraints: aligned to the
+  tick grid (`price % tickSpacing == 0`) **and** strictly above the current
+  clearing price. Clearing sits on a tick, so rounding a human price down is not
+  enough on its own — the result must also clear. `umia auction <slug> ticks`
+  does both; chat-only surfaces should compute, from the fundraise's `auction`
+  data (`tickSpacingX96`, `floorPriceX96`, `clearingPriceX96`, and
+  `maxBidPriceX96` when present):
+  ```
+  raw     = human · 2^96 · 10^currencyDecimals / 10^tokenDecimals
+  capped  = min(raw, maxBidPriceX96)                    # when a cap is set
+  price   = floor(capped / tickSpacing) · tickSpacing
+  minBid  = floor(clearingPriceX96 / tickSpacing) · tickSpacing + tickSpacing
+  ```
+  then require `price >= minBid`, raising the human price and recomputing if it
+  is not (never silently bid `minBid` on the user's behalf). Or POST
+  `orderType: "market"` and let the API price it. Otherwise send the user to the hub.
 - Auction `<slug>` is the project slug; live analytics require the auction to
   be on-chain and indexed; `fundraise.auction` may be absent for fresh
   deployments.
