@@ -1,0 +1,32 @@
+{
+  "name": "base-skills-studio",
+  "version": "1.0.0",
+  "description": "Interactive AI Agent Skills Sandbox & Base MCP Tooling Studio for Coinbase Base.",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "base-skills-cli": "./bin/base-skills-cli.js"
+  },
+  "scripts": {
+    "start": "node src/server/app.js",
+    "cli": "node bin/base-skills-cli.js",
+    "test": "node tests/run-all.js"
+  },
+  "keywords": [
+    "base",
+    "coinbase",
+    "base-skills",
+    "ai-agents",
+    "mcp",
+    "agent-kit",
+    "on-chain-skills"
+  ],
+  "author": "Base Community",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.5",
+    "express": "^4.21.2"
+  }
+}
