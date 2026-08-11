@@ -3,14 +3,14 @@ title: "Boardwalk Plugin"
 description: "Launch, fund, and manage Boardwalk token launches — the CLI builds unsigned calldata → send_calls, or a prefilled launch link when no shell is available."
 tags: [token-launches, staking, governance, liquidity]
 name: boardwalk
-version: 1.0.2
+version: 2.1.0
 integration: hybrid
 chains: [ethereum, base, arbitrum]
 requires:
   shell: optional
   allowlist: []
   externalMcp: null
-  cliPackage: "npx -p @useboardwalk/sdk@1.0.2 boardwalk"
+  cliPackage: "npx -p @useboardwalk/sdk@2.1.0 boardwalk"
 auth: none
 risk: [low-liquidity, slippage, irreversible]
 ---
@@ -31,7 +31,7 @@ This plugin drives the `boardwalk` CLI (the `@useboardwalk/sdk` npm package), wh
 No install step is required — the CLI runs per call via `npx`:
 
 ```bash
-npx -p @useboardwalk/sdk@1.0.2 boardwalk <command> [flags]
+npx -p @useboardwalk/sdk@2.1.0 boardwalk <command> [flags]
 ```
 
 Optionally install it globally (`npm i -g @useboardwalk/sdk`) and call `boardwalk <command>` directly. The no-shell path needs nothing installed — it only produces a URL.
@@ -181,6 +181,6 @@ I'm in a plain chat with no terminal — help me launch a token on Base
 - **Attribution.** On **Base** every call's `data` carries Boardwalk's ERC-8021 builder-code suffix (Base is where the code is registered), so Base volume is attributed even when submitted through the agent's own wallet. Non-Base chains carry no suffix. There is no flag to set, and it never alters the action, recipient, or amount.
 - **No login.** There is no Privy/session step for on-chain actions — the only prerequisites are on-chain (enough BWLK to launch/vote; enough WETH to contribute; the wallet on the right chain).
 - **Graduation threshold** (the standard path's `--raise-goal` must exceed it): 2.5 WETH on every chain. Timelocked per path, so Express and Standard can differ — trust the `graduationThreshold` field in the `launch` output over this number.
-- **Launch paths.** Two: **express** (24h) and **standard** (7d after a 24h start delay). "Standard" is the product name; the CLI flag, the SDK types, and the onchain contracts spell it `advanced`, so pass `--path advanced` and report results as a standard launch.
+- **Launch paths.** Two: **express** (no start delay) and **standard** (24h start delay). Both auction windows are timelock-tunable — read the live window from the `launch` output's `auctionDuration` rather than stating a fixed length. "Standard" is the product name; the CLI flag, the SDK types, and the onchain contracts spell it `advanced`, so pass `--path advanced` and report results as a standard launch.
 - **Networking / allowlist.** `allowlist` is empty because the agent never fetches over Base MCP `web_request` in any supported flow: the shell path runs the CLI (which does its own networking to `api.useboardwalk.com` for the metadata POST and `app.useboardwalk.com` for the launch link), and the no-shell path only emits a URL. Nothing the agent does on a chat-only surface needs an allowlisted host.
 - **Docs.** Conceptual material (auction mechanics, fee model, governance/voting, vesting) lives at <https://www.useboardwalk.com/docs> and <https://www.useboardwalk.com/llms.txt>. This plugin is the executable layer.
