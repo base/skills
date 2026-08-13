@@ -2,7 +2,7 @@
 name: vibenet
 description: >-
   Build on vibenet — Base's devnet for native account abstraction (EIP-8130)
-  and payer gas sponsorship (ERC-8168) using the viem experimental module. Use
+  and payer gas sponsorship (ERC-8168) using viem's eip8130 module. Use
   whenever the user mentions vibenet, EIP-8130, ERC-8168, 8130 accounts, native
   account abstraction, session keys, actors, policies, payers, or gas
   sponsorship on Base — or is writing code that creates or operates 8130 smart
@@ -17,8 +17,8 @@ Vibenet is Base's devnet for **EIP-8130 native account abstraction**: account
 abstraction in the protocol itself. Accounts are portable across EVM chains,
 support multiple signer types (secp256k1, P-256, WebAuthn), key rotation
 without changing address, scoped session-key actors, on-chain policies, and
-native **ERC-8168** gas sponsorship. The tooling lives in viem's
-`experimental/eip8130` module (fork branch — not yet in npm `viem`).
+native **ERC-8168** gas sponsorship. The tooling lives in viem's `eip8130`
+module (fork branch — not yet in npm `viem`).
 
 ## Network
 
@@ -44,23 +44,27 @@ CORS headers, and so does `rpc.vibes.base.org` — so browser apps can talk to
 either. Prefer `rpc.vibes.base.org` for execution and reserve the `account/rpc`
 proxy for when you specifically want the hosted path.
 
-The tooling is **not published to npm** and cannot be installed from git
-directly: the fork's workspace uses pnpm's `catalog:` protocol, so
-`npm install "viem@github:…"` fails outright, and `bun add "viem@github:…"`
-"succeeds" but leaves you an unbuilt monorepo with no `exports` field. Clone,
-build, then depend on the built package (which lives in the fork's `src/`):
+The 8130 modules are additive to viem itself, proposed upstream in
+[wevm/viem#5004](https://github.com/wevm/viem/pull/5004) (still an open draft —
+not yet released to npm). Until it ships, build from the fork branch the PR is
+opened from: `chunter-cb/viem` `feat/eip-8130-production`. It is **not
+installable from git directly**: viem's workspace uses pnpm's `catalog:`
+protocol, so `npm install "viem@github:…"` fails outright, and
+`bun add "viem@github:…"` "succeeds" but leaves you an unbuilt monorepo with no
+`exports` field. Clone, build, then depend on the built package (which lives in
+viem's `src/`):
 
 ```bash
-git clone -b feat/eip-8130 https://github.com/chunter-cb/viem viem-fork
+git clone -b feat/eip-8130-production https://github.com/chunter-cb/viem viem-fork
 cd viem-fork && npx pnpm install --ignore-scripts && npx pnpm run build
 
 # then in your app — --install-links is required:
 npm install --install-links "viem@file:../viem-fork/src"
 ```
 
-Then import from `viem/experimental/eip8130` (and `viem/experimental/eip8168`
-for payers). Core helpers like `createPublicClient` / `parseEther` come from
-plain `viem` — the 8130 module does not re-export them.
+Then import from `viem/eip8130` (and `viem/eip8168` for payers). Core helpers
+like `createPublicClient` / `parseEther` come from plain `viem` — the 8130
+module does not re-export them.
 
 **Use `--install-links`.** Without it npm symlinks `node_modules/viem` to a path
 outside the project root, and Turbopack/Next.js then fails with
@@ -90,8 +94,8 @@ from optimistic local state — it decides whether the next tx carries
 - **`key.k1(...)` builds an actor identity, not a signer** — passing it (or a
   raw private-key hex) as `signer` fails with an opaque `pad()` TypeError. Use
   `privateKeyToAccount(pk)`.
-- **Verify config changes by on-chain read-back** (`isActor8130` /
-  `getConfigSequence8130`), never by receipt logs or `status: success` — a
+- **Verify config changes by on-chain read-back** (`isActor` /
+  `getConfigSequence`), never by receipt logs or `status: success` — a
   skipped authorize is silent.
 - **Read the live config sequence right before signing** — a hardcoded
   sequence causes silent no-ops.
@@ -122,9 +126,9 @@ Read the reference for your task:
 
 - **EIP-8130 spec**: [eip.tools/eip/8130](https://eip.tools/eip/8130)
   (payer standard: [eip.tools/eip/8168](https://eip.tools/eip/8168))
-- **viem fork**: `github.com/chunter-cb/viem`, branch `feat/eip-8130`
-  (API surface: `src/experimental/eip8130/index.ts`; docs:
-  `site/pages/experimental/eip8130`)
+- **viem fork**: [`chunter-cb/viem` `feat/eip-8130-production`](https://github.com/chunter-cb/viem/tree/feat/eip-8130-production)
+  (upstream PR: [wevm/viem#5004](https://github.com/wevm/viem/pull/5004); API
+  surface: `src/eip8130/index.ts`; docs: `site/pages/eip8130`)
 - **Deep guide (chaptered)**: `github.com/chunter-cb/eip-8130-web` (`/guide/*`)
 - **Session-key walkthrough**:
   [gist.github.com/chunter-cb/bf70c53a5ab6d8361ce7f4215b776114](https://gist.github.com/chunter-cb/bf70c53a5ab6d8361ce7f4215b776114)

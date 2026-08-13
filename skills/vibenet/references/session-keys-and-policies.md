@@ -10,7 +10,7 @@ config changes correctly. For account creation and core concepts, read
 import {
   key, authorizeActor, actorScope,
   defineSessionPolicy, encodeSessionPolicyConfig, getEip8130Deployment,
-} from "viem/experimental/eip8130";
+} from "viem/eip8130";
 
 const dep = getEip8130Deployment(chainId);
 const policyConfig = encodeSessionPolicyConfig({
@@ -34,7 +34,11 @@ const change = authorizeActor(sessionActor, {
   expiry: 1_900_000_000n,
   policy: session.actorPolicy,
 });
-// Include `change` in accountChanges of a sendCalls8130 signed by an admin actor.
+// `change` is an unsigned change object. Apply it via account.change([change],
+// { chainId, sequence }) with a LIVE-read sequence — see Sequence correctness
+// below — then include the result in a sendCalls signed by an admin actor.
+// Don't hand-build accountChanges with a hardcoded sequence; that is the #1
+// cause of a silently skipped authorize.
 ```
 
 A policy actor must have a non-zero scope; admin (scope 0) + policy is
@@ -64,8 +68,8 @@ Check them by **reading back on-chain state**, not by the receipt:
   actor was bound and the config sequence had bumped. Account changes are not
   atomic with the calls they ride along with, in either direction. **Never infer
   config state from `receipt.status`.**
-- **The only reliable check is a read-back:** `isActor8130`,
-  `getActorConfig8130`, or a bumped `getConfigSequence8130` — after a failed tx
+- **The only reliable check is a read-back:** `isActor`,
+  `getActorConfig`, or a bumped `getConfigSequence` — after a failed tx
   as much as a successful one.
 - **Reads lag ~1 block (~2s)** behind the receipt — poll the read-back.
 
@@ -79,14 +83,14 @@ channel (`chainId = chain.id`); owner changes use the **multichain** channel
 
 | Deploy path | First local sequence |
 |---|---|
-| Smart wallet (`createAccount`) | `1` (create bumps local 0→1) |
-| Explicit `importAccount` | `1` |
-| Bare 7702 delegation (`account.delegate`) | `0` (delegation does not initialize state) |
+| CREATE2 smart account (`newSmartAccount` + `account.createChange`) | `1` (create bumps local 0→1) |
+| Configured account on an existing address (`toAccount({ address })`) | `1` |
+| Bare 7702 delegation (`toEoaAccount` + `account.delegate`) | `0` (delegation does not initialize state) |
 
 ```ts
-import { getConfigSequence8130, isActor8130 } from "viem/experimental/eip8130";
+import { getConfigSequence, isActor } from "viem/eip8130";
 
-const { local } = await getConfigSequence8130(client, {
+const { local } = await getConfigSequence(client, {
   accountConfiguration: dep.accountConfiguration,
   account: account.address,
 }); // read live — do not assume 0 or 1
@@ -95,7 +99,7 @@ const change = await account.change([authorizeActor(/* … */)], {
   sequence: Number(local),
 });
 // … send the tx, then verify by read-back (polled for ~1 block of lag):
-const bound = await isActor8130(client, {
+const bound = await isActor(client, {
   account: account.address, actorId, accountConfiguration: dep.accountConfiguration,
 });
 if (!bound) throw new Error("authorize was skipped — check sequence/channel");

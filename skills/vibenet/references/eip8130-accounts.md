@@ -1,15 +1,15 @@
 # EIP-8130 accounts and transactions (viem)
 
 Creating 8130 smart accounts and sending batched calls on vibenet / Base
-Sepolia with viem's `experimental/eip8130` module. For network endpoints and
-install, see the [skill root](../SKILL.md).
+Sepolia with viem's `eip8130` module. For network endpoints and install, see
+the [skill root](../SKILL.md).
 
 ## Core concepts
 
 - **Account** — a viem-style account object with `.address` (deterministic,
   CREATE2-derived), `.create()` / `.createChange` (first-tx deploy change), and
-  `signTransaction`. Create via `newSmartAccount8130` / `to8130Account` /
-  `toEoa8130Account`. Creating one puts it in a *counterfactual* state — see
+  `signTransaction`. Create via `newSmartAccount` / `toAccount` /
+  `toEoaAccount`. Creating one puts it in a *counterfactual* state — see
   [Account lifecycle](#account-lifecycle-there-is-no-deploy-step).
 - **Signer** — a signing object that can produce `sender_auth`. For K1, use
   `privateKeyToAccount(pk)` (a viem `LocalAccount`). For P-256 / WebAuthn use
@@ -17,7 +17,7 @@ install, see the [skill root](../SKILL.md).
 - **Actor** — an on-chain identity (`{ actorId, authenticator }`), built with
   `key.k1(address)` / `key.p256(...)` / `key.webAuthn(...)`. Used for
   `initialActors`, `authorizeActor`, `revokeActor` — **not** as the `signer`
-  passed to `newSmartAccount8130`.
+  passed to `newSmartAccount`.
 - **Scope** (`actorScope`) — `scopeUnrestricted` (0x00) is admin. Bits:
   `sender` `policy` `nonce` `selfPayer` `sponsorPayer`. A policy-bearing actor
   must be restricted (non-zero scope), or `authorizeActor` throws.
@@ -39,7 +39,7 @@ install, see the [skill root](../SKILL.md).
 and nothing you call moves it between them directly.
 
 ```
-newSmartAccount8130({ signer })     →  COUNTERFACTUAL
+newSmartAccount({ signer })     →  COUNTERFACTUAL
   address derived locally (CREATE2), synchronous, zero RPC calls.
   eth_getCode returns 0x. The account does not exist on-chain.
 
@@ -58,7 +58,7 @@ That leaves exactly two routes from counterfactual to deployed:
 | Route | Needs funding first? | How |
 |---|---|---|
 | **Sponsored** (shortest path) | No | `sendSponsoredCalls` with `accountChanges: [account.createChange]`. The payer pays gas, so this works at a zero balance — no faucet, no cooldown. See [payer-sponsorship.md](payer-sponsorship.md). |
-| **Self-paid** | Yes | Faucet-fund `account.address`, then `sendCalls8130` with `accountChanges: [account.createChange]`. The account pays its own deploy+batch gas. |
+| **Self-paid** | Yes | Faucet-fund `account.address`, then `sendCalls` with `accountChanges: [account.createChange]`. The account pays its own deploy+batch gas. |
 
 Reach for the sponsored route when onboarding a user or writing a first
 example — it removes the faucet from the critical path entirely.
@@ -89,9 +89,9 @@ Once deployed, **omit `accountChanges` on every subsequent transaction.**
 import { createPublicClient, http, parseEther, toHex } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
 import {
-  newSmartAccount8130, sendCalls8130, estimateGas8130, encodeWalletCalls,
-  waitForTransactionReceipt8130, allPhasesSucceeded,
-} from "viem/experimental/eip8130";
+  newSmartAccount, sendCalls, estimateGas, encodeWalletCalls,
+  waitForTransactionReceipt, allPhasesSucceeded,
+} from "viem/eip8130";
 
 const chainId = 84538453; // vibenet (Base Sepolia = 84532)
 const RPC_URL = "https://rpc.vibes.base.org"; // 8130-capable public RPC
@@ -113,10 +113,10 @@ const signer = privateKeyToAccount(generatePrivateKey());
 // 2) Deterministic account — address exists before any tx. The owner is an
 //    admin actor (scope 0x00), so sends default to ORDERED (sequenced) nonces,
 //    which are expiry-free. (Nonce-free/expiring mode is opt-in via
-//    `nonceKey: nonceKeyMax` — see Gotchas for its current known bug.)
-//    key.k1(signer.address) is what newSmartAccount8130 uses internally for
+//    `nonceKey: nonceKeyMax` — see Gotchas for a historical timing caveat.)
+//    key.k1(signer.address) is what newSmartAccount uses internally for
 //    the primary actor — you only call key.* when authorizing extra actors.
-const account = newSmartAccount8130({ signer }); // synchronous — no await
+const account = newSmartAccount({ signer }); // synchronous — no await
 // (The fork's TS types may require casting a K1 LocalAccount when passing
 // it as `signer`.)
 
@@ -134,13 +134,13 @@ await fetch("https://api.vibes.base.org/api/vibenet/faucet/drip", {
 
 const calls = [{ to: "0x…recipient", value: parseEther("0.001") }];
 const wire = encodeWalletCalls({ account: account.address, calls: [calls] });
-const gas = await estimateGas8130(client, {
+const gas = await estimateGas(client, {
   sender: account.address,
   accountChanges: [account.createChange],
   calls: wire,
 });
 
-const hash = await sendCalls8130(client, {
+const hash = await sendCalls(client, {
   account,
   accountChanges: [account.createChange], // omit on subsequent txs
   calls,
@@ -149,7 +149,7 @@ const hash = await sendCalls8130(client, {
 });
 
 // 4) Wait and check every phase succeeded.
-const receipt = await waitForTransactionReceipt8130(client, { hash });
+const receipt = await waitForTransactionReceipt(client, { hash });
 if (!allPhasesSucceeded(receipt)) throw new Error("a phase reverted");
 ```
 
@@ -160,7 +160,7 @@ account-change application is not covered (see
 changes need a read-back instead). UIs that display per-phase results should
 render `phaseStatuses` and treat `allPhasesSucceeded(receipt)` as the overall
 verdict; don't rely on `receipt.status` alone. For the exact field shape,
-check `src/experimental/eip8130` on the fork branch — it is experimental and
+check `src/eip8130` on the fork branch — it is experimental and
 may shift.
 
 ## Canonical deployment
@@ -170,42 +170,43 @@ Canonical contract addresses per chain come from `getEip8130Deployment(chainId)`
 `authenticators.*`, `policies.{manager,sessionPolicy}`.
 
 The current canonical deployment uses AccountConfiguration
-`0x53648Cf00356fbAA1F2B531715c6B64AaBDE1555`, DefaultAccount
-`0x58da469ef71Dd4B092B010CdA37DE124C926EebD`, PolicyManager
-`0x6e9E627770C1c90371A2E4CB9474A7Af577a4306`, and SessionPolicy
-`0x58ef2d572a1bC528f0B9121d686B2618809604Dc`.
+`0x81305d4f4976220D2af17E5Dc246848E235600AC`, DefaultAccount
+`0x813078f98b3eb214046C8Dc93A771ac9de5AaDEf`, PolicyManager
+`0x813077055d1110F92191ccE13018f51820B40ac1`, and SessionPolicy
+`0x813070914C530d030f4Efd8Fa99C18e836435e55`.
 
 ## Account creation modes
 
-- `newSmartAccount8130({ signer })` — new CREATE2 smart account (most common).
+- `newSmartAccount({ signer })` — new CREATE2 smart account (most common).
   `signer` must be a signing account (`privateKeyToAccount(pk)`, `toP256Signer`,
   or `toWebAuthnSigner`) — **not** `key.k1(...)`.
-- `to8130Account({ signer, userSalt, code, initialActors, authenticator, accountConfigAddress })`
+- `toAccount({ signer, userSalt, code, initialActors, authenticator, accountConfigAddress })`
   — full control over salt / initial actors.
-- `to8130Account({ signer, address, authenticator })` — a configured (non-default)
+- `toAccount({ signer, address, authenticator })` — a configured (non-default)
   actor on an existing/delegated account.
-- `toEoa8130Account(signer)` — an EOA acting as its own default K1 actor
+- `toEoaAccount(signer)` — an EOA acting as its own default K1 actor
   (raw 65-byte sig, EIP-7702 delegation via `account.delegate(impl)`).
 
 ## Reading account state (viem actions)
 
 All take `(client, params)` and read the on-chain `AccountConfiguration`:
-`getActorConfig8130`, `isActor8130`, `getPolicy8130`, `getSessionSpend8130`,
-`getLockStatus8130` / `isLocked8130`, `getConfigSequence8130`,
-`getTransactionCount8130`, `getTransaction8130`, `getTransactionReceipt8130`,
-`waitForTransactionReceipt8130`.
+`getActorConfig`, `isActor`, `getPolicy`, `getSessionSpend`,
+`getLockStatus` / `isLocked`, `getConfigSequence`,
+`getTransactionCount`, `getTransaction`, `getTransactionReceipt`,
+`waitForTransactionReceipt`.
 
 ## Locking
 
-`lockCall` / `initiateUnlockCall` build `applySignedLockChanges` calls; hash the
-change to sign with `hashLockChange8130` (`lockChangeTypehash`). `lockCall`
-requires `unlockDelay >= 1`.
+`lockChange({ unlockDelay })` / `unlockChange()` build lock/unlock account
+changes — include them in `accountChanges` (signed like any other config
+change), no separate hash step. `lockChange` requires `unlockDelay >= 1`
+(`maxUnlockDelay` caps it at `0xffff`).
 
 ## Gotchas
 
 - **`key.k1` ≠ signer.** `key.k1(address)` builds an actor id for authorize /
   `initialActors`. Passing it (or a raw private-key hex) as `signer` to
-  `newSmartAccount8130` fails with an opaque `pad()` TypeError — use
+  `newSmartAccount` fails with an opaque `pad()` TypeError — use
   `privateKeyToAccount(pk)`.
 - Fund `account.address` **before** a self-paid first tx — the deploy+batch pays
   gas from the account (unless a payer sponsors it).
@@ -223,9 +224,9 @@ requires `unlockDelay >= 1`.
   untouched address, not to `value` in general. Cause unconfirmed; if you are
   onboarding a fresh recipient, fund it from the faucet first or expect the
   revert.
-- Attribution goes in `dataSuffix` on `sendCalls8130` (maps to signed `metadata`).
-- **Always pass explicit `gas`** to `sendCalls8130` (estimate with
-  `estimateGas8130`, add ~20% headroom, as in the example above). Omitting it
+- Attribution goes in `dataSuffix` on `sendCalls` (maps to signed `metadata`).
+- **Always pass explicit `gas`** to `sendCalls` (estimate with
+  `estimateGas`, add ~20% headroom, as in the example above). Omitting it
   gets the tx rejected with the misleading error
   `transaction type not supported` — live-confirmed, and easy to misread as
   an RPC capability problem.
@@ -247,11 +248,12 @@ requires `unlockDelay >= 1`.
   returns `healthy: false, reason: "halted"` with a rising `headAgeSecs`. Wait
   for it to recover; there is nothing to fix client-side. Worth surfacing in any
   UI or script that sends transactions.
-- **Nonce-free (expiring) sends have a known bug (planned fix July 22, 2026):**
-  the node can intermittently reject a valid `0x79` with a misleading
-  `transaction type not supported` (the short `expiry` lapses before
-  validation). Until then, prefer **ordered (expiry-free)** sends — the default
-  for admin and `SCOPE_NONCE` actors — which are unaffected.
+- **Nonce-free (expiring) sends historically had a timing bug** — the node
+  could intermittently reject a valid `0x79` with a misleading
+  `transaction type not supported` when the short `expiry` lapsed before
+  validation. The `feat/eip-8130-production` branch no longer flags it, but if
+  you hit it, prefer **ordered (expiry-free)** sends — the default for admin and
+  `SCOPE_NONCE` actors — which are unaffected.
 - Contract addresses are bytecode-derived — the deployed system must be compiled
   with the same solc as `canonicalEip8130Deployment`, or account creation fails
   with "create address mismatch".
