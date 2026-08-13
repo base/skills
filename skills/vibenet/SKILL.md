@@ -46,13 +46,27 @@ proxy for when you specifically want the hosted path.
 
 The 8130 modules are additive to viem itself, proposed upstream in
 [wevm/viem#5004](https://github.com/wevm/viem/pull/5004) (still an open draft —
-not yet released to npm). Until it ships, build from the fork branch the PR is
-opened from: `chunter-cb/viem` `feat/eip-8130-production`. It is **not
-installable from git directly**: viem's workspace uses pnpm's `catalog:`
-protocol, so `npm install "viem@github:…"` fails outright, and
+not yet released to npm). Until it ships, they have to be built from the fork
+branch the PR is opened from: `chunter-cb/viem` `feat/eip-8130-production`.
+
+**Use the bundled installer** — it does the whole clone→build→link dance, which
+is error-prone by hand:
+
+```bash
+scripts/setup-viem-8130.sh [APP_DIR]   # defaults to the current directory
+```
+
+When PR #5004 merges and a viem release ships the modules, this collapses to
+`npm install viem@latest` — the imports (`viem/eip8130`, `viem/eip8168`) and
+APIs are unchanged, so no code moves.
+
+<details><summary>What the script does, and why each step is needed</summary>
+
+The tooling is **not installable from git directly**: viem's workspace uses
+pnpm's `catalog:` protocol, so `npm install "viem@github:…"` fails outright, and
 `bun add "viem@github:…"` "succeeds" but leaves you an unbuilt monorepo with no
-`exports` field. Clone, build, then depend on the built package (which lives in
-viem's `src/`):
+`exports` field. So you clone, build, then depend on the built package (which
+lives in viem's `src/`):
 
 ```bash
 git clone -b feat/eip-8130-production https://github.com/chunter-cb/viem viem-fork
@@ -62,14 +76,15 @@ cd viem-fork && npx pnpm install --ignore-scripts && npx pnpm run build
 npm install --install-links "viem@file:../viem-fork/src"
 ```
 
+**`--install-links` is required.** Without it npm symlinks `node_modules/viem`
+to a path outside the project root, and Turbopack/Next.js then fails with
+`Module not found: Can't resolve 'viem'` for a package that is plainly there
+(`tsc` resolves it fine, which makes it look like a bundler bug).
+</details>
+
 Then import from `viem/eip8130` (and `viem/eip8168` for payers). Core helpers
 like `createPublicClient` / `parseEther` come from plain `viem` — the 8130
 module does not re-export them.
-
-**Use `--install-links`.** Without it npm symlinks `node_modules/viem` to a path
-outside the project root, and Turbopack/Next.js then fails with
-`Module not found: Can't resolve 'viem'` for a package that is plainly there
-(`tsc` resolves it fine, which makes it look like a bundler bug).
 
 If your TypeScript build rejects the module's BigInt literals, set
 `"target": "ES2020"` or later in `tsconfig.json`. Next.js 16's generated config
@@ -117,8 +132,8 @@ Read the reference for your task:
 2. **Pick the right RPC**: `rpc.vibes.base.org` works from both Node and the
    browser; `api.vibes.base.org/api/vibenet/account/rpc` is the hosted proxy to
    the same chain. Never `vibes.base.org` — that host is not an API.
-3. **Implement** with explicit chain id, the fork-branch install, and read-back
-   verification for any account-config change.
+3. **Implement** with explicit chain id, the `scripts/setup-viem-8130.sh`
+   install, and read-back verification for any account-config change.
 4. **Deliver** runnable code, install commands, and any manual steps (env
    vars, faucet funding).
 
