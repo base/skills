@@ -75,60 +75,6 @@ Create an EIP-8130 smart account on vibenet and fund it from the faucet
 Deploy a smart account on vibenet with sponsored gas, so the user needs no ETH
 ```
 
-```text
-Authorize a session key on my 8130 account with a weekly USDC spend limit
-```
-
-### Example: gasless onboarding on vibenet
-
-A worked example of what the `vibenet` skill produces — creating an EIP-8130
-smart account and deploying it with zero user funds, via an ERC-8168 payer:
-
-```ts
-import type { Hex } from "viem";
-import { createPublicClient, http } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import {
-  allPhasesSucceeded,
-  newSmartAccount8130,
-  waitForTransactionReceipt8130,
-} from "viem/experimental/eip8130";
-import { createPayerClient, sendSponsoredCalls } from "viem/experimental/eip8168";
-
-const chain = {
-  id: 84538453,
-  name: "vibenet",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: ["https://rpc.vibes.base.org"] } },
-};
-const client = createPublicClient({ chain, transport: http() });
-
-// The address is derived locally — synchronous, no RPC, nothing on-chain yet.
-// (The fork types `signer` for P-256 keys, so a K1 account needs a cast.)
-const signer = privateKeyToAccount(generatePrivateKey());
-const account = newSmartAccount8130({ signer: signer as never });
-
-// There is no deploy step: the account is created by its first transaction.
-// The payer covers gas, so this works at a zero balance — no faucet needed.
-const payerClient = createPayerClient({
-  url: "https://api.vibes.base.org/api/vibenet/account/payer",
-});
-const { transactionHash: hash } = (await sendSponsoredCalls(client, {
-  account,
-  payerClient,
-  accountChanges: [account.createChange], // only on the first tx
-  calls: [{ to: account.address, value: 0n, data: "0x" }],
-  context: { flow: "onboarding" },
-})) as unknown as { transactionHash: Hex };
-
-const receipt = await waitForTransactionReceipt8130(client, { hash });
-if (!allPhasesSucceeded(receipt)) throw new Error("a phase reverted");
-```
-
-See the [vibenet skill](./skills/vibenet/SKILL.md) for the install steps (the
-8130 tooling ships on a viem fork branch), the account lifecycle, session keys,
-and the devnet's sharper edges.
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
