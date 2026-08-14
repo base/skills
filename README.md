@@ -25,12 +25,13 @@
 
 ## Recommended Skills
 
-Two consolidated skills that cover the most common use cases. Each uses progressive reference loading — the skill loads a single entry point and pulls in detailed references only when needed.
+Consolidated skills that cover the most common use cases. Each uses progressive reference loading — the skill loads a single entry point and pulls in detailed references only when needed.
 
 | Skill | Install | Description |
 | ----- | ------- | ----------- |
 | [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, wallet auth, payments, attribution, and migrations. Consolidates all individual skills into one. |
 | [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via mcp.base.org. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
+| [vibenet](./skills/vibenet/SKILL.md) | `npx skills add base/skills --skill vibenet` | Build on [vibenet](https://chain.base.org/vibenet), the Base Vibes devnet for native account abstraction (EIP-8130) with viem: smart accounts, batched calls, session keys and policies, and ERC-8168 payer gas sponsorship. |
 
 ## Installation
 
@@ -64,6 +65,14 @@ Convert my existing Farcaster miniapp to a standard app on Base
 
 ```text
 Register my trading bot and add builder code attribution to its transactions
+```
+
+```text
+Create an EIP-8130 smart account on vibenet and fund it from the faucet
+```
+
+```text
+Deploy a smart account on vibenet with sponsored gas, so the user needs no ETH
 ```
 
 ## Contributing
