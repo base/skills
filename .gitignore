@@ -140,3 +140,5 @@ vite.config.ts.timestamp-*
 
 .DS_Store
 .DS_Store
+# Skill eval workspaces (local scratch, not shipped)
+skills/*-workspace/
