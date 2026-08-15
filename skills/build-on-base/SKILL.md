@@ -53,6 +53,7 @@ Read the reference for your task:
 | **Run a Base node** | Self-hosted RPC, Reth, hardware requirements | [references/run-node.md](references/run-node.md) |
 | **Builder Codes** | Add ERC-8021 attribution to transactions | [references/builder-codes/overview.md](references/builder-codes/overview.md) |
 | **Base Account SDK** | SIWB, Base Pay, subscriptions, sub-accounts | [references/base-account/overview.md](references/base-account/overview.md) |
+| **Gasless USDC transfers** | EIP-3009 transferWithAuthorization, relayer flows, smart-wallet caveats | [references/gasless-usdc-transfers.md](references/gasless-usdc-transfers.md) |
 | **Register AI agent/bot** | Register wallet, get builder code, wire attribution | [references/agents/register.md](references/agents/register.md) |
 | **Migrate from OnchainKit** | OnchainKitProvider → wagmi, wallet/tx components | [references/migrations/onchainkit/overview.md](references/migrations/onchainkit/overview.md) |
 | **MiniKit → Farcaster SDK** | `@coinbase/onchainkit/minikit` → `@farcaster/miniapp-sdk` | [references/migrations/minikit-to-farcaster/overview.md](references/migrations/minikit-to-farcaster/overview.md) |
