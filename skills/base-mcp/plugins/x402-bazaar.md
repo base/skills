@@ -23,7 +23,7 @@ risk: [irreversible]
 
 ## Overview
 
-x402 Bazaar is a pay-per-call API marketplace on Base exposing 124 read-only
+x402 Bazaar is a pay-per-call API marketplace on Base exposing 131 read-only
 services today — token safety (risk, honeypot, rug score), wallet intelligence
 (net worth, age/activity, approvals, transfers, NFTs), OFAC sanctions screening,
 prices/momentum/pools, and Claude-written AI token & wallet reports. The agent
@@ -123,7 +123,7 @@ authoritative list is the MCP tool catalog itself (and
 | `pre_trade_gate` | $0.10 | The four checks above as one GO / HOLD / STOP before a buy |
 | `b20_safety` | $0.04 | B20 issuer powers (freeze, seize, pause, rebase) → hold/caution/avoid |
 | `wallet_networth` | $0.02 | Token balances and total value for a wallet |
-| `token_approvals` | $0.02 | Live ERC-20 approvals, ranked by what they can drain |
+| `approval_advisor` | $0.05 | Live ERC-20 approvals, ranked by what they can drain, with a revoke queue |
 | `wallet_delegation` | $0.03 | EIP-7702 delegate, and whether it is a recognized implementation |
 | `agent_wallet_audit` | $0.06 | Approvals + spend permissions + delegation as one drain-surface verdict |
 | `sanctions` | $0.02 | OFAC screening for a wallet address |
@@ -156,7 +156,7 @@ MCP submission tool (`send_calls`/`swap`/`sign`).
 
 1. "Is `0x…` a safe token to buy on Base?" → call `ai_token_report` (or `token_risk` + `token_price`), summarize the verdict and risks.
 2. "Screen `0x…` for OFAC sanctions before I send funds." → call `sanctions` (or `compliance_check`); report blocked/clear.
-3. "Profile wallet `0x…` — net worth, age, what can drain it." → call `wallet_networth`, `wallet_summary`, `token_approvals`; summarize.
+3. "Profile wallet `0x…` — net worth, age, what can drain it." → call `wallet_networth`, `wallet_summary`, `approval_advisor`; summarize.
 4. "What's the 24h price & momentum of `0x…`?" → call `token_momentum`; report price and 1h/6h/24h change.
 5. "Is `0x…` a B20 token that can freeze or seize my funds?" → call `b20_safety`; report the hold/caution/avoid verdict and which issuer powers (freeze / seize / pause / rebase) are live.
 6. "Is wallet `0x…` 7702-delegated to code I should worry about?" → call `wallet_delegation`; report the delegate and whether it is a known Coinbase implementation or unrecognized (takeover risk).
