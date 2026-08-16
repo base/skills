@@ -113,6 +113,7 @@ base = { key = "${ETHERSCAN_API_KEY}", url = "https://api.basescan.org/api" }
 forge create src/MyContract.sol:MyContract \
   --rpc-url https://sepolia.base.org \
   --account <keystore-account> \
+  --broadcast \
   --verify \
   --etherscan-api-key $ETHERSCAN_API_KEY
 ```
@@ -123,6 +124,7 @@ forge create src/MyContract.sol:MyContract \
 forge create src/MyContract.sol:MyContract \
   --rpc-url https://mainnet.base.org \
   --account <keystore-account> \
+  --broadcast \
   --verify \
   --etherscan-api-key $ETHERSCAN_API_KEY
 ```
