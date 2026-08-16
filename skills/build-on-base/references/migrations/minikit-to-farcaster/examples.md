@@ -67,7 +67,7 @@ useEffect(() => {
 const { fid, username } = user ?? {};
 ```
 
-Or use FrameProvider (see [PROVIDER.md](PROVIDER.md)):
+Or use FrameProvider (see [provider.md](provider.md)):
 ```typescript
 import { useFrameContext } from '@/components/providers/FrameProvider';
 

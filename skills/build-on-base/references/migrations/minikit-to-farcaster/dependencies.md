@@ -51,4 +51,4 @@ nvm install 22 && nvm use 22
 npm install @farcaster/quick-auth
 ```
 
-See [AUTH.md](AUTH.md) for server-side token verification.
+See [auth.md](auth.md) for server-side token verification.
