@@ -39,7 +39,7 @@ the [skill root](../SKILL.md).
 and nothing you call moves it between them directly.
 
 ```
-newSmartAccount({ signer })     →  COUNTERFACTUAL
+newSmartAccount({ signer, proxy: "erc1167" })     →  COUNTERFACTUAL
   address derived locally (CREATE2), synchronous, zero RPC calls.
   eth_getCode returns 0x. The account does not exist on-chain.
 
@@ -116,7 +116,11 @@ const signer = privateKeyToAccount(generatePrivateKey());
 //    `nonceKey: nonceKeyMax` — see Gotchas for a historical timing caveat.)
 //    key.k1(signer.address) is what newSmartAccount uses internally for
 //    the primary actor — you only call key.* when authorizing extra actors.
-const account = newSmartAccount({ signer }); // synchronous — no await
+//    `proxy: "erc1167"` is required in practice: the default ("upgradeable")
+//    throws `No canonical UpgradeableAccount is enshrined yet` unless you pass
+//    an explicit implementation. "erc1167" gives an immutable
+//    DefaultAccount-backed account.
+const account = newSmartAccount({ signer, proxy: "erc1167" }); // synchronous — no await
 // (The fork's TS types may require casting a K1 LocalAccount when passing
 // it as `signer`.)
 
@@ -177,9 +181,12 @@ The current canonical deployment uses AccountConfiguration
 
 ## Account creation modes
 
-- `newSmartAccount({ signer })` — new CREATE2 smart account (most common).
-  `signer` must be a signing account (`privateKeyToAccount(pk)`, `toP256Signer`,
-  or `toWebAuthnSigner`) — **not** `key.k1(...)`.
+- `newSmartAccount({ signer, proxy: "erc1167" })` — new CREATE2 smart account
+  (most common). `signer` must be a signing account (`privateKeyToAccount(pk)`,
+  `toP256Signer`, or `toWebAuthnSigner`) — **not** `key.k1(...)`. The `proxy`
+  option defaults to `"upgradeable"`, which throws until a canonical
+  UpgradeableAccount is enshrined unless you pass an explicit implementation —
+  pass `proxy: "erc1167"` for an immutable DefaultAccount-backed account.
 - `toAccount({ signer, userSalt, code, initialActors, authenticator, accountConfigAddress })`
   — full control over salt / initial actors.
 - `toAccount({ signer, address, authenticator })` — a configured (non-default)
@@ -204,6 +211,12 @@ change), no separate hash step. `lockChange` requires `unlockDelay >= 1`
 
 ## Gotchas
 
+- **Pass `proxy: "erc1167"` to `newSmartAccount` / `toAccount`.** The `proxy`
+  option defaults to `"upgradeable"`, which throws
+  `BaseError: No canonical UpgradeableAccount is enshrined yet (pending final
+  implementation)` unless you supply an explicit implementation. `"erc1167"`
+  creates an immutable DefaultAccount-backed account and is the mode every
+  example in this skill uses.
 - **`key.k1` ≠ signer.** `key.k1(address)` builds an actor id for authorize /
   `initialActors`. Passing it (or a raw private-key hex) as `signer` to
   `newSmartAccount` fails with an opaque `pad()` TypeError — use
@@ -211,8 +224,9 @@ change), no separate hash step. `lockChange` requires `unlockDelay >= 1`
 - Fund `account.address` **before** a self-paid first tx — the deploy+batch pays
   gas from the account (unless a payer sponsors it).
 - Only the **first** tx includes `account.createChange`; later txs omit it.
-- After a successful create, `eth_getCode` on the account returns an EIP-1167
-  minimal proxy delegating to the canonical DefaultAccount — but the read
+- After a successful create (with `proxy: "erc1167"`), `eth_getCode` on the
+  account returns an EIP-1167 minimal proxy delegating to the canonical
+  DefaultAccount — but the read
   lags ~1 block behind the receipt, so an immediate getCode can return `0x`
   on a tx that succeeded. Poll before concluding the deploy failed (same lag
   as config-change read-backs).
