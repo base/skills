@@ -75,6 +75,5 @@ cat <<EOF
     Core helpers (createPublicClient, parseEther, ...) come from plain 'viem'.
 
     Set "target": "ES2020" (or later) in tsconfig.json — BigInt literals
-    (0n) fail with TS2737 on any lower target, and create-next-app still
-    generates "target": "ES2017".
+    (0n) fail with TS2737 on any lower target.
 EOF

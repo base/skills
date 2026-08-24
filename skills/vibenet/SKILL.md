@@ -88,8 +88,7 @@ module does not re-export them.
 
 Set `"target": "ES2020"` or later in `tsconfig.json`. BigInt literals (`0n`)
 trigger TS2737 on any lower `target` — the check depends on `target`, not
-`lib` — and create-next-app still generates `"target": "ES2017"`, so Next.js
-apps need the bump too.
+`lib`, and many generated configs still default to an older target.
 
 ## Accounts Have No Deploy Step
 
