@@ -74,7 +74,6 @@ cat <<EOF
     Import 8130 helpers from 'viem/eip8130' and payer helpers from 'viem/eip8168'.
     Core helpers (createPublicClient, parseEther, ...) come from plain 'viem'.
 
-    If your TS build rejects the module's BigInt literals, set
-    "target": "ES2020" (or later) in tsconfig.json. Next.js 16's generated
-    config already works, since its lib includes "esnext".
+    Set "target": "ES2020" (or later) in tsconfig.json — BigInt literals
+    (0n) fail with TS2737 on any lower target.
 EOF

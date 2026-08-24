@@ -86,9 +86,9 @@ Then import from `viem/eip8130` (and `viem/eip8168` for payers). Core helpers
 like `createPublicClient` / `parseEther` come from plain `viem` — the 8130
 module does not re-export them.
 
-If your TypeScript build rejects the module's BigInt literals, set
-`"target": "ES2020"` or later in `tsconfig.json`. Next.js 16's generated config
-already works as-is, since its `lib` includes `esnext`.
+Set `"target": "ES2020"` or later in `tsconfig.json`. BigInt literals (`0n`)
+trigger TS2737 on any lower `target` — the check depends on `target`, not
+`lib`, and many generated configs still default to an older target.
 
 ## Accounts Have No Deploy Step
 
