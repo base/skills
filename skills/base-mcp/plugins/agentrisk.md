@@ -21,7 +21,14 @@ risk: []
 > Run Base MCP onboarding first (see SKILL.md). No additional session setup required — each call is paid independently via x402.
 
 ## Overview
-AgentRisk is a self-hosted pre-trade risk API for Base Mainnet. It combines direct on-chain checks (ownership, pausability, LP-burn), GoPlus Security data, and DexScreener liquidity data into a single risk score. It returns an advisory JSON decision (`shouldExecute`, `riskScore`, `riskLevel`, `reasons`) — it does not build or submit any calldata itself.
+AgentRisk is a self-hosted pre-trade risk API for Base Mainnet. It combines direct on-chain checks (ownership, pausability, LP-burn), GoPlus Security data, and DexScreener liquidity data into a single risk score. It returns an advisory JSON decision (`shouldExecute`, `riskScore`, `riskLevel`, `verdict`, `reasons`) — it does not build or submit any calldata itself.
+
+Beyond the base risk score, AgentRisk also flags:
+- **Deployer wallet freshness** — newly-created wallets used for one-off token launches
+- **Brand impersonation** — tokens named after known companies (Apple, Google, Meta, etc.)
+- **Data source disagreement** — cases where third-party APIs and our own on-chain checks conflict
+- **Human-readable verdict** — one plain-English sentence summarizing the decision
+- Repeat scans within 5 minutes are served from cache in under 1ms
 
 ## Surface Routing
 | Capability | Harness with HTTP/shell (Claude Code, Codex, Cursor) | Chat-only (Claude.ai, ChatGPT) |
