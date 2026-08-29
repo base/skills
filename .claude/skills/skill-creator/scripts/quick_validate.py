@@ -4,7 +4,6 @@ Quick validation script for skills - minimal version
 """
 
 import sys
-import os
 import re
 import yaml
 from pathlib import Path
@@ -23,8 +22,8 @@ def validate_skill(skill_path):
     if not content.startswith('---'):
         return False, "No YAML frontmatter found"
 
-    # Extract frontmatter
-    match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+    # Extract frontmatter (tolerate both LF and CRLF line endings)
+    match = re.match(r'^---\r?\n(.*?)\r?\n---', content, re.DOTALL)
     if not match:
         return False, "Invalid frontmatter format"
 
