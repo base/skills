@@ -3,7 +3,7 @@ title: "Vouch402 Plugin"
 description: "x402-metered on-chain risk scores for Base addresses, with EAS fulfillment attestations: pay via send_calls, read the result over HTTP."
 tags: [risk-scoring, attestations, agent-commerce, ai-agents]
 name: vouch402
-version: 0.1.0
+version: 0.2.0
 integration: http-api
 chains: [base]
 requires:
@@ -74,10 +74,17 @@ x402-gated. First call, no `X-PAYMENT` header:
   `resourceId` binds a specific payment to this specific quote; it
   expires after `maxTimeoutSeconds`.
 
-- Retry with header `X-PAYMENT: base64(JSON.stringify({ resourceId, txHash, payer }))`
-  after the transfer confirms. Returns:
+- Retry with header `X-PAYMENT: base64(JSON.stringify({ resourceId, txHash, payer, jurisdictionAttestation: true }))`
+  after the transfer confirms. `jurisdictionAttestation` is **required**,
+  strictly `true` (not merely truthy): it certifies the caller (and
+  whoever it's acting for) is not located in, and is not paying on behalf
+  of anyone in, a Tier 1 restricted jurisdiction (see `## Risks &
+  Warnings`). Since this flow is driven by an autonomous agent rather
+  than a human clicking a checkbox, whatever orchestrates this plugin
+  must set this field explicitly, never assume or hardcode it. Returns:
   - `200`: `{ "address": "0x...", "score": 0-100, "signals": { "walletAgeDays": number, "txCount": number, "uniqueContractInteractions": number, "flagged": boolean }, "attestationUid": "0x<bytes32>" }`
   - `402` again: quote expired/already consumed, tx not yet confirmed, or the payment doesn't match what was quoted (wrong amount/recipient/sender): server-verified, never trusts the retry's claims alone.
+  - `403`: either the request's IP resolves to a Tier 1 restricted jurisdiction (technical geo-block, no exception), or `jurisdictionAttestation` was missing/`false` on the payload above (contractual gate, checked before payment verification).
   - `400`: malformed address, or `resourceId` doesn't match the `:address` in the URL.
   - `500`: an internal failure *after* payment was already verified, still recorded on-chain as a `status=error` fulfillment attestation (see `## Risks & Warnings`).
 
@@ -103,8 +110,8 @@ the signer is recovered from the signature itself and must match the
 3. Get the caller's wallet address (`get_wallets`).
 4. Submit the payment via `send_calls`: one call, `{ to: asset, value: "0", data: <encoded transfer(payTo, maxAmountRequired)> }`, on `network`.
 5. Wait for the payment call to confirm; capture its transaction hash.
-6. `GET` the same resource URL again, with header `X-PAYMENT: base64(JSON.stringify({ resourceId, txHash, payer: <caller's address> }))`.
-7. On `200`, return `score`/`signals`/`attestationUid` to the user. On `402`, surface the reason (don't silently retry with a stale quote; go back to step 2 for a fresh one).
+6. `GET` the same resource URL again, with header `X-PAYMENT: base64(JSON.stringify({ resourceId, txHash, payer: <caller's address>, jurisdictionAttestation: true }))`.
+7. On `200`, return `score`/`signals`/`attestationUid` to the user. On `402`, surface the reason (don't silently retry with a stale quote; go back to step 2 for a fresh one). On `403`, stop: this is not retryable with the same payload, see `## Risks & Warnings`.
 
 ## Submission
 
@@ -125,6 +132,7 @@ For `POST /v1/disputes`, `sign` produces the personal-sign signature described i
 ## Risks & Warnings
 
 - **`irreversible`**: the USDC payment settles on-chain before the caller knows whether the resource server will actually fulfill successfully. If fulfillment fails after payment (a `500`), there is no refund mechanism: the recourse is `POST /v1/disputes` against the resulting `status=error` attestation, not a reversal. Never imply to the user that a failed fulfillment can be silently retried for free or refunded.
+- **Jurisdiction restrictions**: Vouch402 cannot serve requests from, or on behalf of, a Tier 1 restricted jurisdiction (comprehensive-sanctions coverage under OFAC, plus mainland China on a separate legal basis; see `https://www.vouch402.xyz/legal` section 5). This is enforced two ways: an IP-level check on the server (returns `403` regardless of the payload), and the required `jurisdictionAttestation: true` field on the `X-PAYMENT` payload itself, which the caller (this plugin's orchestrator) must set explicitly and honestly. Do not set it to `true` on behalf of a user or agent whose location isn't actually known to be outside those jurisdictions.
 
 ## Notes
 
