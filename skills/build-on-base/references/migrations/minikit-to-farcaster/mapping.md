@@ -409,7 +409,7 @@ function AuthButton() {
 
 ## useNotification
 
-Notifications require server-side implementation. See [NOTIFICATIONS.md](NOTIFICATIONS.md) for details.
+Notifications require server-side implementation. See the [Farcaster Mini App notifications guide](https://miniapps.farcaster.xyz/docs/guides/notifications) for details.
 
 ### Before (MiniKit)
 ```typescript
@@ -449,4 +449,4 @@ function NotifyButton() {
 }
 ```
 
-See [NOTIFICATIONS.md](NOTIFICATIONS.md) for server-side implementation.
+See the [Farcaster Mini App notifications guide](https://miniapps.farcaster.xyz/docs/guides/notifications) for server-side implementation.
