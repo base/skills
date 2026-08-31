@@ -31,15 +31,56 @@ OpenSea is an NFT marketplace and token trading platform. This plugin covers thr
 
 All OpenSea API endpoints require an `x-api-key` header. **This is the first step before using any tool.**
 
-### Instant API key for agents
+### API key resolution (always run this sequence)
 
-Create a free-tier API key instantly with a single call — no signup, no wallet, no human needed:
+You can create a free-tier API key instantly — no signup, no wallet, no human needed. However, instant key creation is **rate-limited to 3 per hour per IP**, so you must **save and reuse** a key once you have one. How you do this depends on your environment.
+
+#### Environments with filesystem access (Cursor, Claude Code, Codex, Windsurf, terminal agents)
+
+These environments can persist a key to disk so it survives across chat sessions. **Follow this sequence every time**, in order:
+
+1. **Check the environment.** If `OPENSEA_API_KEY` is already set and non-empty, use it as-is. User-supplied keys always win — never overwrite or re-fetch.
+2. **Check disk.** Look for a cached key at `${OPENSEA_CONFIG_DIR:-$HOME/.opensea}/api_key`. If the file exists and is non-empty, load it into `OPENSEA_API_KEY`.
+3. **Fetch only if missing.** If neither env var nor cached file exists, request a new instant key via `POST /api/v2/auth/keys`.
+4. **Save immediately after fetching.** Write the key to `~/.opensea/api_key` (mode `600`) *before* making any API call, so every future session reuses it instead of re-fetching.
+
+```bash
+KEY_FILE="${OPENSEA_CONFIG_DIR:-$HOME/.opensea}/api_key"
+if [ -n "${OPENSEA_API_KEY:-}" ]; then
+  :                                              # 1. env var wins
+elif [ -s "$KEY_FILE" ]; then
+  export OPENSEA_API_KEY=$(cat "$KEY_FILE")      # 2. reuse cached key
+else
+  api_key=$(curl -s -X POST https://api.opensea.io/api/v2/auth/keys | jq -r '.api_key')  # 3. fetch
+  mkdir -p "$(dirname "$KEY_FILE")"
+  (umask 077; printf '%s\n' "$api_key" > "$KEY_FILE")  # 4. save before using
+  export OPENSEA_API_KEY="$api_key"
+fi
+```
+
+**Expired or invalid key** — if a request returns HTTP `401` or `403`, the cached key is stale (instant keys expire after 30 days). Delete it and re-run the sequence:
+
+```bash
+rm -f "${OPENSEA_CONFIG_DIR:-$HOME/.opensea}/api_key"
+unset OPENSEA_API_KEY
+# Re-run the resolution sequence above
+```
+
+#### Chat-only surfaces (Claude.ai, ChatGPT, or any environment without filesystem access)
+
+These environments cannot persist to disk. Create a key per session:
 
 ```bash
 export OPENSEA_API_KEY=$(curl -s -X POST https://api.opensea.io/api/v2/auth/keys | jq -r '.api_key')
 ```
 
-Response shape:
+Or set an existing key:
+
+```bash
+export OPENSEA_API_KEY="your-api-key"
+```
+
+### Key creation response shape
 
 ```json
 {
@@ -54,7 +95,7 @@ Use the returned key in the `X-API-KEY` header on all subsequent requests.
 
 **Limits:**
 
-- 3 key creations per hour per IP
+- 3 key creations per hour per IP — reuse your key to stay within this limit
 - 60 requests/min for read endpoints
 - 5 requests/min for write endpoints
 - 5 requests/min for fulfillment endpoints
@@ -63,12 +104,6 @@ Use the returned key in the `X-API-KEY` header on all subsequent requests.
 To upgrade to higher rate limits, visit <https://opensea.io/settings/developer>.
 
 Full documentation: <https://docs.opensea.io/reference/api-keys#instant-api-key-for-agents>
-
-Or set an existing key:
-
-```bash
-export OPENSEA_API_KEY="your-api-key"
-```
 
 The CLI reads `OPENSEA_API_KEY` from the environment automatically.
 
@@ -323,7 +358,7 @@ In Python: `hex(20000000000000000)` outputs `"0x470de4df820000"`
 
 ```
 1. get_wallets → address
-2. Create API key if not already set (POST /api/v2/auth/keys)
+2. Resolve API key (see Auth → API key resolution sequence)
 3. opensea swaps quote --from-chain <chain> --from-address <from> \
      --to-chain <chain> --to-address <to> \
      --quantity <amount> --address <address>
@@ -339,7 +374,7 @@ In Python: `hex(20000000000000000)` outputs `"0x470de4df820000"`
 
 ```
 1. get_wallets → address
-2. Create API key if not already set (POST /api/v2/auth/keys)
+2. Resolve API key (see Auth → API key resolution sequence)
 3. opensea drops list --chains <chains> --type upcoming
    (or GET /api/v2/drops?type=upcoming&chains=<chains>)
 4. opensea drops get <slug> → check eligibility, pricing, supply
@@ -356,7 +391,7 @@ In Python: `hex(20000000000000000)` outputs `"0x470de4df820000"`
 
 ```
 1. get_wallets → address
-2. Create API key if not already set (POST /api/v2/auth/keys)
+2. Resolve API key (see Auth → API key resolution sequence)
 3. opensea search "<query>" --types collection → find collection
    (or GET /api/v2/search?query=<query>&type=collections)
 4. opensea listings best-for-nft <slug> <token_id> → get order_hash, price
@@ -375,7 +410,7 @@ In Python: `hex(20000000000000000)` outputs `"0x470de4df820000"`
 
 ```
 1. get_wallets → address
-2. Create API key if not already set (POST /api/v2/auth/keys)
+2. Resolve API key (see Auth → API key resolution sequence)
 3. opensea offers best-for-nft <slug> <token_id> → get offer_hash, price
 4. Confirm acceptance with user
 5. Use CLI to handle fulfillment (CLI encodes Seaport calldata internally)
@@ -439,7 +474,7 @@ See [../references/batch-calls.md](../references/batch-calls.md) and [../referen
 ```
 Swap 0.02 ETH for USDC on Base
 ```
-1. Create API key via `POST /api/v2/auth/keys` (if not already set).
+1. Resolve API key (see Auth → API key resolution sequence).
 2. Get wallet address via `get_wallets`.
 3. Run `opensea swaps quote --from-chain base --from-address 0x0000000000000000000000000000000000000000 --to-chain base --to-address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 --quantity 0.02 --address <address>` (or GET `/api/v2/swap/quote` with `quantity=20000000000000000`).
 4. Review quote with user (price impact, fees).
@@ -448,7 +483,7 @@ Swap 0.02 ETH for USDC on Base
 ```
 Buy a Bored Ape on Ethereum
 ```
-1. Create API key via `POST /api/v2/auth/keys` (if not already set).
+1. Resolve API key (see Auth → API key resolution sequence).
 2. Get wallet address via `get_wallets`.
 3. Run `opensea listings best boredapeyachtclub --limit 5` to show cheapest listings.
 4. User picks one; extract `order_hash`.
@@ -458,7 +493,7 @@ Buy a Bored Ape on Ethereum
 ```
 What drops are coming up on Base?
 ```
-1. Create API key via `POST /api/v2/auth/keys` (if not already set).
+1. Resolve API key (see Auth → API key resolution sequence).
 2. Run `opensea drops list --chains base --type upcoming` (or GET `/api/v2/drops?type=upcoming&chains=base`).
 3. Present results. If user wants to mint, run `opensea drops mint <slug> --minter <address>` (or POST to `/api/v2/drops/{slug}/mint`).
 4. Map response directly to `send_calls` (mint value is already hex).
@@ -466,7 +501,7 @@ What drops are coming up on Base?
 ```
 Buy an NFT on Ethereum using USDC from Base
 ```
-1. Create API key via `POST /api/v2/auth/keys` (if not already set).
+1. Resolve API key (see Auth → API key resolution sequence).
 2. Get wallet address via `get_wallets`.
 3. Find the listing: `opensea listings best-for-nft <slug> <token_id>`.
 4. Confirm price and payment token with user.
