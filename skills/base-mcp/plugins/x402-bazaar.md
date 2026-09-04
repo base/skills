@@ -39,7 +39,7 @@ It also ships the only **B20** safety suite (~29 tools): B20 is Base's native to
 balance at the protocol level (Policy Registry / `burnBlocked`) — `b20_safety`
 reads those powers into one hold/caution/avoid verdict, and the wider suite covers
 seizure history, full blocklist membership, transfer preflight, supply/rebase and
-an AI due-diligence dossier. Newer drain-surface reads include `wallet_delegation`
+an AI due-diligence dossier. Tokenized stocks run on B20, so the same read tells a Coinbase issuance (`GOOGLc`, `METAc` — holder-eligibility and gated mint, which a regulated instrument must have) apart from a token merely wearing an equity ticker with none of them. Newer drain-surface reads include `wallet_delegation`
 (EIP-7702 rogue-delegate check) and `agent_wallet_audit` (approvals + spend
 permissions + delegation in one verdict). It is
 reached through the **`x402-bazaar-mcp`** server. Each call settles a tiny USDC
