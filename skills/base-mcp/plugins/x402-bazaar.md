@@ -39,7 +39,7 @@ It also ships the only **B20** safety suite (~29 tools): B20 is Base's native to
 balance at the protocol level (Policy Registry / `burnBlocked`) — `b20_safety`
 reads those powers into one hold/caution/avoid verdict, and the wider suite covers
 seizure history, full blocklist membership, transfer preflight, supply/rebase and
-an AI due-diligence dossier. Tokenized stocks run on B20, so the same read tells a Coinbase issuance (`GOOGLc`, `METAc` — holder-eligibility and gated mint, which a regulated instrument must have) apart from a token merely wearing an equity ticker with none of them. Newer drain-surface reads include `wallet_delegation`
+an AI due-diligence dossier. Tokenized stocks run on B20, so the same read covers all 13 of Coinbase's tokenized equities (`AAPLc`, `AMZNc`, `COINc`, `CRCLc`, `GOOGLc`, `INTCc`, `METAc`, `MSFTc`, `MSTRc`, `NVDAc`, `SNDKc`, `SPCXc`, `TSLAc`): it tells a real issuance apart from a token merely wearing an equity ticker by reading who administers the transfer policy on chain, not by consulting a list of addresses — so a newly issued one is recognised the day it appears, and a lookalike cannot borrow the policy administrator. Holder-eligibility gating and gated mint are reported as the regulated shape they are rather than scored as danger. Newer drain-surface reads include `wallet_delegation`
 (EIP-7702 rogue-delegate check) and `agent_wallet_audit` (approvals + spend
 permissions + delegation in one verdict). It is
 reached through the **`x402-bazaar-mcp`** server. Each call settles a tiny USDC
@@ -121,7 +121,7 @@ authoritative list is the MCP tool catalog itself (and
 | `rug_score` | $0.03 | Liquidity, holder concentration and deployer history → rug score |
 | `sellability` | $0.08 | Simulated exit: can this token actually be sold, and at what tax |
 | `pre_trade_gate` | $0.10 | The four checks above as one GO / HOLD / STOP before a buy |
-| `b20_safety` | $0.04 | B20 issuer powers (freeze, seize, pause, rebase) → hold/caution/avoid |
+| `b20_safety` | $0.04 | B20 issuer powers (freeze, seize, pause, rebase) → hold/caution/avoid; also authenticates Coinbase's 13 tokenized equities from the transfer-policy admin |
 | `wallet_networth` | $0.02 | Token balances and total value for a wallet |
 | `approval_advisor` | $0.05 | Live ERC-20 approvals, ranked by what they can drain, with a revoke queue |
 | `wallet_delegation` | $0.03 | EIP-7702 delegate, and whether it is a recognized implementation |
@@ -159,6 +159,7 @@ MCP submission tool (`send_calls`/`swap`/`sign`).
 3. "Profile wallet `0x…` — net worth, age, what can drain it." → call `wallet_networth`, `wallet_summary`, `approval_advisor`; summarize.
 4. "What's the 24h price & momentum of `0x…`?" → call `token_momentum`; report price and 1h/6h/24h change.
 5. "Is `0x…` a B20 token that can freeze or seize my funds?" → call `b20_safety`; report the hold/caution/avoid verdict and which issuer powers (freeze / seize / pause / rebase) are live.
+6. "Is this AAPL/NVDA token on Base the real Coinbase one?" → call `b20_safety`; it answers from the transfer-policy administrator on chain, so report whether the issuer is the operator behind Coinbase's confirmed issuances. Do not read holder-eligibility gating or gated mint as red flags on a genuine one — a regulated instrument must have them. Do not claim a corporate-action history: no tokenized equity on Base has had a multiplier change yet.
 6. "Is wallet `0x…` 7702-delegated to code I should worry about?" → call `wallet_delegation`; report the delegate and whether it is a known Coinbase implementation or unrecognized (takeover risk).
 7. "This invoice asks me to pay a new supplier at `billing@acme-payments.com` — check it." → call `email_verify` and `domain_check`; report deliverability plus how old the domain is, since a domain registered weeks ago is the standard vendor-impersonation pattern.
 
