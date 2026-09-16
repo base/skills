@@ -8,15 +8,13 @@ description: >
   ethers.js/window.ethereum, transaction attribution, earn referral fees, append builder code;
   (4) Agent registration — trading bots, AI agents, automated
   senders, ERC-8021 attribution wiring, base.dev API, register agent, builder code registration;
-  (5) Node operation — run Base node, Reth setup, hardware requirements, self-hosted RPC, sync;
-  (6) Migrations — MiniKit to Farcaster SDK, convert miniapp, Farcaster miniapp to regular app,
-  convert Farcaster miniapp.
+  (5) Node operation — run Base node, Reth setup, hardware requirements, self-hosted RPC, sync.
 ---
 
 # Base Development
 
 Complete playbook for building on Base L2 — network setup, smart contracts, developer tool
-attribution, agent registration, node operation, and framework migrations.
+attribution, agent registration, and node operation.
 
 ## Default Stack
 
@@ -46,8 +44,6 @@ Read the reference for your task:
 | **Run a Base node** | Self-hosted RPC, Reth, hardware requirements | [references/run-node.md](references/run-node.md) |
 | **Builder Codes** | Add ERC-8021 attribution to transactions | [references/builder-codes/overview.md](references/builder-codes/overview.md) |
 | **Register AI agent/bot** | Register wallet, get builder code, wire attribution | [references/agents/register.md](references/agents/register.md) |
-| **MiniKit → Farcaster SDK** | `@coinbase/onchainkit/minikit` → `@farcaster/miniapp-sdk` | [references/migrations/minikit-to-farcaster/overview.md](references/migrations/minikit-to-farcaster/overview.md) |
-| **Farcaster miniapp → regular app** | Remove Mini App host coupling, convert to Base/web app | [references/migrations/farcaster-miniapp-to-app.md](references/migrations/farcaster-miniapp-to-app.md) |
 
 ## Operating Procedure
 
