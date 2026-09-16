@@ -55,7 +55,7 @@ Read [wallet.md](wallet.md) for detailed instructions and code.
 
 Summary:
 1. Create a `WalletConnect` component using wagmi hooks (`useAccount`, `useConnect`, `useDisconnect`)
-2. Component includes a modal with wallet options: Base Account, Coinbase Wallet, MetaMask
+2. Component includes a modal with wallet options such as Coinbase Wallet and MetaMask
 3. Shows truncated address + disconnect button when connected
 4. Replace all OnchainKit wallet imports and component usage
 
@@ -124,7 +124,6 @@ See [troubleshooting.md](troubleshooting.md) for common build and runtime errors
 ## Important Notes
 
 - Always use `wagmi` and `viem` directly. Never import from `@coinbase/onchainkit`.
-- The `baseAccount` connector comes from `wagmi/connectors`, not from a separate package.
 - `wagmi-config.ts` must include every chain the app transacts on. If the original OnchainKit `<Transaction chainId={X} />` used a specific chain, that chain must be in both `chains` and `transports`. Without it, `useWaitForTransactionReceipt` will hang forever.
 - If the project uses Tailwind, use Tailwind classes for the components. If not, adapt to inline styles or the project's existing styling approach (e.g., CSS Modules).
 - Do not export contract call arrays, ABI constants, or other non-page values from Next.js page files. Use non-exported constants or a separate module.

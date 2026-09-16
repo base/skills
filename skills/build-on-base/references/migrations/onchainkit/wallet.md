@@ -8,7 +8,7 @@ OnchainKit provides several wallet components:
 - `<Wallet />` -- container that manages open/closed state
 - `<ConnectWallet />` -- button that triggers connection (renders as "Connect Wallet" when disconnected)
 - `<WalletDropdown />` -- dropdown with identity info and actions
-- `<WalletModal />` -- modal with multiple wallet options (Base Account, Coinbase, MetaMask, Phantom, etc.)
+- `<WalletModal />` -- modal with multiple wallet options (Coinbase Wallet, MetaMask, Phantom, etc.)
 - `<Connected />` -- conditional renderer based on wallet connection state
 
 The replacement `WalletConnect` component combines all of this into one component.
@@ -26,11 +26,7 @@ Create `app/components/WalletConnect.tsx` (or wherever components live in the pr
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import {
-  baseAccount,
-  coinbaseWallet,
-  metaMask,
-} from "wagmi/connectors";
+import { coinbaseWallet, metaMask } from "wagmi/connectors";
 
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -68,14 +64,6 @@ function WalletModal({
   }, [onClose]);
 
   const walletOptions: WalletOption[] = [
-    {
-      id: "base-account",
-      name: "Sign in with Base",
-      connect: () => {
-        connect({ connector: baseAccount({ appName }) });
-        onClose();
-      },
-    },
     {
       id: "coinbase-wallet",
       name: "Coinbase Wallet",
@@ -327,7 +315,7 @@ The component uses Tailwind utility classes. Modify the `className` strings to m
 If the project doesn't use Tailwind, convert the Tailwind classes to inline styles or CSS modules. The key visual elements are:
 - Fixed overlay with semi-transparent black background
 - Centered card with white background, rounded corners, shadow
-- Primary button (blue) for Base Account
+- Primary button (blue) for the preferred wallet
 - Secondary buttons (white/bordered) for other wallets
 - Dark mode support via `dark:` variants
 
@@ -338,9 +326,3 @@ The component is being rendered outside the provider tree. Ensure `WagmiProvider
 
 ### Modal doesn't close after connecting
 This can happen if the connection is async and the component unmounts. The current implementation calls `onClose()` synchronously after `connect()`. If you need to wait for the connection, use the `onSuccess` callback from `useConnect`.
-
-### baseAccount connector not found
-Ensure wagmi version is >= 2.16. The `baseAccount` connector was added in recent wagmi versions. Check with:
-```bash
-npm ls wagmi
-```

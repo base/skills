@@ -7,7 +7,7 @@ Replace `OnchainKitProvider` from `@coinbase/onchainkit` with direct `WagmiProvi
 OnchainKitProvider is a wrapper that:
 1. Creates a wagmi config with `base` + `baseSepolia` chains
 2. Uses `cookieStorage` for persistence and `ssr: true`
-3. Default connector: `baseAccount()` from `wagmi/connectors`
+3. Creates a default wallet connector
 4. Sets up CDP RPC URLs if `apiKey` is provided
 5. Creates a default `QueryClient` from `@tanstack/react-query`
 6. Applies theme/appearance settings via CSS custom properties

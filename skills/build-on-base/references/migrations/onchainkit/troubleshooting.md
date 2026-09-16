@@ -46,7 +46,7 @@ createConfig({
 
 ### Wallet modal opens but nothing happens on click
 **Cause**: The connector might not be available or the wallet extension isn't installed.
-**Solution**: For extension-based wallets (MetaMask), the user needs the extension installed. For Coinbase Wallet and Base Account, they work via popup/redirect without an extension.
+**Solution**: For extension-based wallets such as MetaMask, the user needs the extension installed. Coinbase Wallet can also connect through its popup or redirect flow.
 
 ### Connection succeeds but address doesn't display
 **Cause**: Component not re-rendering after connection state change.

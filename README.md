@@ -2,7 +2,7 @@
 
 ![Base](logo.webp)
 
-[Agent Skills](https://agentskills.io) for building on [Base](https://base.org). These skills enable AI agents to connect to Base, deploy contracts, integrate wallets, run nodes, and more.
+[Agent Skills](https://agentskills.io) for building on [Base](https://base.org). These skills enable AI agents to connect to Base, deploy contracts, register agents, run nodes, and more.
 
 <!-- Badge row 1 - status -->
 
@@ -29,7 +29,7 @@ Consolidated skills that cover the most common use cases. Each uses progressive 
 
 | Skill | Install | Description |
 | ----- | ------- | ----------- |
-| [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, wallet auth, payments, attribution, and migrations. Consolidates all individual skills into one. |
+| [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, attribution, agent registration, nodes, and migrations. Consolidates all individual skills into one. |
 | [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via mcp.base.org. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
 | [vibenet](./skills/vibenet/SKILL.md) | `npx skills add base/skills --skill vibenet` | Build on [vibenet](https://chain.base.org/vibenet), the Base Vibes devnet for native account abstraction (EIP-8130) and Cobalt 200ms native blocks, with viem: smart accounts, batched calls, session keys and policies, ERC-8168 payer gas sponsorship, and millisecond block timestamps. |
 
@@ -53,10 +53,6 @@ Deploy my contract to Base Sepolia
 
 ```text
 How do I connect to Base mainnet?
-```
-
-```text
-Add Sign in with Base to my app
 ```
 
 ```text
