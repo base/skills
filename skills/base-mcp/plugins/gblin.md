@@ -17,11 +17,11 @@ Fetch unsigned calldata from the GBLIN x402 API, then execute via Base MCP's `se
 **Supported chain:** Base mainnet (`8453` / `0x2105`)
 **API base:** `https://gblin.digital`
 
-**x402 paywall:** endpoints under `/api/x402/*` require a micro-payment via EIP-3009 `transferWithAuthorization` before the response is served. This API speaks x402 v2; recommended client is `@x402/fetch` or `@x402/axios`. When Base MCP's `web_request` tool calls a paywalled endpoint it receives HTTP 402 with the payment challenge (also mirrored in the response body). Complete the x402 payment flow before retrying.
+**Free and paid:** the read and prepare endpoints below (`treasury-state`, `health`, `quote`, `governance`, `invest`, `jit`) are free: a plain GET returns the JSON, with no payment. Three endpoints are paid over x402 (`attestation` $0.003, `seal` $0.0045, `catalog` $0.005): they require a micro-payment via EIP-3009 `transferWithAuthorization` before the response is served. This API speaks x402 v2; recommended client is `@x402/fetch` or `@x402/axios`. When Base MCP's `web_request` tool calls a paid endpoint it receives HTTP 402 with the payment challenge (also mirrored in the response body). Complete the x402 payment flow before retrying.
 
 **Free, no payment required:** `/api/x402/llms.txt` (discovery), `/api/x402/attestation-sample` (schema sample of a risk attestation), and the whole MCP surface below.
 
-**Free MCP (no install):** `https://gblin-mcp.gblin-mcp-worker.workers.dev/mcp` (Streamable HTTP) exposes the live market risk regime, an attestation sample, protocol info and the daily coherence report. The stdio server is `npx @gblin-protocol/mcp-server`. Use these when you only need to read state — pay only for the wallet-specific and calldata endpoints.
+**Free MCP (no install):** `https://gblin-mcp.gblin-mcp-worker.workers.dev/mcp` (Streamable HTTP) exposes the live market risk regime, an attestation sample, protocol info and the daily coherence report. The stdio server is `npx @gblin-protocol/mcp-server`. Use these when you prefer MCP over HTTP; the HTTP read and prepare endpoints are free as well.
 
 **Fetching calldata:** the GBLIN API is not on the Base MCP `web_request` allowlist. Construct every prepare URL as a GET request with all parameters in the query string. If `web_request` rejects the host, fetch through whatever capability the harness exposes (shell, direct HTTP, MCP server), or ask the user to paste the JSON response into the chat. Then continue with `send_calls`.
 
@@ -33,13 +33,13 @@ Fetch unsigned calldata from the GBLIN x402 API, then execute via Base MCP's `se
 GET https://gblin.digital/api/x402/llms.txt
 ```
 
-Returns a human-readable summary of the protocol and the available endpoints with their prices. Use this first to confirm the protocol is reachable before attempting paywalled calls.
+Returns a human-readable summary of the protocol and the available endpoints with their prices. Use this first to confirm the protocol is reachable.
 
 ---
 
-## Read endpoints (x402 paywalled)
+## Read endpoints (free, except the attestation)
 
-### Treasury state & NAV — $0.001 USDC
+### Treasury state & NAV — free
 
 ```
 GET https://gblin.digital/api/x402/treasury-state
@@ -49,7 +49,7 @@ Returns NAV in USD, basket composition with dynamic weights, and Crash Shield st
 
 **Use this to:** confirm NAV before quoting, check whether the Crash Shield is active, verify treasury health.
 
-### Health check (wallet-specific) — $0.002 USDC
+### Health check (wallet-specific) — free
 
 ```
 GET https://gblin.digital/api/x402/health?wallet=<wallet_address>&daily_burn=<usd_per_day>
@@ -72,7 +72,7 @@ Response shape:
 
 **Use this to:** verify the user has enough USDC before investing, check the redemption cooldown after a mint (20 seconds, a vault parameter), confirm current holdings and gas runway.
 
-### Quote — $0.001 USDC
+### Quote — free
 
 ```
 GET https://gblin.digital/api/x402/quote?direction=buy&amount=<eth_decimal>
@@ -81,7 +81,7 @@ GET https://gblin.digital/api/x402/quote?direction=sell&amount=<gblin_decimal>
 
 For `direction=buy`, `amount` is in ETH (the vault sets no minimum). For `direction=sell`, `amount` is in GBLIN. Returns the expected output, a safe `minOut` including a dynamic slippage buffer, and the mint fee breakdown (10 bps).
 
-### Governance check — $0.001 USDC
+### Governance check — free
 
 ```
 GET https://gblin.digital/api/x402/governance
@@ -99,11 +99,11 @@ A perishable (10-minute) proof of the current BTC/ETH risk regime (`calm` | `ele
 
 ---
 
-## Prepare endpoints (x402 paywalled)
+## Prepare endpoints (free)
 
 > All prepare endpoints return **unsigned calldata only**. No transaction is ever executed server-side. The user must sign and broadcast via `send_calls`.
 
-### Invest USDC → GBLIN — $0.002 USDC
+### Invest USDC → GBLIN — free
 
 ```
 GET https://gblin.digital/api/x402/invest?usdc=<decimal>&wallet=<wallet_address>
@@ -126,7 +126,7 @@ Response shape:
 }
 ```
 
-### JIT redeem GBLIN → USDC — $0.005 USDC
+### JIT redeem GBLIN → USDC — free
 
 ```
 GET https://gblin.digital/api/x402/jit?usdc=<decimal>&wallet=<wallet_address>
@@ -180,13 +180,13 @@ Include one entry per element of `steps[]`, in the order returned — 2 for inve
 
 ```
 1. get_wallets → address
-2. GET /api/x402/health?wallet=<address>  [pay $0.002 x402]
+2. GET /api/x402/health?wallet=<address>
    → verify usdc balance >= requested amount
    → verify cooldown.active = false
-3. GET /api/x402/quote?direction=buy&amount=<eth>  [pay $0.001 x402]
+3. GET /api/x402/quote?direction=buy&amount=<eth>
    → show user: expected_gblin_out, safe_min_gblin_out, fees
    → ask for confirmation before proceeding
-4. GET /api/x402/invest?usdc=<amount>&wallet=<address>  [pay $0.002 x402]
+4. GET /api/x402/invest?usdc=<amount>&wallet=<address>
    (if web_request rejects host, fetch directly or ask user to paste JSON)
 5. Map steps[] → calls[] (target→to, calldata→data, value→hex)
 6. send_calls(chain="base", calls from steps[0..1])
@@ -203,10 +203,10 @@ Include one entry per element of `steps[]`, in the order returned — 2 for inve
 
 ```
 1. get_wallets → address
-2. GET /api/x402/health?wallet=<address>  [pay $0.002 x402]
+2. GET /api/x402/health?wallet=<address>
    → verify gblin balance >= required amount
    → verify cooldown.active = false (20-second lock after a mint for oneself)
-3. GET /api/x402/jit?usdc=<amount>&wallet=<address>  [pay $0.005 x402]
+3. GET /api/x402/jit?usdc=<amount>&wallet=<address>
 4. Map steps[] → calls[] (3 calls)
 5. send_calls(chain="base", calls=[step 1, step 2, step 3])
 6. User approves → get_request_status(requestId)
@@ -216,9 +216,9 @@ Include one entry per element of `steps[]`, in the order returned — 2 for inve
 
 ```
 1. get_wallets → address
-2. GET /api/x402/treasury-state  [pay $0.001 x402]
+2. GET /api/x402/treasury-state
    → NAV, basket composition, Crash Shield status
-3. GET /api/x402/health?wallet=<address>  [pay $0.002 x402]
+3. GET /api/x402/health?wallet=<address>
    → GBLIN balance in USD, USDC balance, gas health, cooldown
 4. Present: current holdings value, treasury backing, basket breakdown
 ```
@@ -243,7 +243,7 @@ Include one entry per element of `steps[]`, in the order returned — 2 for inve
 - **Governance delay:** any protocol parameter change requires 48 hours via Timelock `0x6aBeC8716fFeEcf7C3D6e68255b4797113E8e5Dd`. Do not promise immediate changes, and do not describe the token as immutable.
 - **GBLIN is not a stablecoin.** NAV moves with WETH and cbBTC prices. It is managed exposure for surplus capital, not a USDC substitute. Always present the current NAV before quoting.
 - **Fees:** 10 bps on mint (5 protocol + 5 stability, which stays in the NAV) and a 0.50% a year management fee, accrued as new shares. Redemption pays no protocol fee.
-- **x402 costs:** read operations cost $0.001–$0.003 USDC and prepare operations $0.002–$0.005 USDC. These are API charges, not gas.
+- **x402 costs:** reading state and preparing calldata are free. Only the signed risk attestation ($0.003), the action receipt ($0.0045) and the catalogue liveness report ($0.005) are paid. These are API charges, not gas.
 
 ---
 
