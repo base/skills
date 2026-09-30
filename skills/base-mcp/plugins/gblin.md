@@ -1,117 +1,71 @@
-# GBLIN Protocol Plugin
-
-> [!IMPORTANT]
-> ## STOP — COMPLETE ONBOARDING BEFORE USING THIS PLUGIN
->
-> Before calling any GBLIN endpoint, you MUST complete the Base MCP onboarding flow:
-> 1. Call `get_wallets` (Detection) — the user's wallet address is required by every prepare call
-> 2. Present wallet status and disclaimer (Onboarding)
->
-> Do NOT calculate amounts, fetch NAV, or prepare any transaction before the wallet address is confirmed.
-
-GBLIN (Global Balanced Liquidity Index) is a treasury-backed index token on Base mainnet. Every GBLIN is backed by real on-chain collateral (WETH + cbBTC + USDC), priced in real time via Chainlink oracles. NAV = treasury value / circulating supply. There is no pre-mint: supply starts at zero.
-
-Fetch unsigned calldata from the GBLIN x402 API, then execute via Base MCP's `send_calls`.
-
-**Contract (Base mainnet):** `0xc2181d975c05c8c724b334bcED0764c0b86B1D53`
-**Supported chain:** Base mainnet (`8453` / `0x2105`)
-**API base:** `https://gblin.digital`
-
-**Free and paid:** the read and prepare endpoints below (`treasury-state`, `health`, `quote`, `governance`, `invest`, `jit`) are free: a plain GET returns the JSON, with no payment. Three endpoints are paid over x402 (`attestation` $0.003, `seal` $0.0045, `catalog` $0.005): they require a micro-payment via EIP-3009 `transferWithAuthorization` before the response is served. This API speaks x402 v2; recommended client is `@x402/fetch` or `@x402/axios`. When Base MCP's `web_request` tool calls a paid endpoint it receives HTTP 402 with the payment challenge (also mirrored in the response body). Complete the x402 payment flow before retrying.
-
-**Free, no payment required:** `/api/x402/llms.txt` (discovery), `/api/x402/attestation-sample` (schema sample of a risk attestation), and the whole MCP surface below.
-
-**Free MCP (no install):** `https://gblin-mcp.gblin-mcp-worker.workers.dev/mcp` (Streamable HTTP) exposes the live market risk regime, an attestation sample, protocol info and the daily coherence report. The stdio server is `npx @gblin-protocol/mcp-server`. Use these when you prefer MCP over HTTP; the HTTP read and prepare endpoints are free as well.
-
-**Fetching calldata:** the GBLIN API is not on the Base MCP `web_request` allowlist. Construct every prepare URL as a GET request with all parameters in the query string. If `web_request` rejects the host, fetch through whatever capability the harness exposes (shell, direct HTTP, MCP server), or ask the user to paste the JSON response into the chat. Then continue with `send_calls`.
-
+---
+title: "GBLIN Plugin"
+description: "Park surplus USDC in the GBLIN basket vault at NAV, redeem it back to USDC just in time, and read the market risk regime via HTTP API → send_calls on Base."
+tags: [vaults, ai-agents, agent-commerce]
+name: gblin
+version: 0.2.0
+integration: http-api
+chains: [base]
+requires:
+  shell: none
+  allowlist: [gblin.digital]
+  externalMcp: null
+  cliPackage: null
+auth: none
+risk: [slippage, irreversible]
 ---
 
-## Protocol discovery (free, no paywall)
+# GBLIN Plugin
+
+> [!IMPORTANT]
+> Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any GBLIN endpoint. The user's wallet address, required by the `health`, `invest` and `jit` endpoints, is fetched lazily with `get_wallets` when a flow needs it.
+
+## Overview
+
+GBLIN is a basket vault on Base mainnet: one ERC-20 share backed by cbBTC, WETH and USDC held in the contract, priced by Chainlink feeds, minted and redeemed at net asset value (NAV). The vault never swaps by itself; it rebalances through a Dutch auction and cuts the weight of an asset during a severe drawdown (the crash shield). The plugin reads treasury state and quotes over the GBLIN HTTP API, fetches **unsigned calldata** from its prepare endpoints, and executes via `send_calls`. Typical use: keep operating cash in USDC, park the surplus in GBLIN, and redeem just in time when an x402 invoice needs USDC.
+
+**Supported chain:** Base mainnet (8453). GBLIN is not a stablecoin: its NAV moves with cbBTC and WETH.
+
+## Surface Routing
+
+GBLIN is HTTP-only; every capability follows the standard HTTP routing in [../references/custom-plugins.md](../references/custom-plugins.md).
+
+| Capability | Path |
+|-----------|------|
+| Read NAV, basket, shield status, quotes, wallet health, governance | Harness HTTP tool if available, else `web_request` GET against `gblin.digital`. |
+| Prepare an investment (USDC → GBLIN) or a just-in-time redemption (GBLIN → USDC) | Harness HTTP tool or `web_request` GET → calldata → `send_calls`. |
+| Paid attestation of the risk regime (x402, USDC on Base) | Harness with an x402 client only (`@x402/fetch`). On chat-only surfaces skip it: the same regime is readable for free from `treasury-state`. |
+| Execute the prepared calldata | Base MCP `send_calls` (works on every surface). |
+
+**Prerequisite:** `gblin.digital` must be in the MCP server's `web_request` allowlist. Every prepare endpoint is a GET with query-string parameters: if the host is rejected and no harness HTTP tool is available, construct the URL, ask the user to paste the JSON response into the chat, and continue with `send_calls`.
+
+## Endpoints
+
+### Read endpoints (free)
 
 ```
 GET https://gblin.digital/api/x402/llms.txt
-```
-
-Returns a human-readable summary of the protocol and the available endpoints with their prices. Use this first to confirm the protocol is reachable.
-
----
-
-## Read endpoints (free, except the attestation)
-
-### Treasury state & NAV — free
-
-```
 GET https://gblin.digital/api/x402/treasury-state
-```
-
-Returns NAV in USD, basket composition with dynamic weights, and Crash Shield status.
-
-**Use this to:** confirm NAV before quoting, check whether the Crash Shield is active, verify treasury health.
-
-### Health check (wallet-specific) — free
-
-```
-GET https://gblin.digital/api/x402/health?wallet=<wallet_address>&daily_burn=<usd_per_day>
-```
-
-`daily_burn` is optional; when provided, the response adds an operational runway estimate and a rebalance recommendation.
-
-Response shape:
-
-```json
-{
-  "wallet": "0x...",
-  "balances": { "gblin": "…", "gblin_value_usd": 0, "usdc": "…", "eth": "…", "total_usd": 0 },
-  "ratios": { "gblin_pct": 0, "usdc_pct": 0 },
-  "gas_health": { "status": "ok|low|critical", "eth_balance": "…", "warning": null },
-  "cooldown": { "active": false, "seconds_remaining": 0, "last_deposit_unix": 0 },
-  "recommendation": "…"
-}
-```
-
-**Use this to:** verify the user has enough USDC before investing, check the redemption cooldown after a mint (20 seconds, a vault parameter), confirm current holdings and gas runway.
-
-### Quote — free
-
-```
+GET https://gblin.digital/api/x402/health?wallet=<address>&daily_burn=<usd_per_day>
 GET https://gblin.digital/api/x402/quote?direction=buy&amount=<eth_decimal>
 GET https://gblin.digital/api/x402/quote?direction=sell&amount=<gblin_decimal>
-```
-
-For `direction=buy`, `amount` is in ETH (the vault sets no minimum). For `direction=sell`, `amount` is in GBLIN. Returns the expected output, a safe `minOut` including a dynamic slippage buffer, and the mint fee breakdown (10 bps).
-
-### Governance check — free
-
-```
 GET https://gblin.digital/api/x402/governance
 ```
 
-Verifies on-chain that the contract owner is the 48-hour Timelock and reads its minimum delay. Use it when a user asks who can change protocol parameters.
+- `llms.txt` — human-readable summary of the protocol and the endpoints with their prices. Use it first to confirm the API is reachable.
+- `treasury-state` — `nav_usd`, `eth_price_usd`, basket rows with dynamic weights, `crash_shield_active`, current `slippage_buffer_pct`.
+- `health` — balances (`gblin`, `gblin_value_usd`, `usdc`, `eth`, `total_usd`), ratios, `gas_health`, the redemption `cooldown`; with `daily_burn` (optional), a runway estimate and a rebalance `recommendation`.
+- `quote` — expected output, a safe `minOut` including the slippage buffer, and the fee breakdown. `buy` amounts are in ETH; `sell` amounts are in GBLIN.
+- `governance` — verifies on-chain that the contract owner is the 48-hour timelock and reads its minimum delay.
 
-### Risk attestation — $0.003 USDC
-
-```
-GET https://gblin.digital/api/x402/attestation
-```
-
-A perishable (10-minute) proof of the current BTC/ETH risk regime (`calm` | `elevated` | `crash`), derived from the on-chain Crash Shield. Attach it to your own action as portable proof-of-diligence. A free sample of the exact schema is at `/api/x402/attestation-sample`, and the live regime is readable for free through the MCP endpoint above.
-
----
-
-## Prepare endpoints (free)
-
-> All prepare endpoints return **unsigned calldata only**. No transaction is ever executed server-side. The user must sign and broadcast via `send_calls`.
-
-### Invest USDC → GBLIN — free
+### Prepare endpoints (free, unsigned calldata only)
 
 ```
-GET https://gblin.digital/api/x402/invest?usdc=<decimal>&wallet=<wallet_address>
+GET https://gblin.digital/api/x402/invest?usdc=<decimal>&wallet=<address>
+GET https://gblin.digital/api/x402/jit?usdc=<decimal>&wallet=<address>
 ```
 
-Returns a 2-step ordered batch of unsigned calldata. The vault never swaps, so an arbitrary token goes through the Zap: approve USDC to the Zap, then one call that swaps USDC→WETH on the adapter and mints at NAV. Every step carries a non-zero `minOut`. Step 2 carries a `gas` limit: send it with that limit, because the vault reserves gas for its capped transfers and an automatic estimate can revert out of gas.
-
-Response shape:
+Both return the same shape; nothing is executed server-side.
 
 ```json
 {
@@ -121,154 +75,136 @@ Response shape:
     { "step": 2, "description": "Swap USDC to WETH and mint GBLIN at NAV, in one transaction", "target": "0x0E9D6Ceb6D313b021622C121Cda9C62e86e60200", "calldata": "0x...", "value": "0", "gas": "1100000" }
   ],
   "gas_hint": 1100000,
-  "expected": { "usdc_in": "…", "weth_min": "…", "gblin_expected": "…", "gblin_min": "…", "slippage_buffer_pct": 0, "slippage_reason": "…" },
-  "security": { "mev_protected": true, "min_outs_set": true }
+  "expected": { "usdc_in": "...", "weth_min": "...", "gblin_expected": "...", "gblin_min": "...", "slippage_buffer_pct": 0 }
 }
 ```
 
-### JIT redeem GBLIN → USDC — free
+- `invest` — two steps: approve USDC to the GBLIN Zap, then one call that swaps USDC → WETH on the adapter and mints at NAV. Every step carries a non-zero `minOut`.
+- `jit` — three steps: approve the shares to the Zap, `sellGBLINForEth` (redeem in kind and sell every leg, all or nothing), then a Uniswap WETH → USDC swap. `expected` carries `usdc_out`, `nav_used_usd`, `slippage_buffer_pct`; `compatibility` lists `eoa`, `erc4337`, `eip7702`. Requires the redemption cooldown to have elapsed (`health.cooldown`).
+
+### Paid endpoints (x402, USDC on Base)
 
 ```
-GET https://gblin.digital/api/x402/jit?usdc=<decimal>&wallet=<wallet_address>
+GET https://gblin.digital/api/x402/attestation      $0.003  signed, 10-minute proof of the risk regime (calm | elevated | crash)
+GET https://gblin.digital/api/x402/catalog          $0.005  liveness report of the x402 catalogue
 ```
 
-Just-In-Time redemption to pay an x402 invoice when USDC runs short. Redemption is **three steps** (approve the shares to the Zap, `GBLINZap.sellGBLINForEth` — redeem in kind and sell every leg, all or nothing — then a Uniswap WETH→USDC swap) returned in the same `sequential_txs` shape as invest. An EOA signs three times; an ERC-4337 / EIP-7702 account can batch them into one operation. Requires the redemption cooldown (20 seconds after a mint for oneself) to have elapsed. Step 2 carries a `gas` limit (also given as `gas_hint`): send it with at least that limit, because the Zap forwards gas-capped transfers and a tight limit reverts.
+A plain GET returns HTTP 402 with the x402 v2 payment challenge; complete it with `@x402/fetch` or `@x402/axios` and retry. A free sample of the attestation schema is at `/api/x402/attestation-sample`.
 
-```json
-{
-  "action": "sequential_txs",
-  "steps": [ { "step": 1, "target": "0x...", "calldata": "0x...", "value": "0" }, { "step": 2, "…": "…" }, { "step": 3, "…": "…" } ],
-  "params": { "gblin_amount": "…", "eth_min_out": "…", "target_token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "min_usdc_out": "…" },
-  "expected": { "usdc_out": "…", "nav_used_usd": 0, "slippage_buffer_pct": 0 },
-  "compatibility": { "eoa": true, "erc4337": true, "eip7702": true },
-  "gas_hint": 1100000
-}
-```
-
-### Relay a gasless GBLIN payment — fee paid in GBLIN
+## Orchestration
 
 ```
-GET  https://gblin.digital/api/relay/gblin
-POST https://gblin.digital/api/relay/gblin
+get_wallets → address
+      ↓
+GET /api/x402/treasury-state           → NAV, crash shield status
+GET /api/x402/health?wallet=<address>  → USDC and GBLIN balances, cooldown, gas health
+      ↓
+GET /api/x402/invest?... or /api/x402/jit?...  → steps[], expected
+      ↓
+Show NAV, expected output, minimum output and fees; ask for confirmation
+      ↓
+send_calls(chain="base", calls mapped from steps[]) → approvalUrl + requestId
+      ↓
+User approves (see ../references/approval-mode.md) → get_request_status(requestId) → confirmed
 ```
 
-For a payer that holds GBLIN but no ETH, and has nobody to carry its payment on chain. The GET returns the fee (in GBLIN at the live NAV), its recipient and the token's EIP-712 domain. The payer signs two `TransferWithAuthorization` messages — the payment and the fee, with different nonces — and POSTs `{ payment: { authorization, signature }, fee: { authorization, signature } }`. The relay checks both against the chain, simulates them and submits them in one transaction: both settle or neither does. Not an x402 endpoint: the fee travels inside the signed transfer, so the payer needs neither ETH nor USDC.
+### Park surplus USDC
 
----
+1. `get_wallets` → address.
+2. `health?wallet=<address>` → confirm `balances.usdc` ≥ amount and `gas_health.status` is `ok`.
+3. `treasury-state` → if `crash_shield_active` is true, tell the user before continuing.
+4. `invest?usdc=<amount>&wallet=<address>` → show `expected.gblin_expected`, `expected.gblin_min` and the fees; ask for confirmation.
+5. `send_calls` with both steps in order.
+6. `get_request_status(requestId)`.
 
-## send_calls mapping
+### Just-in-time redemption for an x402 invoice
 
-> **Field mapping:** GBLIN uses `target`/`calldata` instead of the Base MCP standard `to`/`data`. Map them explicitly before calling `send_calls`. Both invest and JIT return the same `steps[]` array, so one mapping covers both.
+1. `get_wallets` → address.
+2. `health?wallet=<address>` → confirm `balances.gblin_value_usd` covers the amount and `cooldown.active` is false.
+3. `jit?usdc=<amount>&wallet=<address>` → show `expected.usdc_out` and `expected.nav_used_usd`; ask for confirmation.
+4. `send_calls` with the three steps in order.
+5. `get_request_status(requestId)`, then pay the invoice.
+
+### Treasury check (read-only)
+
+1. `get_wallets` → address.
+2. `treasury-state` and `health?wallet=<address>&daily_burn=<usd>` → present holdings, NAV, basket weights, runway estimate and recommendation. No transaction.
+
+## Submission
+
+Target tool: **`send_calls`**.
+
+GBLIN steps use `target` and `calldata`; map them to `to` and `data`, convert `value` to hex, and keep the order returned:
 
 ```json
 {
   "chain": "base",
   "calls": [
-    { "to": "<steps[0].target>", "value": "<steps[0].value as hex>", "data": "<steps[0].calldata>" },
-    { "to": "<steps[1].target>", "value": "<steps[1].value as hex>", "data": "<steps[1].calldata>" }
+    { "to": "<steps[0].target>", "value": "0x0", "data": "<steps[0].calldata>" },
+    { "to": "<steps[1].target>", "value": "0x0", "data": "<steps[1].calldata>" }
   ]
 }
 ```
 
-Include one entry per element of `steps[]`, in the order returned — 2 for invest, 3 for JIT. Never reorder them, and carry each step's `value` over as hex: the JIT swap step sends ETH. A step that carries `gas` needs that limit: if the wallet estimates the batch as a whole and it reverts out of gas, send the steps one by one with the limit given.
+One entry per element of `steps[]`: two for `invest`, three for `jit`. Never reorder them (approvals come first). A step that carries `gas` needs at least that limit: the vault forwards gas-capped transfers, and a wallet's own estimate can land just under what the call needs. If the wallet estimates the batch as a whole and it reverts out of gas, send the steps one by one with the given limit. Then walk the approval flow (see [../references/approval-mode.md](../references/approval-mode.md)) and poll `get_request_status`.
 
----
+## Example Prompts
 
-## Orchestration patterns
+**"I have 500 USDC idle on Base. Park 400 in GBLIN and keep 100 liquid."**
 
-### Pattern A — Invest idle USDC into GBLIN
+1. `get_wallets` → address.
+2. `health?wallet=<address>` → `balances.usdc` ≥ 400, `gas_health.status` = `ok`, `cooldown.active` = false.
+3. `treasury-state` → NAV and shield status; mention it if the shield is active.
+4. `invest?usdc=400&wallet=<address>` → show `gblin_expected`, `gblin_min` and the fees; confirm.
+5. `send_calls("base", calls from steps[0..1])`.
+6. `get_request_status(requestId)`.
 
-```
-1. get_wallets → address
-2. GET /api/x402/health?wallet=<address>
-   → verify usdc balance >= requested amount
-   → verify cooldown.active = false
-3. GET /api/x402/quote?direction=buy&amount=<eth>
-   → show user: expected_gblin_out, safe_min_gblin_out, fees
-   → ask for confirmation before proceeding
-4. GET /api/x402/invest?usdc=<amount>&wallet=<address>
-   (if web_request rejects host, fetch directly or ask user to paste JSON)
-5. Map steps[] → calls[] (target→to, calldata→data, value→hex)
-6. send_calls(chain="base", calls from steps[0..1])
-7. User approves once → get_request_status(requestId)
-8. Confirm both steps executed
-```
+**"An x402 invoice needs 12 USDC and I only hold GBLIN."**
 
-**Preconditions to validate before step 4:**
-- USDC balance ≥ requested amount + gas buffer
-- Crash Shield status known (check treasury-state)
-- Cooldown not active
+1. `get_wallets` → address.
+2. `health?wallet=<address>` → `balances.gblin_value_usd` ≥ 12, `cooldown.active` = false.
+3. `jit?usdc=12&wallet=<address>` → show `usdc_out` and `nav_used_usd`; confirm.
+4. `send_calls("base", calls from steps[0..2])`.
+5. `get_request_status(requestId)`, then pay the invoice.
 
-### Pattern B — JIT redeem for an x402 payment
+**"What is my GBLIN position worth, and how long does my USDC last at $20 a day?"** *(read-only)*
 
-```
-1. get_wallets → address
-2. GET /api/x402/health?wallet=<address>
-   → verify gblin balance >= required amount
-   → verify cooldown.active = false (20-second lock after a mint for oneself)
-3. GET /api/x402/jit?usdc=<amount>&wallet=<address>
-4. Map steps[] → calls[] (3 calls)
-5. send_calls(chain="base", calls=[step 1, step 2, step 3])
-6. User approves → get_request_status(requestId)
-```
+1. `get_wallets` → address.
+2. `treasury-state` → NAV and basket.
+3. `health?wallet=<address>&daily_burn=20` → balances, runway estimate, recommendation. No transaction submitted.
 
-### Pattern C — Portfolio check
+**"Who can change GBLIN's parameters?"** *(read-only)*
 
-```
-1. get_wallets → address
-2. GET /api/x402/treasury-state
-   → NAV, basket composition, Crash Shield status
-3. GET /api/x402/health?wallet=<address>
-   → GBLIN balance in USD, USDC balance, gas health, cooldown
-4. Present: current holdings value, treasury backing, basket breakdown
-```
+1. `governance` → the owner is the 48-hour timelock; report its minimum delay. Do not describe the token as immutable.
 
-### Pattern D — Risk gate before deploying capital
+## Risks & Warnings
 
-```
-1. Read the live risk regime for free from the MCP endpoint
-   (tool: risk.regime)
-2. If regime = "crash" → stand down: do not invest, tell the user why
-3. Otherwise continue with Pattern A
-4. If the user needs portable proof of the check, buy /api/x402/attestation
-```
+- **Slippage.** `invest` swaps USDC → WETH before minting, and `jit` sells the redeemed legs on a DEX before the final swap to USDC; each step carries a `minOut` derived from the API's slippage buffer. Show the `expected` values and the buffer to the user and never raise the buffer silently. A large amount against thin liquidity fails the whole `jit` call by design (all or nothing): the shares stay with the holder.
+- **Irreversible.** A confirmed mint or redemption cannot be undone. Always show NAV, expected output and fees before `send_calls`, and never invest without an explicit confirmation: GBLIN's NAV moves with cbBTC and WETH; it is managed exposure for surplus capital, not a USDC substitute.
 
----
+## Notes
 
-## Safety rules for agents
+- **Fees.** Mint with ETH or WETH: 0.10% (0.05% to the protocol, 0.05% stays in the vault and lifts the NAV). Management: 0.50% a year, accrued as new shares. Redemption in kind: no fee. The API reports current values; the x402 prices are API charges, not gas.
+- **Cooldown.** A mint made directly on the vault for oneself sets a 20-second redemption cooldown; a mint through the Zap, as `invest` prepares it, does not. `health.cooldown` reports it either way.
+- **Crash shield.** When `crash_shield_active` is true, the weight of an asset in a severe drawdown has been cut and moved to USDC; the contract handles it, the agent explains it.
+- **Governance.** Every parameter change goes through the 48-hour timelock, within bounds written in the contract.
+- **Hosted MCP (optional, free).** `https://gblin-mcp.gblin-mcp-worker.workers.dev/mcp` (Streamable HTTP) exposes the risk regime, treasury state and protocol info as MCP tools; `npx @gblin-protocol/mcp-server` runs the same server over stdio. The HTTP endpoints above are sufficient on their own.
+- **Gasless GBLIN payments.** The share implements EIP-3009. `https://gblin.digital/api/relay/gblin` carries a signed `transferWithAuthorization` on chain for a fee quoted in GBLIN at NAV; not an x402 endpoint.
 
-- **Never skip the quote step.** Always show NAV, expected output, and fees before executing invest.
-- **Crash Shield:** if the treasury state reports the shield active, warn the user that basket weights have been defensively adjusted after a market drawdown beyond the protocol's crash threshold (15% base, adaptive with volatility). Do not block the transaction — the contract handles it — but explain the situation.
-- **Cooldown:** if `cooldown.active` is true, do not attempt any sell or JIT redeem. Wait until `seconds_remaining` reaches zero (20 seconds after a mint for oneself).
-- **Governance delay:** any protocol parameter change requires 48 hours via Timelock `0x6aBeC8716fFeEcf7C3D6e68255b4797113E8e5Dd`. Do not promise immediate changes, and do not describe the token as immutable.
-- **GBLIN is not a stablecoin.** NAV moves with WETH and cbBTC prices. It is managed exposure for surplus capital, not a USDC substitute. Always present the current NAV before quoting.
-- **Fees:** 10 bps on mint (5 protocol + 5 stability, which stays in the NAV) and a 0.50% a year management fee, accrued as new shares. Redemption pays no protocol fee.
-- **x402 costs:** reading state and preparing calldata are free. Only the signed risk attestation ($0.003), the action receipt ($0.0045) and the catalogue liveness report ($0.005) are paid. These are API charges, not gas.
-
----
-
-## Key addresses (Base mainnet)
+### Addresses (Base mainnet)
 
 | Contract | Address |
 |---|---|
-| GBLIN | `0xc2181d975c05c8c724b334bcED0764c0b86B1D53` |
-| Timelock 48h | `0x6aBeC8716fFeEcf7C3D6e68255b4797113E8e5Dd` |
-| WETH | `0x4200000000000000000000000000000000000006` |
-| USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
-| cbBTC | `0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf` |
-| GBLIN Lens | `0xfCFea8027019E8551A1f09AD91532471F5D26f61` |
+| GBLIN vault (ERC-20 share) | `0xc2181d975c05c8c724b334bcED0764c0b86B1D53` |
 | GBLIN Zap | `0x0E9D6Ceb6D313b021622C121Cda9C62e86e60200` |
-| SwapRouter02 | `0x2626664c2603336E57B271c5C0b26F421741e481` |
+| GBLIN Lens | `0xfCFea8027019E8551A1f09AD91532471F5D26f61` |
+| Timelock (48 h) | `0x6aBeC8716fFeEcf7C3D6e68255b4797113E8e5Dd` |
+| USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| WETH | `0x4200000000000000000000000000000000000006` |
+| cbBTC | `0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf` |
 
----
+### Resources
 
-## Resources
-
-- Website: https://gblin.digital
-- Agent guide: https://gblin.digital/agents
-- Protocol discovery: https://gblin.digital/api/x402/llms.txt
-- Hosted MCP (free): https://gblin-mcp.gblin-mcp-worker.workers.dev/mcp
-- GitHub: https://github.com/gblinproject/GBLIN-Protocol
-- MCP Server: https://github.com/gblinproject/gblin-treasury-risk-regime
+- Site: https://gblin.digital · Agent guide: https://gblin.digital/agents
+- Protocol source and test write-ups: https://github.com/gblinproject/GBLIN-Protocol
 - Basescan: https://basescan.org/address/0xc2181d975c05c8c724b334bcED0764c0b86B1D53
-- Defillama: https://defillama.com/protocol/tvl/global-balanced-liquidity-index
