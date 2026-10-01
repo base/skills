@@ -3,7 +3,7 @@ title: "Uniswap Plugin"
 description: "Swap tokens and manage liquidity positions on Uniswap."
 tags: [dex, swap, liquidity]
 name: uniswap
-version: 0.2.0
+version: 0.3.0
 integration: http-api
 chains: [base]
 requires:
@@ -20,6 +20,9 @@ risk: [slippage]
 > [!IMPORTANT]
 > Complete the short Base MCP onboarding flow defined in `SKILL.md` before calling any Uniswap endpoint. The user's wallet address — passed as `walletAddress` in every swap and LP call — is fetched lazily when needed.
 
+> [!IMPORTANT]
+> **Before calling any Uniswap endpoint, obtain an API key.** Every request needs an `x-api-key` header, and there is no shared key — each operator brings their own, generated for free on the Uniswap developer portal. See `## Auth` for the one-time setup.
+
 ## Overview
 
 Uniswap on Base: token swaps using the proxy-approval flow (no Permit2 signing) and LP position management for V2, V3, and V4. The plugin fetches unsigned calldata from the Uniswap API, then executes transaction previews with `send_calls`. No additional MCP server is required.
@@ -28,14 +31,35 @@ Uniswap on Base: token swaps using the proxy-approval flow (no Permit2 signing) 
 
 ## Auth
 
-Use these headers for all requests:
+Uniswap's Trading and LP APIs require a per-operator API key, sent as the `x-api-key` header on every request. **There is no shared or hardcoded key.** Each operator brings their own key: this binds their usage to Uniswap's developer terms, keeps rate limits (RPS) scoped to them rather than shared with everyone, and avoids one public key accumulating spam traffic.
+
+### Obtaining a key
+
+Creating a free account on the Uniswap developer portal automatically generates an API key:
+
+1. Open <https://developers.uniswap.org/dashboard/welcome>.
+2. Sign up — "Continue with Google", "Continue with GitHub", or "Continue with email".
+3. A key is issued automatically on account creation. Copy it from the dashboard.
+
+Account creation can't be scripted through this plugin, so complete it one of two ways:
+
+- **Operator-driven (default).** Ask the operator to run the sign-up above and provide the resulting API key. This is the normal path — most harnesses can't create an email account or click through a web sign-up.
+- **Agent-driven (only if you control both an inbox and a browser).** If — and only if — this harness can drive a browser *and* read a mailbox you own (e.g. a connected email account/MCP, for any confirmation link), you may complete the sign-up yourself: navigate to the portal, register with your own email, confirm if prompted, and read the generated key from the dashboard. Never invent, guess, or reuse another party's credentials or key.
+
+### Using and storing the key
+
+Send the operator's key as `x-api-key` on every request:
 
 ```json
 {
   "Content-Type": "application/json",
-  "x-api-key": "NeoYO3V50_koJAipDEalYWbMO1XMaFPAQmpOm6_Npo0"
+  "x-api-key": "<UNISWAP_API_KEY>"
 }
 ```
+
+- Prefer a harness secret or environment variable over pasting the raw key into chat. If the harness has no secret mechanism and the operator must paste it, they must paste the key **in full, exactly as issued** — never truncated, abbreviated, or reconstructed; a partial key causes confusing auth failures.
+- Never echo the API key back to the user, log it, or include it in `send_calls` parameters or any onchain calldata.
+- Use one key per operator. Do not share a key across users — that re-creates the shared-key problems above (unbound terms acceptance, pooled rate limits, spam).
 
 For the swap proxy-approval flow, also include this header on **all** swap endpoints: `/check_approval`, `/quote`, and `/swap`.
 
@@ -477,6 +501,7 @@ Apply the same thresholds to swap and LP slippage. If the user did not specify a
 
 ## Notes
 
+- Every request needs a per-operator `x-api-key` from <https://developers.uniswap.org/dashboard/welcome> — there is no shared key. See `## Auth`.
 - Native ETH address: `0x0000000000000000000000000000000000000000`
 - USDC on Base: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 - WETH on Base: `0x4200000000000000000000000000000000000006`
