@@ -30,7 +30,7 @@ Consolidated skills that cover the most common use cases. Each uses progressive 
 | Skill | Install | Description |
 | ----- | ------- | ----------- |
 | [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, attribution, agent registration, and nodes. Consolidates all individual skills into one. |
-| [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via mcp.base.org. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
+| [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via wallet-mcp.coinbase.com. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
 | [vibenet](./skills/vibenet/SKILL.md) | `npx skills add base/skills --skill vibenet` | Build on [vibenet](https://chain.base.org/vibenet), the Base Vibes devnet for native account abstraction (EIP-8130) and Cobalt 200ms native blocks, with viem: smart accounts, batched calls, session keys and policies, ERC-8168 payer gas sponsorship, and millisecond block timestamps. |
 
 ## Installation
