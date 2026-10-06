@@ -126,6 +126,8 @@ For Smart Wallets (EIP-5792 `sendCalls`): See [smart-wallets.md](smart-wallets.m
 2. **Block explorer**: Find tx hash, view input data, confirm last 16 bytes are `8021` repeating
 3. **Validation tool**: Use [builder-code-checker.vercel.app](https://builder-code-checker.vercel.app/)
 
+To track users, retention and funnels for the app, see [analytics.md](analytics.md).
+
 ## Key Facts
 
 - Builder Codes are ERC-721 NFTs minted on Base

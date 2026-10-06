@@ -8,13 +8,15 @@ description: >
   ethers.js/window.ethereum, transaction attribution, earn referral fees, append builder code;
   (4) Agent registration — trading bots, AI agents, automated
   senders, ERC-8021 attribution wiring, base.dev API, register agent, builder code registration;
-  (5) Node operation — run Base node, Reth setup, hardware requirements, self-hosted RPC, sync.
+  (5) Node operation — run Base node, Reth setup, hardware requirements, self-hosted RPC, sync;
+  (6) User analytics — track users, DAU/WAU/MAU, retention, funnels keyed by wallet address,
+  PostHog/Mixpanel/Amplitude, add analytics to my app, replace Base Dashboard user metrics.
 ---
 
 # Base Development
 
 Complete playbook for building on Base L2 — network setup, smart contracts, developer tool
-attribution, agent registration, and node operation.
+attribution, user analytics, agent registration, and node operation.
 
 ## Default Stack
 
@@ -43,6 +45,7 @@ Read the reference for your task:
 | **Deploy contracts** | Foundry deployment, BaseScan verification, faucet | [references/deploy-contracts.md](references/deploy-contracts.md) |
 | **Run a Base node** | Self-hosted RPC, Reth, hardware requirements | [references/run-node.md](references/run-node.md) |
 | **Builder Codes** | Add ERC-8021 attribution to transactions | [references/builder-codes/overview.md](references/builder-codes/overview.md) |
+| **User analytics** | Track users, retention and funnels by wallet address | [references/builder-codes/analytics.md](references/builder-codes/analytics.md) |
 | **Register AI agent/bot** | Register wallet, get builder code, wire attribution | [references/agents/register.md](references/agents/register.md) |
 
 ## Operating Procedure
