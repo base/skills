@@ -10,7 +10,7 @@ description: >
   senders, ERC-8021 attribution wiring, base.dev API, register agent, builder code registration;
   (5) Node operation — run Base node, Reth setup, hardware requirements, self-hosted RPC, sync;
   (6) User analytics — track users, DAU/WAU/MAU, retention, funnels keyed by wallet address,
-  PostHog/Mixpanel/Amplitude, add analytics to my app, replace Base Dashboard user metrics.
+  add analytics to my app, replace Base Dashboard user metrics.
 ---
 
 # Base Development
