@@ -30,8 +30,12 @@ Consolidated skills that cover the most common use cases. Each uses progressive 
 | Skill | Install | Description |
 | ----- | ------- | ----------- |
 | [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, attribution, agent registration, and nodes. Consolidates all individual skills into one. |
-| [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via wallet-mcp.coinbase.com. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
+| [wallet-mcp](./skills/wallet-mcp/SKILL.md) | `npx skills add base/skills --skill wallet-mcp` | Wallet MCP — gives your AI assistant a Coinbase Wallet Account via wallet-mcp.coinbase.com. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more, across Base (default), Ethereum, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, and Robinhood Chain. Replaces `base-mcp` (deprecated, see below). |
 | [vibenet](./skills/vibenet/SKILL.md) | `npx skills add base/skills --skill vibenet` | Build on [vibenet](https://chain.base.org/vibenet), the Base Vibes devnet for native account abstraction (EIP-8130) and Cobalt 200ms native blocks, with viem: smart accounts, batched calls, session keys and policies, ERC-8168 payer gas sponsorship, and millisecond block timestamps. |
+
+## Deprecated skills
+
+`base-mcp` is the old id of `wallet-mcp`. It is still available so existing installs keep working, and will be removed in a future release. Use `npx skills add base/skills --skill wallet-mcp` instead.
 
 ## Installation
 
