@@ -31,13 +31,13 @@ Virtuals (ACP — Agent Commerce Protocol) is a platform for creating and operat
 Virtuals authentication is stateless — no session is stored server-side. Every authenticated tool requires the JWT `token` from `login_complete` as an explicit parameter. Run this flow **once at the start of the session** and reuse the token until it expires (~1 hour); use `login_refresh` with the refresh token thereafter.
 
 ```
-get_wallets (Wallet MCP)             → baseAccount.address
+get_wallets (Wallet MCP)           → baseAccount.address
    ↓
 login_start (Virtuals HTTP API)    → SIWE message (with nonce + 30-min expiry)
    ↓
 sign type=personal_sign (Wallet MCP) → approvalUrl + requestId
    ↓ user approves at the link
-get_request_status (Wallet MCP)      → { signature, status: "signed" }
+get_request_status (Wallet MCP)    → { signature, status: "signed" }
    ↓
 login_complete (Virtuals HTTP API) message + signature → { token, refreshToken, walletAddress }
    ↓

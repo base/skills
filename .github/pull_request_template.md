@@ -12,13 +12,13 @@
 
 ## Affected skill(s)
 
-<!-- e.g. build-on-base, base-mcp -->
+<!-- e.g. build-on-base, wallet-mcp -->
 
 ## Plugin checklist
 
 - [ ] Plugin spec/manifest is accurate and tested
 - [ ] (If Applicable) API endpoints and/or external MCP/CLI tested and functional
-- [ ] Follows [Contribution Scope](../skills/base-mcp/references/plugin-spec.md#contribution-scope)
+- [ ] Follows [Contribution Scope](../skills/wallet-mcp/references/plugin-spec.md#contribution-scope)
 
 ## Base MCP Plugin Submission Agreement (when applicable)
 

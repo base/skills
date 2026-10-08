@@ -271,7 +271,7 @@ Follow these steps to write a new plugin file (`skills/wallet-mcp/plugins/<slug>
 
 Keep a plugin PR's diff minimal. A contribution should change only:
 
-- **Your plugin file** — `skills/wallet-mcp/plugins/<slug>.md` (the file you are adding). This is the only file most plugin PRs touch.
+- **Your plugin file** — `skills/wallet-mcp/plugins/<slug>.md` (the file you are adding). This is the only file most plugin PRs touch. While the deprecated `base-mcp` skill is still in the repo, also add an identical copy at `skills/base-mcp/plugins/<slug>.md`.
 - **The tag vocabulary — only if you introduce a genuinely new `tag`** — by appending it to the list in [Choosing each field's value](#choosing-each-fields-value). Don't otherwise edit that list.
 
 Do **not** edit the following in a plugin PR — they are maintainer-managed and updated when a plugin is reviewed and accepted into the registry:

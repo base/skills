@@ -22,7 +22,7 @@ If Wallet MCP tools are available, load [references/tone.md](references/tone.md)
 
 Keep it short. Do this once per session, before doing real work:
 
-1. **Briefly mention what's available** — one or two sentences. The user has a Coinbase Wallet Account and can do things like check balances, send and swap tokens, sign messages, make x402 payments, and batch contract calls across Base (the default chain), Ethereum, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, and Robinhood Chain, and (if installed) use third-party plugins for DeFi, swaps, and other onchain actions. Do not enumerate every tool — the agent discovers tools and plugins directly from the MCP.
+1. **Briefly mention what's available** — one or two sentences. The user has a Coinbase Wallet Account and can do things like check balances, send and swap tokens, sign messages, make x402 payments, and batch contract calls on Base (the default chain) and other supported chains, and (if installed) use third-party plugins for DeFi, swaps, and other onchain actions. Do not enumerate every tool — the agent discovers tools and plugins directly from the MCP.
 
 2. **Show this disclaimer verbatim** before proceeding:
 
@@ -46,7 +46,7 @@ Wallet MCP tools take a `chain` parameter. **Base is the default chain** — use
 | Robinhood Chain | `robinhood-chain` |
 | Base Sepolia (testnet) | `base-sepolia` |
 
-The tool descriptions exposed by the MCP remain the source of truth for the current set. Individual plugins may support only a subset of these chains — check the plugin's notice before acting.
+Not every tool covers every chain: x402 payments run on Base and Base Sepolia only, and `swap` is mainnet-only. The tool descriptions exposed by the MCP remain the source of truth for the current set and per-tool limits. Individual plugins may support only a subset of these chains — check the plugin's notice before acting.
 
 ## Tools
 

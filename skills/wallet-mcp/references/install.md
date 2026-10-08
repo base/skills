@@ -27,7 +27,7 @@ Or manually:
    - **Remote MCP server URL**: `https://wallet-mcp.coinbase.com`
 3. Click **Add**
 
-A browser tab opens to authorize on first use — sign in with your Coinbase Wallet account.
+A browser tab opens to authorize on first use — sign in with your Coinbase Wallet Account.
 
 ---
 
