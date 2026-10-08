@@ -29,7 +29,7 @@ Append findings as `## Live API / SDK Verification` in the report. Update the ve
 
 ## Geoblock verification (perps, prediction markets, gambling)
 
-For plugins in regulated categories where the protocol's frontend geoblocks certain jurisdictions (typically US), verify that the API enforces equivalent restrictions. If the API serves requests that the frontend would block, Base MCP risks being deemed a circumvention tool.
+For plugins in regulated categories where the protocol's frontend geoblocks certain jurisdictions (typically US), verify that the API enforces equivalent restrictions. If the API serves requests that the frontend would block, Wallet MCP risks being deemed a circumvention tool.
 
 Test from a US IP (or the relevant restricted jurisdiction):
 ```bash

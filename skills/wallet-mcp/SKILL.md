@@ -1,30 +1,28 @@
 ---
-title: "Base MCP Skill"
-description: "Base MCP — gives your AI assistant access to a Base Account via the Base MCP server (wallet-mcp.coinbase.com). Wallet, portfolio, sending, swapping, signing, x402 payments, batched contract calls, and transaction history across supported chains."
-name: base-mcp
+title: "Wallet MCP Skill"
+description: "Wallet MCP — gives your AI assistant access to a Coinbase Wallet Account via the Wallet MCP server (wallet-mcp.coinbase.com). Wallet, portfolio, sending, swapping, signing, x402 payments, batched contract calls, and transaction history across Base, Ethereum, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, and Robinhood Chain."
+name: wallet-mcp
 version: 0.1.0
 ---
 
-# Base MCP
-
-> **Deprecated:** this skill has been renamed to `wallet-mcp`. Install with `npx skills add base/skills --skill wallet-mcp`. This copy still works and will be removed later.
+# Wallet MCP
 
 > [!IMPORTANT]
-> ## Run onboarding at the start of every conversation that touches Base MCP
+> ## Run onboarding at the start of every conversation that touches Wallet MCP
 >
 > Including conversations that jump straight to a plugin topic. Onboarding is short — see below.
 
 ## Detection
 
-The Base MCP exposes its tools to the harness when connected. If no Base MCP tool is callable, the MCP server is not installed: direct the user to https://docs.cdp.coinbase.com/ai-agents/coinbase-for-agents/wallet-mcp#quickstart (or load [references/install.md](references/install.md) for app-specific steps) and stop.
+The Wallet MCP exposes its tools to the harness when connected. If no Wallet MCP tool is callable, the MCP server is not installed: direct the user to https://docs.cdp.coinbase.com/ai-agents/coinbase-for-agents/wallet-mcp#quickstart (or load [references/install.md](references/install.md) for app-specific steps) and stop.
 
-If Base MCP tools are available, load [references/tone.md](references/tone.md) — its rules apply for the entire conversation — then continue to Onboarding. If — and only if — sibling files aren't readable (e.g. you were handed just this `SKILL.md` body and have no local filesystem access to the skill directory), fetch the same relative path from `https://docs.cdp.coinbase.com/coinbase-for-agents/wallet-mcp/references/tone.md` using the `web_request` tool from Base MCP. The same fallback applies to every other reference and plugin link in this file (see "Loading referenced files" below).
+If Wallet MCP tools are available, load [references/tone.md](references/tone.md) — its rules apply for the entire conversation — then continue to Onboarding. If — and only if — sibling files aren't readable (e.g. you were handed just this `SKILL.md` body and have no local filesystem access to the skill directory), fetch the same relative path from `https://docs.cdp.coinbase.com/coinbase-for-agents/wallet-mcp/references/tone.md` using the `web_request` tool from Wallet MCP. The same fallback applies to every other reference and plugin link in this file (see "Loading referenced files" below).
 
 ## Onboarding
 
 Keep it short. Do this once per session, before doing real work:
 
-1. **Briefly mention what's available** — one or two sentences. The user has a Base Account wallet and can do things like check balances, send and swap tokens, sign messages, make x402 payments, batch contract calls, and (if installed) use third-party plugins for DeFi, swaps, and other onchain actions. Do not enumerate every tool — the agent discovers tools and plugins directly from the MCP.
+1. **Briefly mention what's available** — one or two sentences. The user has a Coinbase Wallet Account and can do things like check balances, send and swap tokens, sign messages, make x402 payments, and batch contract calls on Base (the default chain) and other supported chains, and (if installed) use third-party plugins for DeFi, swaps, and other onchain actions. Do not enumerate every tool — the agent discovers tools and plugins directly from the MCP.
 
 2. **Show this disclaimer verbatim** before proceeding:
 
@@ -32,9 +30,27 @@ Keep it short. Do this once per session, before doing real work:
 
 3. **Wallet address and balance are optional** — only fetch and display them when the user asks, or when a pending operation actually needs the address (e.g., a write call, a position lookup). Don't volunteer a wallet dump up front.
 
+## Supported chains
+
+Wallet MCP tools take a `chain` parameter. **Base is the default chain** — use it unless the user asks for another chain or a plugin requires one. Use these exact chain names:
+
+| Chain | `chain` value |
+|-------|---------------|
+| Base (default) | `base` |
+| Ethereum | `ethereum` |
+| Arbitrum | `arbitrum` |
+| Optimism | `optimism` |
+| Polygon | `polygon` |
+| BNB Chain | `bsc` |
+| Avalanche | `avalanche` |
+| Robinhood Chain | `robinhood-chain` |
+| Base Sepolia (testnet) | `base-sepolia` |
+
+Not every tool covers every chain: x402 payments run on Base and Base Sepolia only, and `swap` is mainnet-only. The tool descriptions exposed by the MCP remain the source of truth for the current set and per-tool limits. Individual plugins may support only a subset of these chains — check the plugin's notice before acting.
+
 ## Tools
 
-The Base MCP advertises its own tool catalog to the harness. Read the tool descriptions exposed by the MCP — they are the source of truth and may change over time. Do not assume a fixed list; do not preload a tool catalog from this skill.
+The Wallet MCP advertises its own tool catalog to the harness. Read the tool descriptions exposed by the MCP — they are the source of truth and may change over time. Do not assume a fixed list; do not preload a tool catalog from this skill.
 
 Two patterns deserve their own references because they span multiple tools:
 
@@ -49,18 +65,18 @@ Two patterns deserve their own references because they span multiple tools:
 ### Loading referenced files
 
 - **Default — local.** Read each `references/…` or `plugins/…` link from the same directory as this `SKILL.md` (filesystem read, e.g. `Read`/`cat`). This is the canonical source — always try this first.
-- **Fallback — web (only when local read fails).** If — and only if — the local file is genuinely unreadable (e.g. you were handed `SKILL.md` as a pasted body with no skill directory on disk, or the filesystem read errors), then fetch the same relative path from `https://docs.cdp.coinbase.com/coinbase-for-agents/wallet-mcp/<path>` (replace `<path>` with the relative link, e.g. `references/tone.md`, `plugins/morpho.md`). Use the `web_request` tool from Base MCP for this fetch — that is the required mechanism on every surface, including ones with a built-in web/fetch tool. Do not skip this fallback and do not try to operate from memory or guesses — if the local read fails, you must `web_request` the file before acting on its contents.
+- **Fallback — web (only when local read fails).** If — and only if — the local file is genuinely unreadable (e.g. you were handed `SKILL.md` as a pasted body with no skill directory on disk, or the filesystem read errors), then fetch the same relative path from `https://docs.cdp.coinbase.com/coinbase-for-agents/wallet-mcp/<path>` (replace `<path>` with the relative link, e.g. `references/tone.md`, `plugins/morpho.md`). Use the `web_request` tool from Wallet MCP for this fetch — that is the required mechanism on every surface, including ones with a built-in web/fetch tool. Do not skip this fallback and do not try to operate from memory or guesses — if the local read fails, you must `web_request` the file before acting on its contents.
 - **Lazy.** Only load a reference or plugin when the conversation actually needs it. Don't preload the catalog.
 
 ## Plugins
 
-Plugins extend Base MCP with third-party functionality (lending, swaps, perps, etc.). Each plugin is a separate third-party service that Base does not operate, endorse, or audit. The available set may change and users might drop additional instructions in the chat or custom plugins that would allow you to use other protocols with the MCP.
+Plugins extend Wallet MCP with third-party functionality (lending, swaps, perps, etc.). Each plugin is a separate third-party service that Base does not operate, endorse, or audit. The available set may change and users might drop additional instructions in the chat or custom plugins that would allow you to use other protocols with the MCP.
 
 ### Routing rule — name-gated, never auto-routed
 
 Open a plugin **only** when the user names that specific third-party platform (e.g. "swap on Uniswap", "lend on Moonwell", "buy a gift card on Bitrefill") or otherwise unambiguously points to it. Never infer a platform from a bare capability — choosing one third-party service over another is the user's decision, not yours.
 
-If the user asks for a capability **without** naming a platform — "swap some USDC", "earn yield", "launch a token", "buy a gift card" — do **not** pick a plugin for them. Instead, list the plugins from the table below that cover that capability (and mention any native Base MCP tool that also does, e.g. the built-in `swap`), then let the user choose. Only after the user names a platform do you open its plugin and act.
+If the user asks for a capability **without** naming a platform — "swap some USDC", "earn yield", "launch a token", "buy a gift card" — do **not** pick a plugin for them. Instead, list the plugins from the table below that cover that capability (and mention any native Wallet MCP tool that also does, e.g. the built-in `swap`), then let the user choose. Only after the user names a platform do you open its plugin and act.
 
 Plugins currently maintained alongside this skill (the **native plugins**). Use the table two ways: (a) to route a request that already names a platform to the right plugin, and (b) to assemble the option list when the user asks for a capability without naming one. The "Open it when…" column intentionally anchors each trigger to the platform's own name — that name is the trigger.
 
@@ -91,10 +107,10 @@ Load a plugin reference only once the user has named the platform it covers (per
 
 ### Native plugins vs. custom / user-supplied plugins
 
-Native plugin HTTP hosts may be allowlisted in the Base MCP `web_request` tool. Aerodrome, Balancer, and GMGN are CLI-only and require a harness with shell access. Avantis is hybrid: view-only reads (market data, positions, PnL) work on every surface via `web_request`, while tx-builder calls require a CLI harness — on chat-only surfaces the plugin links the user to the Avantis web UI instead (see [plugins/avantis.md](plugins/avantis.md)). Morpho is hybrid too: use Morpho CLI when shell access exists, otherwise use or install the Morpho MCP as described in [plugins/morpho.md](plugins/morpho.md). Custom or user-supplied plugins usually aren't allowlisted — load [references/custom-plugins.md](references/custom-plugins.md) for the decision tree on which HTTP path to use (harness HTTP tool vs. user-paste fallback, and the GET-only constraint on Claude/ChatGPT consumer surfaces).
+Native plugin HTTP hosts may be allowlisted in the Wallet MCP `web_request` tool. Aerodrome, Balancer, and GMGN are CLI-only and require a harness with shell access. Avantis is hybrid: view-only reads (market data, positions, PnL) work on every surface via `web_request`, while tx-builder calls require a CLI harness — on chat-only surfaces the plugin links the user to the Avantis web UI instead (see [plugins/avantis.md](plugins/avantis.md)). Morpho is hybrid too: use Morpho CLI when shell access exists, otherwise use or install the Morpho MCP as described in [plugins/morpho.md](plugins/morpho.md). Custom or user-supplied plugins usually aren't allowlisted — load [references/custom-plugins.md](references/custom-plugins.md) for the decision tree on which HTTP path to use (harness HTTP tool vs. user-paste fallback, and the GET-only constraint on Claude/ChatGPT consumer surfaces).
 
 ## Installation
 
 ```bash
-npx skills add base/skills --skill base-mcp
+npx skills add base/skills --skill wallet-mcp
 ```
