@@ -18,7 +18,10 @@ RESPONSE=$(curl -sf -X POST "$API_URL" \
   exit 1
 }
 
-BUILDER_CODE=$(echo "$RESPONSE" | grep -o '"builder_code":"[^"]*"' | cut -d'"' -f4)
+# Match one or more spaces or tabs after the colon (pretty-printers may use either).
+# Fall back to an empty value when the grep pipeline finds nothing, otherwise
+# `set -euo pipefail` aborts the script here and the check below never runs.
+BUILDER_CODE=$(echo "$RESPONSE" | grep -oE '"builder_code":[[:space:]]*"[^"]*"' | grep -oE '"[^"]*"$' | tr -d '"') || BUILDER_CODE=""
 
 if [ -z "$BUILDER_CODE" ]; then
   echo "Error: No builder_code in API response" >&2
