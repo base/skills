@@ -18,7 +18,7 @@ RESPONSE=$(curl -sf -X POST "$API_URL" \
   exit 1
 }
 
-BUILDER_CODE=$(echo "$RESPONSE" | grep -o '"builder_code":"[^"]*"' | cut -d'"' -f4)
+BUILDER_CODE=$(echo "$RESPONSE" | grep -o '"builder_code": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
 
 if [ -z "$BUILDER_CODE" ]; then
   echo "Error: No builder_code in API response" >&2
