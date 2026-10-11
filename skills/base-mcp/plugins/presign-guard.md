@@ -3,7 +3,7 @@ title: "presign-guard Plugin"
 description: "Pre-trade safety checks via the presign-guard HTTP API (free or paid with Wallet MCP x402) before any swap or send_calls on EVM chains."
 tags: [security, token-safety, risk-check, trading, swap]
 name: presign-guard
-version: 0.2.0
+version: 0.3.0
 integration: http-api
 chains: [base, ethereum, arbitrum, optimism, polygon, bsc]
 requires:
@@ -22,7 +22,7 @@ risk: []
 
 ## Overview
 
-[presign-guard](https://presign-guard.fizzl.eu) answers one question before your agent buys a token or signs a transaction: green, orange or red. It checks the token (honeypot, sell tax, mint or owner powers, thin or unlocked liquidity, fake look-alikes, very new token), the counterparty of a transaction or approval (flagged or sanctioned address, unverified contract, unlimited allowance) and the wallet's open approvals, on Base, Ethereum, Arbitrum, Optimism, Polygon and BSC. The plugin calls the presign-guard HTTP API to get a verdict and uses it to gate the user's own `swap` or `send_calls` (including calls prepared by other plugins such as Bankr, Clawnch, Uniswap or KyberSwap). A free quick verdict needs no payment; the full answer with reason codes costs $0.01 USDC on Base, paid through Wallet MCP's x402 tools.
+[presign-guard](https://presign-guard.fizzl.eu) answers one question before your agent buys a token or signs a transaction: green, orange or red. It checks the token (honeypot, sell tax, mint or owner powers, thin or unlocked liquidity, fake look-alikes, very new token), the counterparty of a transaction or approval (flagged or sanctioned address, unverified contract, unlimited allowance), what a transaction really does (it is simulated against the latest block when the sending wallet is given) and the wallet's open approvals, on Base, Ethereum, Arbitrum, Optimism, Polygon and BSC. The plugin calls the presign-guard HTTP API to get a verdict and uses it to gate the user's own `swap` or `send_calls` (including calls prepared by other plugins such as Bankr, Clawnch, Uniswap or KyberSwap). A free quick verdict needs no payment; the full answer with reason codes costs $0.01 USDC on Base, paid through Wallet MCP's x402 tools.
 
 ## Surface Routing
 
@@ -67,11 +67,11 @@ Same query as the quick check. Returns the verdict, a grade (`SAFE`, `CAUTION`, 
 
 JSON body, one of:
 
-* Transaction (what `send_calls` would send): `{ "type": "transaction", "chainId": 8453, "to": "0x…", "data": "0x…", "value": "0" }`
+* Transaction (what `send_calls` would send): `{ "type": "transaction", "chainId": 8453, "from": "0x…", "to": "0x…", "data": "0x…", "value": "0" }`. With `from` (the wallet that would send it) the transaction is simulated against the latest block, also inside routers, multicalls and batches: the answer gets a `simulation` field with every asset that leaves or arrives, and `HIDDEN_APPROVAL` (an approval the call doesn't show), `SIMULATION_NFT_OUT` (an NFT leaves the wallet) or `SIMULATION_FAILS` (it would revert) is orange.
 * Token approval: `{ "type": "approval", "chainId": 8453, "token": "0x…", "spender": "0x…", "amount": "1000000" }` (`amount` in base units; `"0"` = revoke)
 * EIP-712 signature (Permit, Permit2, EIP-3009, Seaport): `{ "type": "signature", "chainId": 8453, "typedData": { … } }`
 
-Optional on all: `origin` (the site or dapp that asked; a domain under 30 days old is orange). Supported `chainId`: 8453 (Base), 1, 42161, 10, 137, 56.
+Optional on all: `origin` (the site or dapp that asked; a domain under 30 days old is orange) and `intent` (one sentence: what the user wants to do, e.g. "swap 10 USDC for ETH"; a transaction that does something else, such as 5,000 USDC leaving, is orange `INTENT_MISMATCH`). Supported `chainId`: 8453 (Base), 1, 42161, 10, 137, 56.
 
 ```json
 { "verdict": "orange", "reasons": [{ "code": "UNLIMITED_APPROVAL", "severity": "orange", "subject": "0x0000…8ba3", "details": { "token": "0x8335…2913" } }] }
@@ -95,7 +95,7 @@ Query: `chain`, `address` (the wallet). Returns the verdict, a summary and every
 ### Before `send_calls` (calldata from any plugin)
 
 1. Get the wallet with `get_wallets` and the calls the other plugin prepared (`{ to, value, data }` per call).
-2. For each call that moves value or grants access (approve, permit, transfer, swap router call), build a `POST /v1/check` body: `type: "transaction"` with `chainId`, `to`, `data`, `value`; for a plain ERC-20 `approve` you may send `type: "approval"` instead.
+2. For each call that moves value or grants access (approve, permit, transfer, swap router call), build a `POST /v1/check` body: `type: "transaction"` with `chainId`, `from` (the wallet from `get_wallets`, so the call is simulated), `to`, `data`, `value`, and `intent` (what the user asked for, in one sentence); for a plain ERC-20 `approve` you may send `type: "approval"` instead.
 3. Pay and run it via `initiate_x402_request` (method `POST`, resource `https://presign-guard.fizzl.eu/v1/check`, the JSON body, `maxPayment` `0.01`) → approval → `complete_x402_request`.
 4. Only submit the batch with `send_calls` if every call is `green`, or the user explicitly accepted each `orange` reason. Never submit when any call is `red`.
 
@@ -131,8 +131,9 @@ Paid checks are paid with Wallet MCP `initiate_x402_request` / `complete_x402_re
 
 **"Check these calls before you send them"** (after another plugin prepared calldata)
 
-1. One paid `POST /v1/check` per value-moving call (`type: "transaction"`).
-2. Submit with `send_calls` only if all are `green` or the user accepted each `orange`.
+1. One paid `POST /v1/check` per value-moving call (`type: "transaction"`, with `from` and `intent`).
+2. Show what the `simulation` says leaves and arrives in the wallet.
+3. Submit with `send_calls` only if all are `green` or the user accepted each `orange`.
 
 **"Do I have risky approvals on my Base wallet?"**
 
