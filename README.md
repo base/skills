@@ -2,7 +2,7 @@
 
 ![Base](logo.webp)
 
-[Agent Skills](https://agentskills.io) for building on [Base](https://base.org). These skills enable AI agents to connect to Base, deploy contracts, integrate wallets, run nodes, and more.
+[Agent Skills](https://agentskills.io) for building on [Base](https://base.org). These skills enable AI agents to connect to Base, deploy contracts, register agents, run nodes, and more.
 
 <!-- Badge row 1 - status -->
 
@@ -25,12 +25,17 @@
 
 ## Recommended Skills
 
-Two consolidated skills that cover the most common use cases. Each uses progressive reference loading — the skill loads a single entry point and pulls in detailed references only when needed.
+Consolidated skills that cover the most common use cases. Each uses progressive reference loading — the skill loads a single entry point and pulls in detailed references only when needed.
 
 | Skill | Install | Description |
 | ----- | ------- | ----------- |
-| [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, wallet auth, payments, attribution, and migrations. Consolidates all individual skills into one. |
-| [base-mcp](./skills/base-mcp/SKILL.md) | `npx skills add base/skills --skill base-mcp` | Base MCP server — gives your AI assistant a wallet via mcp.base.org. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more. |
+| [build-on-base](./skills/build-on-base/SKILL.md) | `npx skills add base/skills --skill build-on-base` | Complete Base development playbook: network, contracts, attribution, agent registration, and nodes. Consolidates all individual skills into one. |
+| [wallet-mcp](./skills/wallet-mcp/SKILL.md) | `npx skills add base/skills --skill wallet-mcp` | Wallet MCP — gives your AI assistant a Coinbase Wallet Account via wallet-mcp.coinbase.com. Sending, swapping, signing, batched calls, balances, and partner plugins for lending, swaps, and more, across Base (default), Ethereum, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, and Robinhood Chain. Replaces `base-mcp` (deprecated, see below). |
+| [vibenet](./skills/vibenet/SKILL.md) | `npx skills add base/skills --skill vibenet` | Build on [vibenet](https://chain.base.org/vibenet), the Base Vibes devnet for native account abstraction (EIP-8130) and Cobalt 200ms native blocks, with viem: smart accounts, batched calls, session keys and policies, ERC-8168 payer gas sponsorship, and millisecond block timestamps. |
+
+## Deprecated skills
+
+`base-mcp` is the old id of `wallet-mcp`. It is still available so existing installs keep working, and will be removed in a future release. Use `npx skills add base/skills --skill wallet-mcp` instead.
 
 ## Installation
 
@@ -55,15 +60,19 @@ How do I connect to Base mainnet?
 ```
 
 ```text
-Add Sign in with Base to my app
-```
-
-```text
-Convert my existing Farcaster miniapp to a standard app on Base
-```
-
-```text
 Register my trading bot and add builder code attribution to its transactions
+```
+
+```text
+Create an EIP-8130 smart account on vibenet and fund it from the faucet
+```
+
+```text
+Deploy a smart account on vibenet with sponsored gas, so the user needs no ETH
+```
+
+```text
+Send a transaction on vibenet and show me which 200ms block it landed in
 ```
 
 ## Contributing

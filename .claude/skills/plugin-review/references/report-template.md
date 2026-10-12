@@ -5,7 +5,7 @@ Write to a file like `PR-<n>-<slug>.md` (for PR reviews) or `<slug>-review.md` (
 ```markdown
 # <slug> — Plugin Spec Evaluation
 
-**Plugin:** `<slug>.md` · **Evaluated against:** current Base MCP Plugin Specification · **Date:** <YYYY-MM-DD>
+**Plugin:** `<slug>.md` · **Evaluated against:** current Wallet MCP Plugin Specification · **Date:** <YYYY-MM-DD>
 
 ## Verdict
 <One of: ✅ Conforms / 🟡 Approve with minor changes / 🔴 Request changes.> <1–2 sentence rationale reflecting both static and (if run) live findings.>

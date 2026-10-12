@@ -1,6 +1,6 @@
 # Evaluation Criteria
 
-Assess each plugin against these dimensions. The spec (`skills/base-mcp/references/plugin-spec.md`) is the source of truth — fetch the current version; it changes. Cite evidence (line/section) for every finding.
+Assess each plugin against these dimensions. The spec (`skills/wallet-mcp/references/plugin-spec.md`) is the source of truth — fetch the current version; it changes. Cite evidence (line/section) for every finding.
 
 ## Table of contents
 - File location & naming
@@ -20,13 +20,13 @@ Assess each plugin against these dimensions. The spec (`skills/base-mcp/referenc
 - Severity rubric
 
 ## File location & naming
-- Plugin file is at `skills/base-mcp/plugins/<slug>.md`.
+- Plugin file is at `skills/wallet-mcp/plugins/<slug>.md`. While `base-mcp` is deprecated but still present, a new plugin must be added to **both** `skills/wallet-mcp/plugins/` and `skills/base-mcp/plugins/` with identical content (the server still reads the old folder as a fallback).
 - `<slug>` matches frontmatter `name`.
 
 ## Frontmatter
 Required fields present: `title`, `description`, `tags`, `name`, `version`, `integration`, `chains`.
 - **Enums valid**: `integration` ∈ {cli-only, http-api, external-mcp, semantic-base-tool, hybrid}; `requires.shell` ∈ {required, optional, none}; `auth` ∈ {none, api-key, siwe-jwt, oauth-on-install}; `risk` tags ∈ {liquidation, slippage, low-liquidity, pii, irreversible}.
-- **`chains` ⊆ supported set**: arbitrum, avalanche, base, base-sepolia, bsc, ethereum, optimism, polygon. `[]` is valid if no onchain tx routes through Base MCP. (Re-check the live `chain` param on Base MCP tools — the set can change.)
+- **`chains` ⊆ supported set**: arbitrum, avalanche, base, base-sepolia, bsc, ethereum, optimism, polygon, robinhood-chain. `[]` is valid if no onchain tx routes through Wallet MCP. (Re-check the live `chain` param on Wallet MCP tools — the set can change.)
 - **`tags`**: 3–5 lowercase, hyphenated capability/category keywords (not the protocol name). Reuse existing vocabulary; flag net-new tags (and confirm they're appended to the vocabulary list — the one sanctioned shared-file edit).
 - **Capability flags** (`requires.shell/allowlist/externalMcp/cliPackage`, `auth`, `risk`) accurate and derived from real behavior, not copied from another plugin.
 - **`version`** is the plugin-doc version (semver). NOT the package/npm version, NOT a spec version. No mandated starting value.
@@ -42,7 +42,7 @@ R = always required; C = conditional on flags.
 - **Canonical order** as listed above; no broken internal `#anchor` links after renames.
 
 ## Submission
-Names a concrete Base MCP tool — `send_calls`, `swap`, `sign`, or `none` — and shows the **exact mapping** from the endpoint/command/MCP output into that tool's input (`{to, value, data}` normalization, chain-string mapping, approvals-before-action batch order). For `none`, state why.
+Names a concrete Wallet MCP tool — `send_calls`, `swap`, `sign`, or `none` — and shows the **exact mapping** from the endpoint/command/MCP output into that tool's input (`{to, value, data}` normalization, chain-string mapping, approvals-before-action batch order). For `none`, state why.
 
 ## Surface Routing
 A capability × surface table (read vs write × harness vs chat-only) mapping to an execution path (harness HTTP tool / `web_request` / CLI / external MCP / UI-paste fallback). **Must state the shell-less / chat-only behavior** — an explicit fallback or an explicit "stop." (A correct chat-only "stop when the host isn't on the `web_request` allowlist" is good, not a defect.)
@@ -69,7 +69,7 @@ Plugin copy must use **neutral, non-promotional language**. Flag as a **blocker*
 The plugin must describe what the protocol *does*, not advocate for using it. Orchestration should present options neutrally, not prescribe a preferred action.
 
 ## Geoblocking (high-risk categories)
-Applies to plugins in **perps, prediction markets, and gambling** categories. If the protocol's frontend geoblocks US IPs (or other jurisdictions), the underlying API must enforce equivalent restrictions. Check this during live testing (see `references/live-testing.md`). If the API serves US IPs while the frontend blocks them, Base MCP risks being deemed a circumvention tool — flag as a **blocker**.
+Applies to plugins in **perps, prediction markets, and gambling** categories. If the protocol's frontend geoblocks US IPs (or other jurisdictions), the underlying API must enforce equivalent restrictions. Check this during live testing (see `references/live-testing.md`). If the API serves US IPs while the frontend blocks them, Wallet MCP risks being deemed a circumvention tool — flag as a **blocker**.
 
 ## Disclaimers
 The plugin's `> [!IMPORTANT]` onboarding callout (first element in the body) should include appropriate disclaimers about the plugin's third-party nature and any relevant risk context. For high-risk categories (perps, prediction markets, privacy), disclaimers should be more prominent. The plugin's `## Installation` section (if present) should also reference these disclaimers.
@@ -79,7 +79,7 @@ Plugins in the following categories require **explicit legal review** before inc
 
 ## Cross-cutting gotchas (the high-value, easy-to-miss ones)
 
-1. **Smart-account signatures (ERC-1271/6492) are variable-length (>200 bytes), not 65-byte EOA sigs.** The default Base MCP account is a smart contract wallet. Any plugin that:
+1. **Smart-account signatures (ERC-1271/6492) are variable-length (>200 bytes), not 65-byte EOA sigs.** The default Wallet MCP account is a smart contract wallet. Any plugin that:
    - string-replaces a fixed 65-byte signature placeholder inside calldata, or
    - bakes an off-chain EIP-712 signature into calldata (e.g. Permit2 `buildCallWithPermit2`)
    is **broken** for the default wallet (works only for EOAs). Correct pattern: grant the allowance onchain in the `send_calls` batch (e.g. ERC20 `approve` → Permit2 `approve` → router call). Treat this as a blocker, not a nit.
