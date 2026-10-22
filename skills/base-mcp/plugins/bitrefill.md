@@ -166,7 +166,7 @@ Resources:
 
 ### SIWX helpers (no external libraries)
 
-Verified against `siwe@2.3.2` and `@x402/extensions@2.3.0`. Run in Node 18+ or any JS shell.
+Verified against `siwe@2.3.2` and `@x402/extensions@2.3.0`. Run in a supported Node.js release (22 or 24; 18 and 20 are end-of-life) or any JS shell.
 
 **JavaScript:**
 
